@@ -1,0 +1,87 @@
+{
+  "topic": "Como negociar dívidas e sair do vermelho",
+  "title": "O truque legal para apagar dívidas do banco",
+  "hook_text": "O banco odeia que você saiba disso!",
+  "scenes": [
+    {
+      "narration": "O banco já desistiu da sua dívida e vendeu ela por preço de banana!",
+      "search_query": "bank building exterior",
+      "image_prompt": "A modern bank building viewed from street level under a dramatic dark sky.",
+      "speaker": "A"
+    },
+    {
+      "narration": "Empresas de cobrança compram pacotes de calotes com até noventa e cinco porcento de desconto.",
+      "search_query": "business office desk",
+      "image_prompt": "A person looking at financial documents on a modern desk with a laptop under red warning light.",
+      "speaker": "A"
+    },
+    {
+      "narration": "Isso significa que a sua dívida real vale centavos perto do que cobram de você.",
+      "search_query": "calculator on paper",
+      "image_prompt": "Close up of hands using a calculator over financial papers and red bills.",
+      "speaker": "A"
+    },
+    {
+      "narration": "É por isso que plataformas oficiais conseguem cortes absurdos que parecem mentira.",
+      "search_query": "smartphone financial app",
+      "image_prompt": "A young person using a finance app on a smartphone showing a massive discount.",
+      "speaker": "A"
+    },
+    {
+      "narration": "Dívidas de dez mil reais podem ser liquidadas por menos de quinhentos reais.",
+      "search_query": "money savings coins",
+      "image_prompt": "A small pile of Brazilian Real currency notes neatly stacked on a wooden table.",
+      "speaker": "A"
+    },
+    {
+      "narration": "Após o acordo, seu nome fica limpo em até cinco dias úteis, por lei.",
+      "search_query": "approved document check",
+      "image_prompt": "A close up of a digital screen showing a bright green checkmark indicating approval.",
+      "speaker": "A"
+    },
+    {
+      "narration": "Limpar o nome não é favor do gerente, é seu direito garantido.",
+      "search_query": "person smiling relieved",
+      "image_prompt": "A young Brazilian person smiling while looking at their phone in a bright room.",
+      "speaker": "A"
+    },
+    {
+      "narration": "Consulte seu CPF hoje. Quanto o banco quer de você?",
+      "search_query": "typing on laptop",
+      "image_prompt": "Hands typing on a laptop keyboard on a clean white desk.",
+      "speaker": "A"
+    }
+  ],
+  "description": "Descubra como os bancos lidam com as dívidas e como você pode conseguir descontos de até noventa e cinco porcento para limpar seu nome. Deixe nos comentários qual é a sua maior dificuldade com dinheiro.",
+  "hashtags": [
+    "#shorts",
+    "#educacaofinanceira",
+    "#sairdasdividas",
+    "#serasa",
+    "#financas"
+  ],
+  "tags": [
+    "como negociar dividas",
+    "sair do vermelho",
+    "educacao financeira",
+    "serasa limpa nome",
+    "limpar o nome",
+    "como economizar dinheiro",
+    "jovens e dinheiro",
+    "financas pessoais",
+    "cartao de credito",
+    "desconto em dividas",
+    "como negociar dívidas e sair do vermelho",
+    "shorts"
+  ],
+  "category": "education",
+  "style": "facts",
+  "language": "pt",
+  "cast": [],
+  "score": 72,
+  "review": [
+    "O gancho (hook) faz uma pergunta fraca que dá margem para o espectador rolar a tela.",
+    "O ritmo das primeiras cenas é lento e acadêmico, perdendo o foco na urgência do tema.",
+    "Falta especificidade brutal e choque imediato nos primeiros segundos."
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "title": "O truque legal para apagar dívidas do banco #shorts",
+  "description": "Descubra como os bancos lidam com as dívidas e como você pode conseguir descontos de até noventa e cinco porcento para limpar seu nome. Deixe nos comentários qual é a sua maior dificuldade com dinheiro.\n\n#shorts #educacaofinanceira #sairdasdividas #serasa #financas\n\nFootage: Pixabay",
+  "tags": [
+    "como negociar dividas",
+    "sair do vermelho",
+    "educacao financeira",
+    "serasa limpa nome",
+    "limpar o nome",
+    "como economizar dinheiro",
+    "jovens e dinheiro",
+    "financas pessoais",
+    "cartao de credito",
+    "desconto em dividas",
+    "como negociar dívidas e sair do vermelho",
+    "shorts"
+  ],
+  "category_id": "27",
+  "language": "pt",
+  "topic": "Como negociar dívidas e sair do vermelho",
+  "subject": "como negociar dívidas e sair do vermelho",
+  "topic_divergence": {
+    "diverges": false,
+    "overlap": 1.0,
+    "relation": "equivalent"
+  },
+  "source": "manual",
+  "style": "facts",
+  "duration": 39.5,
+  "resolution": "1080x1920",
+  "llm": "gemini:gemini-3.5-flash-lite",
+  "score": 72,
+  "review": [
+    "O gancho (hook) faz uma pergunta fraca que dá margem para o espectador rolar a tela.",
+    "O ritmo das primeiras cenas é lento e acadêmico, perdendo o foco na urgência do tema.",
+    "Falta especificidade brutal e choque imediato nos primeiros segundos."
+  ],
+  "cast": [],
+  "voice": "edge:pt-BR-AntonioNeural",
+  "timing": "native",
+  "visuals": [
+    {
+      "source": "pixabay",
+      "id": "85757",
+      "kind": "video",
+      "query": "bank building exterior"
+    },
+    {
+      "source": "pixabay",
+      "id": "137254",
+      "kind": "video",
+      "query": "business office desk"
+    },
+    {
+      "source": "pixabay",
+      "id": "174006",
+      "kind": "video",
+      "query": "calculator on paper"
+    },
+    {
+      "source": "pixabay",
+      "id": "90",
+      "kind": "video",
+      "query": "smartphone financial app"
+    },
+    {
+      "source": "pixabay",
+      "id": "98141",
+      "kind": "video",
+      "query": "money savings coins"
+    },
+    {
+      "source": "pixabay",
+      "id": "143441",
+      "kind": "video",
+      "query": "approved document check"
+    },
+    {
+      "source": "pollinations",
+      "id": "scene06_ai.jpg",
+      "kind": "image",
+      "query": "A young Brazilian person smiling while looking at their phone in a bright room."
+    },
+    {
+      "source": "pixabay",
+      "id": "10839",
+      "kind": "video",
+      "query": "typing on laptop"
+    }
+  ],
+  "parent_id": null,
+  "created_at": "2026-10-20T23:47:43+00:00"
+}
