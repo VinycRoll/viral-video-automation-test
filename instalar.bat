@@ -69,10 +69,11 @@ echo.
 
 REM ── 4. Dependencias Python ────────────────────────────────────────────────────
 echo [4/8] Instalando dependencias Python...
-echo    requests, python-dotenv        — utilitarios do pipeline
-echo    coqui-tts, torch, soundfile    — narracao local (XTTS v2, pt-br)
+echo    requests, python-dotenv                    — utilitarios do pipeline
+echo    coqui-tts, torch, soundfile                — narracao local (XTTS v2, pt-br)
+echo    google-auth-oauthlib, google-api-python-client — upload YouTube
 python -m pip install --upgrade pip
-python -m pip install requests python-dotenv coqui-tts torch torchaudio soundfile
+python -m pip install requests python-dotenv coqui-tts torch torchaudio soundfile google-auth-oauthlib google-api-python-client
 if errorlevel 1 (
     echo    ❌ Erro ao instalar dependencias Python.
     pause
