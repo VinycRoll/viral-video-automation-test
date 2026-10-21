@@ -293,7 +293,7 @@ def main():
     parser = argparse.ArgumentParser(description="Gera e posta Reels de finanças no Instagram")
     parser.add_argument("tema", nargs="?", help="Tema do vídeo (opcional)")
     parser.add_argument("--dry-run", action="store_true", help="Só gera o vídeo, não posta")
-    parser.add_argument("--video", metavar="CAMINHO", help="Posta um vídeo já gerado (pula a geração)")
+    parser.add_argument("--video", metavar="CAMINHO", help="Posta um vídeo já gerado sem regerar. Use aspas simples no caminho: --video 'videos_gerados/.../short.mp4'")
     args = parser.parse_args()
 
     faltando = []
