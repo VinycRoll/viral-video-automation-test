@@ -49,12 +49,21 @@ where python >nul 2>nul
 if %errorlevel%==0 (
     for /f "delims=" %%v in ('python --version') do echo    %%v encontrado ✅
 ) else (
-    echo    ❌ Python nao encontrado.
-    echo    Baixe em https://python.org e, durante a instalacao, marque a opcao
-    echo    "Add python.exe to PATH" antes de clicar em Install.
-    echo    Depois feche este terminal, abra um novo e rode instalar.bat novamente.
-    pause
-    exit /b 1
+    where winget >nul 2>nul
+    if %errorlevel%==0 (
+        echo    Python nao encontrado. Instalando via winget...
+        winget install Python.Python.3.12 --accept-source-agreements --accept-package-agreements
+        echo    ⚠️  Feche e reabra este terminal para o Python entrar no PATH, depois rode instalar.bat novamente.
+        pause
+        exit /b 0
+    ) else (
+        echo    ❌ Python nao encontrado e winget nao disponivel.
+        echo    Baixe em https://python.org e, durante a instalacao, marque a opcao
+        echo    "Add python.exe to PATH" antes de clicar em Install.
+        echo    Depois feche este terminal, abra um novo e rode instalar.bat novamente.
+        pause
+        exit /b 1
+    )
 )
 echo.
 
@@ -104,13 +113,27 @@ echo.
 
 REM ── 7. ComfyUI (opcional — geracao de imagens local para --ai-image) ──────────
 echo [7/8] ComfyUI ^(opcional — geracao de imagens local para --ai-image^)
+
+REM Garante que o git esta instalado antes de perguntar sobre ComfyUI
+where git >nul 2>nul
+if errorlevel 1 (
+    where winget >nul 2>nul
+    if %errorlevel%==0 (
+        echo    Git nao encontrado. Instalando via winget...
+        winget install Git.Git --accept-source-agreements --accept-package-agreements
+        echo    ✅ Git instalado.
+    ) else (
+        echo    ⚠️  Git nao encontrado. Baixe em https://git-scm.com/download/win
+    )
+)
+
 set "RESPOSTA_COMFYUI="
 set /p RESPOSTA_COMFYUI="   Deseja instalar o ComfyUI para geracao de imagens local? (s/n) "
 
 if /i "%RESPOSTA_COMFYUI%"=="s" (
     where git >nul 2>nul
     if errorlevel 1 (
-        echo    ❌ git nao encontrado — instale o git e rode instalar.bat novamente para configurar o ComfyUI.
+        echo    ❌ git nao encontrado — instale o git, reabra o terminal e rode instalar.bat novamente para configurar o ComfyUI.
     ) else (
         set "COMFYUI_DIR=%SCRIPT_DIR%ComfyUI"
 
