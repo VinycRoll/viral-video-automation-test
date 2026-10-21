@@ -3,3 +3,4 @@ videos_gerados/
 __pycache__/
 *.pyc
 *.mp4
+.historico.json
