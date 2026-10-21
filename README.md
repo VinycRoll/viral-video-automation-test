@@ -4,8 +4,9 @@ Gera e posta Reels sobre finanças pessoais no Instagram automaticamente com um 
 
 **Tecnologias:**
 - 🤖 **Gemini** — gera o roteiro
-- 🔊 **edge-tts** — narração em português (grátis, sem API key)
-- 🎬 **Pixabay** — footage de vídeo stock
+- 🔊 **XTTS v2 (Coqui TTS)** — narração em português, local e grátis (sem API key)
+- 🎬 **Pixabay** — footage de vídeo stock (ou fallback de imagens no modo `--motion --ai-image`)
+- 🖼️ **ComfyUI (SD 1.5)** — opcional: gera imagens de fundo com Ken Burns no modo `--motion --ai-image`
 - 📲 **Publora** — posta no Instagram via API
 
 ---
@@ -54,7 +55,24 @@ reel                        # tema aleatório
 reel 'renda passiva'        # tema específico
 reel --dry-run              # só gera o vídeo, não posta
 reel --video caminho.mp4    # posta um vídeo já gerado (pula a geração)
+reel --motion               # usa Remotion (motion graphics) ao invés do purffle-shorts
+reel --motion --ai-image    # + imagens de fundo via ComfyUI (SD 1.5) com Ken Burns
+                             # (usa Pixabay automaticamente se o ComfyUI não estiver rodando em localhost:8188)
 ```
+
+> **ComfyUI (opcional):** o `instalar.sh` pergunta se você quer instalar o ComfyUI automaticamente
+> (clona o repositório, instala dependências e baixa o checkpoint SD 1.5 fp16, ~2.1 GB — leve o
+> suficiente para GPUs com 4GB de VRAM). Para usar `--ai-image`, inicie-o antes:
+> ```bash
+> cd ComfyUI && python3 main.py --lowvram   # http://localhost:8188
+> ```
+> Configure no `.env` se precisar mudar algo:
+> ```env
+> COMFYUI_URL=http://localhost:8188
+> COMFYUI_CHECKPOINT=v1-5-pruned-emaonly-fp16.safetensors
+> COMFYUI_WIDTH=512
+> COMFYUI_HEIGHT=768
+> ```
 
 > **Dica:** o `--dry-run` mostra o caminho exato do vídeo gerado. Use-o com `--video` para postar depois:
 > ```bash

@@ -4,7 +4,10 @@ post_reel.py — Pipeline automático de Instagram Reels sobre finanças pessoai
 
 Fluxo:
   1. Escolhe um tema viral de finanças
-  2. Chama o purffle-shorts para gerar o vídeo (Gemini → roteiro, edge-tts → narração, Pixabay → imagens)
+  2. Gera o vídeo:
+     - padrão: purffle-shorts (Gemini → roteiro, edge-tts → narração, Pixabay → imagens)
+     - --motion: gerar_motion.py (Gemini → roteiro, Kokoro TTS → narração, Remotion → render,
+       opcionalmente ComfyUI/SD1.5 com Ken Burns via --ai-image, fallback Pixabay)
   3. Tenta postar via Publora (limite: 15 posts/mês)
   4. Fallback automático: upload Catbox.moe → Make.com → Instagram
 
@@ -14,6 +17,7 @@ Uso:
   python3 post_reel.py --dry-run              # só gera o vídeo, não posta
   python3 post_reel.py --video caminho.mp4   # posta um vídeo já gerado
   python3 post_reel.py --make --video ...    # força Make.com (ignora Publora)
+  python3 post_reel.py --motion --ai-image   # Remotion + imagens IA (ComfyUI/Pixabay) com Ken Burns
 """
 
 import argparse
@@ -32,6 +36,7 @@ from dotenv import load_dotenv
 # ── Caminhos ──────────────────────────────────────────────────────────────────
 SCRIPT_DIR    = Path(__file__).parent
 PURFFLE_DIR   = SCRIPT_DIR / "viral-video-automation"
+MOTION_DIR    = SCRIPT_DIR / "remotion-template"
 VIDEOS_DIR    = SCRIPT_DIR / "videos_gerados"
 HISTORICO     = SCRIPT_DIR / ".historico.json"
 
@@ -110,17 +115,80 @@ def escolher_tema(hint: str | None = None) -> str:
     return random.choice(disponiveis)
 
 
+def gerar_video_motion(tema: str, ai_image: bool = False) -> "tuple[Path | None, str]":
+    """Chama gerar_motion.py para gerar o vídeo com Remotion + Kokoro TTS.
+    Retorna (caminho_mp4, caption_instagram) ou (None, "")."""
+    print(f"\n🎬 Gerando vídeo motion sobre: '{tema}'")
+    modo_imagem = "ComfyUI/Pixabay → imagens + Ken Burns | " if ai_image else ""
+    print(f"   (Gemini → roteiro | Kokoro TTS → narração | {modo_imagem}Remotion → render)")
+
+    script_py = MOTION_DIR / "gerar_motion.py"
+    if not script_py.exists():
+        print(f"❌ gerar_motion.py não encontrado em {MOTION_DIR}")
+        return None, ""
+
+    cmd = [sys.executable, str(script_py), tema]
+    if ai_image:
+        cmd.append("--ai-image")
+
+    try:
+        resultado = subprocess.run(
+            cmd,
+            cwd=str(MOTION_DIR),
+            timeout=600,
+        )
+
+        if resultado.returncode != 0:
+            print(f"❌ gerar_motion.py falhou (código {resultado.returncode})")
+            return None, ""
+
+        # O vídeo vai para videos_gerados/motion_TIMESTAMP/reel.mp4
+        # Pega o mp4 mais recente criado pelo script
+        mp4s = sorted(
+            (SCRIPT_DIR / "videos_gerados").rglob("reel.mp4"),
+            key=lambda p: p.stat().st_mtime,
+        )
+        if not mp4s:
+            print("❌ reel.mp4 não encontrado após geração")
+            return None, ""
+
+        video = mp4s[-1]
+        print(f"✅ Vídeo gerado: {video} ({video.stat().st_size // 1024} KB)")
+
+        # Tenta ler a caption do ultimo_roteiro.json gerado pelo script
+        caption = ""
+        roteiro_json = MOTION_DIR / "ultimo_roteiro.json"
+        if roteiro_json.exists():
+            try:
+                roteiro = json.loads(roteiro_json.read_text())
+                caption = roteiro.get("caption", "")
+            except Exception:
+                pass
+
+        if not caption:
+            caption = montar_caption(tema)
+
+        return video, caption
+
+    except subprocess.TimeoutExpired:
+        print("❌ Timeout: geração demorou mais de 10 minutos")
+        return None, ""
+    except Exception as e:
+        print(f"❌ Erro ao chamar gerar_motion.py: {e}")
+        return None, ""
+
+
 def gerar_video_purffle(tema: str, output_dir: Path) -> "Path | None":
     """Chama o purffle-shorts para gerar o vídeo narrado com Pixabay."""
     print(f"\n🎬 Gerando vídeo sobre: '{tema}'")
-    print("   (Gemini → roteiro | edge-tts → narração | Pixabay → imagens)")
+    print("   (Gemini → roteiro | Kokoro TTS → narração | Pixabay → imagens)")
 
     env = os.environ.copy()
     env["PIXABAY_API_KEY"] = PIXABAY_KEY
     env["GEMINI_API_KEY"]  = GEMINI_KEY
     env["LLM_PROVIDER"]    = "gemini"
     env["LLM_MODEL"]       = "gemini-3.5-flash-lite"
-    env["TTS_ENGINE"]      = "edge"
+    env["TTS_ENGINE"]      = "kokoro"
     env["LANGUAGE"]        = "pt"
     env["TARGET_SECONDS"]  = "45"
     env["SCRIPT_STYLE"]    = "facts"
@@ -371,6 +439,8 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="Só gera o vídeo, não posta")
     parser.add_argument("--video", metavar="CAMINHO", help="Posta um vídeo já gerado sem regerar")
     parser.add_argument("--make", action="store_true", help="Força o uso do Make.com (ignora Publora)")
+    parser.add_argument("--motion", action="store_true", help="Usa Remotion (gerar_motion.py) ao invés do purffle-shorts")
+    parser.add_argument("--ai-image", action="store_true", help="Gera imagens de fundo via ComfyUI (SD 1.5) com Ken Burns; usa Pixabay se o ComfyUI não estiver rodando (requer --motion)")
     args = parser.parse_args()
 
     # Validação de chaves
@@ -382,7 +452,7 @@ def main():
         if not MAKE_WEBHOOK: faltando.append("MAKE_WEBHOOK_URL")
 
     if not args.video:
-        if not PIXABAY_KEY: faltando.append("PIXABAY_API_KEY")
+        if not args.motion and not PIXABAY_KEY: faltando.append("PIXABAY_API_KEY")
         if not GEMINI_KEY:  faltando.append("GEMINI_API_KEY")
 
     if faltando and not args.dry_run:
@@ -425,11 +495,20 @@ def main():
     print("📱 PIPELINE INSTAGRAM REELS — FINANÇAS PESSOAIS")
     print("=" * 60)
     print(f"📌 Tema: {tema}")
+    if args.motion:
+        print("🎨 Modo: Remotion (motion graphics)")
+    if args.ai_image:
+        print("🖼️  Imagens: ComfyUI (SD 1.5) com fallback Pixabay")
     if args.dry_run:
         print("🔍 Modo dry-run: vídeo será gerado mas não postado")
     print()
 
-    video_path = gerar_video_purffle(tema, VIDEOS_DIR)
+    if args.motion:
+        video_path, caption_motion = gerar_video_motion(tema, ai_image=args.ai_image)
+        if caption_motion:
+            caption = caption_motion
+    else:
+        video_path = gerar_video_purffle(tema, VIDEOS_DIR)
 
     if not video_path:
         print("\n❌ Falha na geração do vídeo.")
