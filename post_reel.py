@@ -5,14 +5,15 @@ post_reel.py — Pipeline automático de Instagram Reels sobre finanças pessoai
 Fluxo:
   1. Escolhe um tema viral de finanças
   2. Chama o purffle-shorts para gerar o vídeo (Gemini → roteiro, edge-tts → narração, Pixabay → imagens)
-  3. Faz upload do MP4 para o Publora
-  4. Posta no Instagram como Reel
+  3. Tenta postar via Publora (limite: 15 posts/mês)
+  4. Fallback automático: upload Catbox.moe → Make.com → Instagram
 
 Uso:
   python3 post_reel.py                        # tema aleatório
   python3 post_reel.py 'renda extra'          # tema específico
   python3 post_reel.py --dry-run              # só gera o vídeo, não posta
   python3 post_reel.py --video caminho.mp4   # posta um vídeo já gerado
+  python3 post_reel.py --make --video ...    # força Make.com (ignora Publora)
 """
 
 import argparse
@@ -30,7 +31,7 @@ from dotenv import load_dotenv
 
 # ── Caminhos ──────────────────────────────────────────────────────────────────
 SCRIPT_DIR    = Path(__file__).parent
-PURFFLE_DIR   = Path("/home/vinycius/Área de trabalho/PROJETOS/viral-video-automation")
+PURFFLE_DIR   = SCRIPT_DIR / "viral-video-automation"
 VIDEOS_DIR    = SCRIPT_DIR / "videos_gerados"
 HISTORICO     = SCRIPT_DIR / ".historico.json"
 
@@ -44,6 +45,7 @@ PUBLORA_KEY         = os.getenv("PUBLORA_API_KEY", "")
 INSTAGRAM_PLATFORM  = os.getenv("INSTAGRAM_PLATFORM_ID", "")
 PIXABAY_KEY         = os.getenv("PIXABAY_API_KEY", "")
 GEMINI_KEY          = os.getenv("GEMINI_API_KEY", "")
+MAKE_WEBHOOK        = os.getenv("MAKE_WEBHOOK_URL", "")
 
 PUBLORA_BASE = "https://api.publora.com/api/v1"
 
@@ -285,6 +287,80 @@ def publicar_agora(post_group_id: str) -> bool:
         return False
 
 
+def upload_catbox(video_path: Path) -> "str | None":
+    """Faz upload do vídeo para o Catbox.moe e retorna a URL permanente."""
+    print("\n📤 Fazendo upload para Catbox.moe...")
+    tamanho_mb = video_path.stat().st_size / (1024 * 1024)
+    print(f"   Enviando {video_path.name} ({tamanho_mb:.1f} MB)...")
+
+    with open(video_path, "rb") as f:
+        r = requests.post(
+            "https://catbox.moe/user/api.php",
+            data={"reqtype": "fileupload"},
+            files={"fileToUpload": (video_path.name, f, "video/mp4")},
+            timeout=300,
+        )
+
+    if r.ok and r.text.strip().startswith("https://"):
+        url = r.text.strip()
+        print(f"✅ Upload Catbox concluído: {url}")
+        return url
+
+    print(f"❌ Erro no upload Catbox: {r.status_code} — {r.text[:200]}")
+    return None
+
+
+def postar_via_make(video_url: str, caption: str) -> bool:
+    """Envia a URL do vídeo e a legenda para o webhook do Make.com."""
+    if not MAKE_WEBHOOK:
+        print("❌ MAKE_WEBHOOK_URL não configurado no .env")
+        return False
+
+    print("\n🔗 Enviando para Make.com → Instagram...")
+    r = requests.post(
+        MAKE_WEBHOOK,
+        json={"video_url": video_url, "caption": caption},
+        timeout=30,
+    )
+
+    if r.ok:
+        print("✅ Make.com recebeu a requisição — Reel sendo postado!")
+        return True
+    else:
+        print(f"❌ Make.com retornou erro: {r.status_code} — {r.text[:200]}")
+        return False
+
+
+def postar_fallback_make(video_path: Path, caption: str) -> bool:
+    """Fallback: Catbox.moe (URL permanente) → Make.com → Instagram."""
+    print("\n🔄 Usando fallback: Catbox.moe + Make.com")
+    video_url = upload_catbox(video_path)
+    if not video_url:
+        return False
+    return postar_via_make(video_url, caption)
+
+
+def postar_video(video_path: Path, caption: str, forcar_make: bool = False) -> bool:
+    """Tenta Publora; se falhar ou --make, usa Discord + Make.com."""
+    if forcar_make or not PUBLORA_KEY or not INSTAGRAM_PLATFORM:
+        if forcar_make:
+            print("\n   (modo --make: usando Make.com diretamente)")
+        return postar_fallback_make(video_path, caption)
+
+    # Tenta Publora primeiro
+    post_group_id = fazer_upload_publora(video_path, caption)
+    if post_group_id:
+        sucesso = publicar_agora(post_group_id)
+        if sucesso:
+            return True
+        print("\n⚠️  Publora: publicação falhou. Tentando fallback Make.com...")
+
+    else:
+        print("\n⚠️  Publora: upload falhou. Tentando fallback Make.com...")
+
+    return postar_fallback_make(video_path, caption)
+
+
 def montar_caption(tema: str) -> str:
     return f"{tema.capitalize()} — o que você precisava saber 💰\n\n{HASHTAGS_BASE}"
 
@@ -293,18 +369,24 @@ def main():
     parser = argparse.ArgumentParser(description="Gera e posta Reels de finanças no Instagram")
     parser.add_argument("tema", nargs="?", help="Tema do vídeo (opcional)")
     parser.add_argument("--dry-run", action="store_true", help="Só gera o vídeo, não posta")
-    parser.add_argument("--video", metavar="CAMINHO", help="Posta um vídeo já gerado sem regerar. Use aspas simples: --video 'videos_gerados/.../short.mp4'")
+    parser.add_argument("--video", metavar="CAMINHO", help="Posta um vídeo já gerado sem regerar")
+    parser.add_argument("--make", action="store_true", help="Força o uso do Make.com (ignora Publora)")
     args = parser.parse_args()
 
+    # Validação de chaves
     faltando = []
-    if not PUBLORA_KEY:        faltando.append("PUBLORA_API_KEY")
-    if not INSTAGRAM_PLATFORM: faltando.append("INSTAGRAM_PLATFORM_ID")
+    if not args.make:
+        if not PUBLORA_KEY:        faltando.append("PUBLORA_API_KEY")
+        if not INSTAGRAM_PLATFORM: faltando.append("INSTAGRAM_PLATFORM_ID")
+    else:
+        if not MAKE_WEBHOOK: faltando.append("MAKE_WEBHOOK_URL")
+
     if not args.video:
         if not PIXABAY_KEY: faltando.append("PIXABAY_API_KEY")
         if not GEMINI_KEY:  faltando.append("GEMINI_API_KEY")
 
     if faltando and not args.dry_run:
-        print(f"❌ Chaves faltando: {', '.join(faltando)}")
+        print(f"❌ Chaves faltando no .env: {', '.join(faltando)}")
         sys.exit(1)
 
     # ── Modo --video: posta vídeo já existente ────────────────────────────────
@@ -324,19 +406,15 @@ def main():
         print(f"🎞️  Vídeo: {video_path.name}")
         print()
 
-        post_group_id = fazer_upload_publora(video_path, caption)
-        if not post_group_id:
-            print(f"\n⚠️  Upload falhou.")
-            sys.exit(1)
+        sucesso = postar_video(video_path, caption, forcar_make=args.make)
 
-        sucesso = publicar_agora(post_group_id)
         if sucesso:
             salvar_historico(carregar_historico(), tema)
             print(f"\n🎉 Reel postado com sucesso no Instagram!")
             print(f"   Tema: {tema}")
         else:
-            print(f"\n⚠️  Vídeo enviado, mas publicação falhou.")
-            print(f"   Publique manualmente no Publora: postGroupId = {post_group_id}")
+            print(f"\n❌ Falha ao postar. Vídeo disponível em: {video_path}")
+            sys.exit(1)
         return
 
     # ── Fluxo normal: gera + posta ────────────────────────────────────────────
@@ -363,21 +441,15 @@ def main():
         print(f"   Para postar: reel --video '{video_path}'")
         sys.exit(0)
 
-    post_group_id = fazer_upload_publora(video_path, caption)
-
-    if not post_group_id:
-        print(f"\n⚠️  Upload falhou. Vídeo disponível em: {video_path}")
-        sys.exit(1)
-
-    sucesso = publicar_agora(post_group_id)
+    sucesso = postar_video(video_path, caption, forcar_make=args.make)
 
     if sucesso:
         salvar_historico(carregar_historico(), tema)
         print(f"\n🎉 Reel postado com sucesso no Instagram!")
         print(f"   Tema: {tema}")
     else:
-        print(f"\n⚠️  Vídeo enviado, mas publicação falhou.")
-        print(f"   Publique manualmente no Publora: postGroupId = {post_group_id}")
+        print(f"\n❌ Falha ao postar. Vídeo disponível em: {video_path}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
