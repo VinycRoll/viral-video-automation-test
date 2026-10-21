@@ -31,6 +31,17 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
+# ── Libs Google / YouTube (opcionais) ─────────────────────────────────────────
+try:
+    from google.oauth2.credentials import Credentials
+    from google_auth_oauthlib.flow import InstalledAppFlow
+    from google.auth.transport.requests import Request as GoogleRequest
+    from googleapiclient.discovery import build
+    from googleapiclient.http import MediaFileUpload
+    YOUTUBE_DISPONIVEL = True
+except ImportError:
+    YOUTUBE_DISPONIVEL = False
+
 # ── Caminhos ──────────────────────────────────────────────────────────────────
 SCRIPT_DIR    = Path(__file__).parent
 PURFFLE_DIR   = SCRIPT_DIR / "viral-video-automation"
@@ -49,6 +60,10 @@ INSTAGRAM_PLATFORM  = os.getenv("INSTAGRAM_PLATFORM_ID", "")
 PIXABAY_KEY         = os.getenv("PIXABAY_API_KEY", "")
 GEMINI_KEY          = os.getenv("GEMINI_API_KEY", "")
 MAKE_WEBHOOK        = os.getenv("MAKE_WEBHOOK_URL", "")
+YOUTUBE_MAKE_WEBHOOK  = os.getenv("YOUTUBE_MAKE_WEBHOOK_URL", "")
+YOUTUBE_SCOPES        = ["https://www.googleapis.com/auth/youtube.upload"]
+YOUTUBE_CLIENT_SECRET = SCRIPT_DIR / "client_secret.json"
+YOUTUBE_TOKEN_FILE    = SCRIPT_DIR / ".youtube_token.json"
 
 PUBLORA_BASE = "https://api.publora.com/api/v1"
 
@@ -420,6 +435,109 @@ def postar_video(video_path: Path, caption: str, forcar_make: bool = False) -> b
     return postar_fallback_make(video_path, caption)
 
 
+def obter_credenciais_youtube():
+    """Carrega/renova/cria token OAuth do YouTube."""
+    creds = None
+    if YOUTUBE_TOKEN_FILE.exists():
+        creds = Credentials.from_authorized_user_file(str(YOUTUBE_TOKEN_FILE), YOUTUBE_SCOPES)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(GoogleRequest())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(str(YOUTUBE_CLIENT_SECRET), YOUTUBE_SCOPES)
+            creds = flow.run_local_server(port=0)
+        YOUTUBE_TOKEN_FILE.write_text(creds.to_json())
+    return creds
+
+
+def upload_youtube(video_path: Path, titulo: str, descricao: str) -> bool:
+    """Faz upload do vídeo para o YouTube via API v3."""
+    print("\n▶️  YOUTUBE")
+    print("   Autenticando com Google...")
+    try:
+        creds = obter_credenciais_youtube()
+        youtube = build("youtube", "v3", credentials=creds)
+        body = {
+            "snippet": {
+                "title": titulo,
+                "description": descricao,
+                "tags": ["shorts", "financas", "dinheiro", "investimentos"],
+                "categoryId": "22",
+            },
+            "status": {"privacyStatus": "public"},
+        }
+        media = MediaFileUpload(str(video_path), chunksize=-1, resumable=True)
+        request = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
+        print("   Enviando vídeo...")
+        response = None
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                pct = int(status.progress() * 100)
+                print(f"   Upload: {pct}%", end="\r")
+        print(f"   ✅ YouTube: https://youtube.com/shorts/{response['id']}")
+        return True
+    except Exception as e:
+        print(f"   ❌ YouTube API erro: {e}")
+        return False
+
+
+def postar_youtube_make(video_url: str, titulo: str, descricao: str) -> bool:
+    """Fallback: envia para Make.com postar no YouTube."""
+    if not YOUTUBE_MAKE_WEBHOOK:
+        print("   ⚠️  YOUTUBE_MAKE_WEBHOOK_URL não configurado — pulando YouTube.")
+        return False
+    print("   📡 Enviando para Make.com (YouTube)...")
+    try:
+        r = requests.post(YOUTUBE_MAKE_WEBHOOK, json={"video_url": video_url, "titulo": titulo, "descricao": descricao}, timeout=30)
+        if r.ok:
+            print("   ✅ Make.com: webhook YouTube disparado")
+            return True
+        print(f"   ❌ Make.com YouTube: {r.status_code} {r.text[:200]}")
+        return False
+    except Exception as e:
+        print(f"   ❌ Make.com YouTube erro: {e}")
+        return False
+
+
+def postar_todas_redes(video_path: Path, caption: str, tema: str, forcar_make: bool = False) -> bool:
+    """Posta o vídeo em todas as redes: Instagram + YouTube."""
+    resultados = {}
+
+    # ── Instagram ──────────────────────────────────────────────────────────────
+    print("\n📱 INSTAGRAM")
+    resultados["instagram"] = postar_video(video_path, caption, forcar_make=forcar_make)
+
+    # ── YouTube ────────────────────────────────────────────────────────────────
+    titulo_yt   = f"{tema.capitalize()} 💰 #shorts"
+    descricao_yt = f"{caption}\n\n#Shorts"
+    yt_ok = False
+
+    if not forcar_make and YOUTUBE_DISPONIVEL and YOUTUBE_CLIENT_SECRET.exists():
+        yt_ok = upload_youtube(video_path, titulo_yt, descricao_yt)
+
+    if not yt_ok:
+        # Fallback: Make.com
+        video_url = None
+        try:
+            video_url = upload_0x0(video_path)
+        except Exception:
+            pass
+        if video_url:
+            yt_ok = postar_youtube_make(video_url, titulo_yt, descricao_yt)
+        else:
+            yt_ok = postar_youtube_make("", titulo_yt, descricao_yt)
+
+    resultados["youtube"] = yt_ok
+
+    # ── Resumo ─────────────────────────────────────────────────────────────────
+    print("\n📊 Resultado:")
+    for rede, ok in resultados.items():
+        print(f"   {'✅' if ok else '❌'} {rede.capitalize()}")
+
+    return any(resultados.values())
+
+
 def montar_caption(tema: str) -> str:
     return f"{tema.capitalize()} — o que você precisava saber 💰\n\n{HASHTAGS_BASE}"
 
@@ -466,7 +584,7 @@ def main():
         print(f"🎞️  Vídeo: {video_path.name}")
         print()
 
-        sucesso = postar_video(video_path, caption, forcar_make=args.make)
+        sucesso = postar_todas_redes(video_path, caption, tema, forcar_make=args.make)
 
         if sucesso:
             salvar_historico(carregar_historico(), tema)
@@ -508,7 +626,7 @@ def main():
         print(f"   Para postar: reel --video '{video_path}'")
         sys.exit(0)
 
-    sucesso = postar_video(video_path, caption, forcar_make=args.make)
+    sucesso = postar_todas_redes(video_path, caption, tema, forcar_make=args.make)
 
     if sucesso:
         salvar_historico(carregar_historico(), tema)
