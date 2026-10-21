@@ -5,3 +5,5 @@ __pycache__/
 *.mp4
 .historico.json
 .historico.json
+remotion-template/node_modules/
+remotion-template/.cache/
