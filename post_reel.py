@@ -122,25 +122,12 @@ def gerar_video_purffle(tema: str, output_dir: Path) -> "Path | None":
     env["TARGET_SECONDS"]  = "45"
     env["SCRIPT_STYLE"]    = "facts"
     env["WATERMARK"]       = "none"
-    env["VISUAL_SOURCES"]  = "pixabay,pollinations"  # Pixabay primeiro; Pollinations (IA) como fallback
+    env["VISUAL_SOURCES"]  = "pixabay,pollinations"
     env["KEEP_VIDEOS"]     = "true"
-    env["SCRIPT_REVIEW"]   = "rewrite"  # Script Doctor reescreve roteiros fracos
-    # Contexto do canal — melhora muito a qualidade do roteiro
-    env["CHANNEL_NAME"]    = "VinyBruno.ia"
-    env["AUDIENCE"]        = (
-        "jovens brasileiros de 20 a 35 anos que querem aprender educação financeira, "
-        "sair das dívidas e investir pela primeira vez. Linguagem simples, direta e motivadora."
-    )
-    env["NICHES"]          = (
-        "educação financeira brasileira,investimentos para iniciantes,"
-        "sair das dívidas,renda extra,independência financeira"
-    )
 
     pasta_saida = output_dir / f"purffle_{int(time.time())}"
     pasta_saida.mkdir(parents=True, exist_ok=True)
     env["OUTPUT_DIR"] = str(pasta_saida)  # purffle usa esta variável de ambiente
-
-    env_file = PURFFLE_DIR / ".env"
 
     cmd = [
         sys.executable, "-m", "purffle_shorts", "make",
@@ -150,7 +137,6 @@ def gerar_video_purffle(tema: str, output_dir: Path) -> "Path | None":
         "--visuals", "pixabay,pollinations",
         "--duration", "45",
         "--style", "facts",
-        "--env-file", str(env_file),
     ]
 
     print(f"   Executando purffle-shorts...")

@@ -1,2 +1,5 @@
-node_modules/
+videos_gerados/
 .env
+__pycache__/
+*.pyc
+*.mp4
