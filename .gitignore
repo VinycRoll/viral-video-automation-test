@@ -7,3 +7,5 @@ __pycache__/
 .historico.json
 remotion-template/node_modules/
 remotion-template/.cache/
+ComfyUI/
+remotion-template.tar.gz
