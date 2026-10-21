@@ -9,9 +9,10 @@ Fluxo:
   4. Posta no Instagram como Reel
 
 Uso:
-  python3 post_reel.py                  # tema aleatório
-  python3 post_reel.py 'renda extra'    # tema específico
-  python3 post_reel.py --dry-run        # só gera o vídeo, não posta
+  python3 post_reel.py                        # tema aleatório
+  python3 post_reel.py 'renda extra'          # tema específico
+  python3 post_reel.py --dry-run              # só gera o vídeo, não posta
+  python3 post_reel.py --video caminho.mp4   # posta um vídeo já gerado
 """
 
 import argparse
@@ -122,10 +123,9 @@ def gerar_video_purffle(tema: str, output_dir: Path) -> "Path | None":
     env["TARGET_SECONDS"]  = "45"
     env["SCRIPT_STYLE"]    = "facts"
     env["WATERMARK"]       = "none"
-    env["VISUAL_SOURCES"]  = "pixabay,pollinations"  # Pixabay primeiro; Pollinations (IA) como fallback
+    env["VISUAL_SOURCES"]  = "pixabay,pollinations"
     env["KEEP_VIDEOS"]     = "true"
-    env["SCRIPT_REVIEW"]   = "rewrite"  # Script Doctor reescreve roteiros fracos
-    # Contexto do canal — melhora muito a qualidade do roteiro
+    env["SCRIPT_REVIEW"]   = "rewrite"
     env["CHANNEL_NAME"]    = "VinyBruno.ia"
     env["AUDIENCE"]        = (
         "jovens brasileiros de 20 a 35 anos que querem aprender educação financeira, "
@@ -138,7 +138,7 @@ def gerar_video_purffle(tema: str, output_dir: Path) -> "Path | None":
 
     pasta_saida = output_dir / f"purffle_{int(time.time())}"
     pasta_saida.mkdir(parents=True, exist_ok=True)
-    env["OUTPUT_DIR"] = str(pasta_saida)  # purffle usa esta variável de ambiente
+    env["OUTPUT_DIR"] = str(pasta_saida)
 
     env_file = PURFFLE_DIR / ".env"
 
@@ -169,7 +169,6 @@ def gerar_video_purffle(tema: str, output_dir: Path) -> "Path | None":
 
         mp4s = sorted(pasta_saida.rglob("*.mp4"), key=lambda p: p.stat().st_mtime)
         if not mp4s:
-            # fallback: procura em output_videos dentro do purffle
             mp4s = sorted((PURFFLE_DIR / "output_videos").rglob("*.mp4"), key=lambda p: p.stat().st_mtime)
 
         if mp4s:
@@ -195,7 +194,6 @@ def fazer_upload_publora(video_path: Path, caption: str) -> "str | None":
         "Content-Type": "application/json",
     }
 
-    # 1. Criar rascunho
     print("\n📤 Criando rascunho no Publora...")
     r = requests.post(
         f"{PUBLORA_BASE}/create-post",
@@ -216,7 +214,6 @@ def fazer_upload_publora(video_path: Path, caption: str) -> "str | None":
 
     print(f"   Rascunho criado: {post_group_id}")
 
-    # 2. Obter URL de upload pré-assinada
     print("📎 Obtendo URL de upload...")
     r = requests.post(
         f"{PUBLORA_BASE}/get-upload-url",
@@ -243,7 +240,6 @@ def fazer_upload_publora(video_path: Path, caption: str) -> "str | None":
 
     print(f"   Enviando arquivo ({video_path.stat().st_size // 1024} KB)...")
 
-    # 3. Enviar o arquivo via PUT
     with open(video_path, "rb") as f:
         r = requests.put(
             upload_url,
@@ -297,18 +293,53 @@ def main():
     parser = argparse.ArgumentParser(description="Gera e posta Reels de finanças no Instagram")
     parser.add_argument("tema", nargs="?", help="Tema do vídeo (opcional)")
     parser.add_argument("--dry-run", action="store_true", help="Só gera o vídeo, não posta")
+    parser.add_argument("--video", metavar="CAMINHO", help="Posta um vídeo já gerado (pula a geração)")
     args = parser.parse_args()
 
     faltando = []
-    if not PUBLORA_KEY:   faltando.append("PUBLORA_API_KEY")
+    if not PUBLORA_KEY:        faltando.append("PUBLORA_API_KEY")
     if not INSTAGRAM_PLATFORM: faltando.append("INSTAGRAM_PLATFORM_ID")
-    if not PIXABAY_KEY:   faltando.append("PIXABAY_API_KEY")
-    if not GEMINI_KEY:    faltando.append("GEMINI_API_KEY")
+    if not args.video:
+        if not PIXABAY_KEY: faltando.append("PIXABAY_API_KEY")
+        if not GEMINI_KEY:  faltando.append("GEMINI_API_KEY")
 
     if faltando and not args.dry_run:
         print(f"❌ Chaves faltando: {', '.join(faltando)}")
         sys.exit(1)
 
+    # ── Modo --video: posta vídeo já existente ────────────────────────────────
+    if args.video:
+        video_path = Path(args.video)
+        if not video_path.exists():
+            print(f"❌ Arquivo não encontrado: {video_path}")
+            sys.exit(1)
+
+        tema    = escolher_tema(args.tema)
+        caption = montar_caption(tema)
+
+        print("=" * 60)
+        print("📱 PIPELINE INSTAGRAM REELS — FINANÇAS PESSOAIS")
+        print("=" * 60)
+        print(f"📌 Tema: {tema}")
+        print(f"🎞️  Vídeo: {video_path.name}")
+        print()
+
+        post_group_id = fazer_upload_publora(video_path, caption)
+        if not post_group_id:
+            print(f"\n⚠️  Upload falhou.")
+            sys.exit(1)
+
+        sucesso = publicar_agora(post_group_id)
+        if sucesso:
+            salvar_historico(carregar_historico(), tema)
+            print(f"\n🎉 Reel postado com sucesso no Instagram!")
+            print(f"   Tema: {tema}")
+        else:
+            print(f"\n⚠️  Vídeo enviado, mas publicação falhou.")
+            print(f"   Publique manualmente no Publora: postGroupId = {post_group_id}")
+        return
+
+    # ── Fluxo normal: gera + posta ────────────────────────────────────────────
     tema    = escolher_tema(args.tema)
     caption = montar_caption(tema)
 
@@ -320,7 +351,6 @@ def main():
         print("🔍 Modo dry-run: vídeo será gerado mas não postado")
     print()
 
-    # 1. Gera o vídeo
     video_path = gerar_video_purffle(tema, VIDEOS_DIR)
 
     if not video_path:
@@ -330,9 +360,9 @@ def main():
     if args.dry_run:
         print(f"\n✅ DRY RUN concluído!")
         print(f"   Vídeo salvo em: {video_path}")
+        print(f"   Para postar: reel --video '{video_path}'")
         sys.exit(0)
 
-    # 2. Upload + publicar
     post_group_id = fazer_upload_publora(video_path, caption)
 
     if not post_group_id:

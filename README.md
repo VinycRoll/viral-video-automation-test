@@ -53,7 +53,15 @@ GEMINI_API_KEY=...         # https://aistudio.google.com (grátis)
 reel                        # tema aleatório
 reel 'renda passiva'        # tema específico
 reel --dry-run              # só gera o vídeo, não posta
+reel --video caminho.mp4    # posta um vídeo já gerado (pula a geração)
 ```
+
+> **Dica:** o `--dry-run` mostra o caminho exato do vídeo gerado. Use-o com `--video` para postar depois:
+> ```bash
+> reel --dry-run
+> # ✅ Vídeo salvo em: videos_gerados/.../short.mp4
+> # Para postar: reel --video 'videos_gerados/.../short.mp4'
+> ```
 
 ---
 
