@@ -29,9 +29,11 @@ fi
 # ── 3. Dependências Python ───────────────────────────────────────────────────
 echo ""
 echo "📦 Instalando dependências Python..."
-echo "   requests, python-dotenv        — utilitários do pipeline"
-echo "   coqui-tts, torch, soundfile    — narração local (XTTS v2, pt-br)"
-pip install requests python-dotenv coqui-tts torch torchaudio soundfile --break-system-packages
+echo "   requests, python-dotenv              — utilitários do pipeline"
+echo "   coqui-tts, torch, soundfile          — narração local (XTTS v2, pt-br)"
+echo "   google-auth-oauthlib, google-api-python-client — upload YouTube"
+pip install requests python-dotenv coqui-tts torch torchaudio soundfile \
+    google-auth-oauthlib google-api-python-client --break-system-packages
 
 # ── 4. purffle-shorts (submódulo) ────────────────────────────────────────────
 echo ""

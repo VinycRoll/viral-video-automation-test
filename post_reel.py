@@ -4,20 +4,18 @@ post_reel.py — Pipeline automático de Instagram Reels sobre finanças pessoai
 
 Fluxo:
   1. Escolhe um tema viral de finanças
-  2. Gera o vídeo:
-     - padrão: purffle-shorts (Gemini → roteiro, edge-tts → narração, Pixabay → imagens)
-     - --motion: gerar_motion.py (Gemini → roteiro, Kokoro TTS → narração, Remotion → render,
-       opcionalmente ComfyUI/SD1.5 com Ken Burns via --ai-image, fallback Pixabay)
+  2. Gera o vídeo (purffle-shorts ou Remotion com --motion)
   3. Tenta postar via Publora (limite: 15 posts/mês)
   4. Fallback automático: upload Catbox.moe → Make.com → Instagram
 
 Uso:
-  python3 post_reel.py                        # tema aleatório
-  python3 post_reel.py 'renda extra'          # tema específico
-  python3 post_reel.py --dry-run              # só gera o vídeo, não posta
-  python3 post_reel.py --video caminho.mp4   # posta um vídeo já gerado
-  python3 post_reel.py --make --video ...    # força Make.com (ignora Publora)
-  python3 post_reel.py --motion --ai-image   # Remotion + imagens IA (ComfyUI/Pixabay) com Ken Burns
+  python3 post_reel.py                          # tema aleatório (purffle-shorts)
+  python3 post_reel.py 'renda extra'            # tema específico
+  python3 post_reel.py --motion                 # usa Remotion (motion graphics)
+  python3 post_reel.py --motion 'renda extra'   # motion + tema específico
+  python3 post_reel.py --dry-run                # só gera o vídeo, não posta
+  python3 post_reel.py --video caminho.mp4      # posta um vídeo já gerado
+  python3 post_reel.py --make --video ...       # força Make.com (ignora Publora)
 """
 
 import argparse
@@ -115,25 +113,20 @@ def escolher_tema(hint: str | None = None) -> str:
     return random.choice(disponiveis)
 
 
-def gerar_video_motion(tema: str, ai_image: bool = False) -> "tuple[Path | None, str]":
-    """Chama gerar_motion.py para gerar o vídeo com Remotion + Kokoro TTS.
+def gerar_video_motion(tema: str) -> "tuple[Path | None, str]":
+    """Chama gerar_motion.py para gerar o vídeo com Remotion + edge-tts.
     Retorna (caminho_mp4, caption_instagram) ou (None, "")."""
     print(f"\n🎬 Gerando vídeo motion sobre: '{tema}'")
-    modo_imagem = "ComfyUI/Pixabay → imagens + Ken Burns | " if ai_image else ""
-    print(f"   (Gemini → roteiro | Kokoro TTS → narração | {modo_imagem}Remotion → render)")
+    print("   (Gemini → roteiro | edge-tts → narração | Remotion → render)")
 
     script_py = MOTION_DIR / "gerar_motion.py"
     if not script_py.exists():
         print(f"❌ gerar_motion.py não encontrado em {MOTION_DIR}")
         return None, ""
 
-    cmd = [sys.executable, str(script_py), tema]
-    if ai_image:
-        cmd.append("--ai-image")
-
     try:
         resultado = subprocess.run(
-            cmd,
+            [sys.executable, str(script_py), tema],
             cwd=str(MOTION_DIR),
             timeout=600,
         )
@@ -143,7 +136,6 @@ def gerar_video_motion(tema: str, ai_image: bool = False) -> "tuple[Path | None,
             return None, ""
 
         # O vídeo vai para videos_gerados/motion_TIMESTAMP/reel.mp4
-        # Pega o mp4 mais recente criado pelo script
         mp4s = sorted(
             (SCRIPT_DIR / "videos_gerados").rglob("reel.mp4"),
             key=lambda p: p.stat().st_mtime,
@@ -181,14 +173,14 @@ def gerar_video_motion(tema: str, ai_image: bool = False) -> "tuple[Path | None,
 def gerar_video_purffle(tema: str, output_dir: Path) -> "Path | None":
     """Chama o purffle-shorts para gerar o vídeo narrado com Pixabay."""
     print(f"\n🎬 Gerando vídeo sobre: '{tema}'")
-    print("   (Gemini → roteiro | Kokoro TTS → narração | Pixabay → imagens)")
+    print("   (Gemini → roteiro | edge-tts → narração | Pixabay → imagens)")
 
     env = os.environ.copy()
     env["PIXABAY_API_KEY"] = PIXABAY_KEY
     env["GEMINI_API_KEY"]  = GEMINI_KEY
     env["LLM_PROVIDER"]    = "gemini"
     env["LLM_MODEL"]       = "gemini-3.5-flash-lite"
-    env["TTS_ENGINE"]      = "kokoro"
+    env["TTS_ENGINE"]      = "edge"
     env["LANGUAGE"]        = "pt"
     env["TARGET_SECONDS"]  = "45"
     env["SCRIPT_STYLE"]    = "facts"
@@ -355,26 +347,25 @@ def publicar_agora(post_group_id: str) -> bool:
         return False
 
 
-def upload_catbox(video_path: Path) -> "str | None":
-    """Faz upload do vídeo para o Catbox.moe e retorna a URL permanente."""
-    print("\n📤 Fazendo upload para Catbox.moe...")
+def upload_0x0(video_path: Path) -> "str | None":
+    """Faz upload do vídeo para o 0x0.st e retorna a URL permanente."""
+    print("\n📤 Fazendo upload para 0x0.st...")
     tamanho_mb = video_path.stat().st_size / (1024 * 1024)
     print(f"   Enviando {video_path.name} ({tamanho_mb:.1f} MB)...")
 
     with open(video_path, "rb") as f:
         r = requests.post(
-            "https://catbox.moe/user/api.php",
-            data={"reqtype": "fileupload"},
-            files={"fileToUpload": (video_path.name, f, "video/mp4")},
+            "https://0x0.st",
+            files={"file": (video_path.name, f, "video/mp4")},
             timeout=300,
         )
 
     if r.ok and r.text.strip().startswith("https://"):
         url = r.text.strip()
-        print(f"✅ Upload Catbox concluído: {url}")
+        print(f"✅ Upload 0x0.st concluído: {url}")
         return url
 
-    print(f"❌ Erro no upload Catbox: {r.status_code} — {r.text[:200]}")
+    print(f"❌ Erro no upload 0x0.st: {r.status_code} — {r.text[:200]}")
     return None
 
 
@@ -400,9 +391,9 @@ def postar_via_make(video_url: str, caption: str) -> bool:
 
 
 def postar_fallback_make(video_path: Path, caption: str) -> bool:
-    """Fallback: Catbox.moe (URL permanente) → Make.com → Instagram."""
-    print("\n🔄 Usando fallback: Catbox.moe + Make.com")
-    video_url = upload_catbox(video_path)
+    """Fallback: 0x0.st (URL permanente) → Make.com → Instagram."""
+    print("\n🔄 Usando fallback: 0x0.st + Make.com")
+    video_url = upload_0x0(video_path)
     if not video_url:
         return False
     return postar_via_make(video_url, caption)
@@ -439,8 +430,7 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="Só gera o vídeo, não posta")
     parser.add_argument("--video", metavar="CAMINHO", help="Posta um vídeo já gerado sem regerar")
     parser.add_argument("--make", action="store_true", help="Força o uso do Make.com (ignora Publora)")
-    parser.add_argument("--motion", action="store_true", help="Usa Remotion (gerar_motion.py) ao invés do purffle-shorts")
-    parser.add_argument("--ai-image", action="store_true", help="Gera imagens de fundo via ComfyUI (SD 1.5) com Ken Burns; usa Pixabay se o ComfyUI não estiver rodando (requer --motion)")
+    parser.add_argument("--motion", action="store_true", help="Usa Remotion (motion graphics) ao invés do purffle-shorts")
     args = parser.parse_args()
 
     # Validação de chaves
@@ -497,14 +487,12 @@ def main():
     print(f"📌 Tema: {tema}")
     if args.motion:
         print("🎨 Modo: Remotion (motion graphics)")
-    if args.ai_image:
-        print("🖼️  Imagens: ComfyUI (SD 1.5) com fallback Pixabay")
     if args.dry_run:
         print("🔍 Modo dry-run: vídeo será gerado mas não postado")
     print()
 
     if args.motion:
-        video_path, caption_motion = gerar_video_motion(tema, ai_image=args.ai_image)
+        video_path, caption_motion = gerar_video_motion(tema)
         if caption_motion:
             caption = caption_motion
     else:
