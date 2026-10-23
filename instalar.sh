@@ -112,7 +112,7 @@ if [[ "$RESPOSTA_COMFYUI" =~ ^[sS]$ ]]; then
 else
     echo "   ⏭️  Pulando instalação do ComfyUI."
     echo "      Para instalar depois: https://github.com/comfyanonymous/ComfyUI"
-    echo "      Sem o ComfyUI rodando em localhost:8188, 'reel --motion --ai-image' usa o Pixabay automaticamente."
+    echo "      Sem o ComfyUI rodando em localhost:8188, 'reel --ai-image' usa o Pixabay automaticamente."
 fi
 
 # ── 7. Alias 'reel' no .bashrc/.zshrc ─────────────────────────────────────────
@@ -138,16 +138,10 @@ echo ""
 echo "✅ Instalação concluída!"
 echo ""
 echo "🚀 Como usar:"
-echo "   reel                          # purffle-shorts + posta (tema aleatório)"
+echo "   reel                          # Remotion + XTTS v2 + Pixabay, e posta (tema aleatório)"
 echo "   reel 'renda extra'            # tema específico"
 echo "   reel --dry-run                # só gera o vídeo (sem postar)"
 echo "   reel --make --video f.mp4    # força Make.com (fallback manual)"
+echo "   reel --ai-image               # fundo com imagens de IA (sobe/derruba o ComfyUI sozinho; fallback Pixabay)"
+echo "   reel --purffle                # pipeline legado purffle-shorts + edge-tts"
 echo ""
-echo "   # Motion graphics (estilo animado):"
-echo "   reel --motion                 # Remotion + XTTS v2 (tema aleatório)"
-echo "   reel --motion --ai-image      # + imagens de fundo com Ken Burns (ComfyUI, fallback Pixabay)"
-echo ""
-if [ -d "$SCRIPT_DIR/ComfyUI" ]; then
-    echo "   # Antes de usar --ai-image, inicie o ComfyUI em outro terminal:"
-    echo "   cd ComfyUI && python3 main.py --lowvram   # fica em http://localhost:8188"
-fi

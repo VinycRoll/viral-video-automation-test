@@ -174,7 +174,7 @@ if /i "%RESPOSTA_COMFYUI%"=="s" (
 ) else (
     echo    ⏭️  Pulando instalacao do ComfyUI.
     echo       Para instalar depois: https://github.com/comfyanonymous/ComfyUI
-    echo       Sem o ComfyUI rodando em localhost:8188, "reel --motion --ai-image" usa o Pixabay automaticamente.
+    echo       Sem o ComfyUI rodando em localhost:8188, "reel --ai-image" usa o Pixabay automaticamente.
 )
 echo.
 
@@ -201,21 +201,14 @@ echo  ✅ Instalacao concluida!
 echo ===============================================
 echo.
 echo 🚀 Como usar:
-echo    reel                              purffle-shorts + posta (tema aleatorio)
+echo    reel                              Remotion + XTTS v2 + Pixabay, e posta (tema aleatorio)
 echo    reel "renda extra"                tema especifico
 echo    reel --dry-run                    so gera o video (sem postar)
 echo    reel --make --video f.mp4         forca Make.com (fallback manual)
-echo.
-echo    REM Motion graphics (estilo animado):
-echo    reel --motion                     Remotion + XTTS v2 (tema aleatorio)
-echo    reel --motion --ai-image          + imagens de fundo com Ken Burns (ComfyUI, fallback Pixabay)
+echo    reel --ai-image                   fundo com imagens de IA (sobe/derruba o ComfyUI sozinho; fallback Pixabay)
+echo    reel --purffle                    pipeline legado purffle-shorts + edge-tts
 echo.
 echo    Exemplo completo:
-echo    reel "renda extra" --motion --dry-run
+echo    reel "renda extra" --ai-image --dry-run
 echo.
-if exist "%SCRIPT_DIR%ComfyUI" (
-    echo    Antes de usar --ai-image, inicie o ComfyUI em outro terminal:
-    echo    cd ComfyUI ^&^& python main.py --lowvram   ^(fica em http://localhost:8188^)
-    echo.
-)
 pause

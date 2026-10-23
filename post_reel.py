@@ -4,15 +4,15 @@ post_reel.py — Pipeline automático de Instagram Reels sobre finanças pessoai
 
 Fluxo:
   1. Escolhe um tema viral de finanças
-  2. Gera o vídeo (purffle-shorts ou Remotion com --motion)
+  2. Gera o vídeo (Remotion + XTTS v2 + imagens de fundo via Pixabay, por padrão)
   3. Tenta postar via Publora (limite: 15 posts/mês)
   4. Fallback automático: upload Catbox.moe → Make.com → Instagram
 
 Uso:
-  python3 post_reel.py                          # tema aleatório (purffle-shorts)
+  python3 post_reel.py                          # tema aleatório (Remotion + XTTS v2 + Pixabay)
   python3 post_reel.py 'renda extra'            # tema específico
-  python3 post_reel.py --motion                 # usa Remotion (motion graphics)
-  python3 post_reel.py --motion 'renda extra'   # motion + tema específico
+  python3 post_reel.py --ai-image               # fundo com imagens de IA (ComfyUI, fallback Pixabay)
+  python3 post_reel.py --purffle                # usa o pipeline legado purffle-shorts + edge-tts
   python3 post_reel.py --dry-run                # só gera o vídeo, não posta
   python3 post_reel.py --video caminho.mp4      # posta um vídeo já gerado
   python3 post_reel.py --make --video ...       # força Make.com (ignora Publora)
@@ -128,20 +128,26 @@ def escolher_tema(hint: str | None = None) -> str:
     return random.choice(disponiveis)
 
 
-def gerar_video_motion(tema: str) -> "tuple[Path | None, str]":
-    """Chama gerar_motion.py para gerar o vídeo com Remotion + edge-tts.
+def gerar_video_motion(tema: str, ai_image: bool = False) -> "tuple[Path | None, str]":
+    """Chama gerar_motion.py para gerar o vídeo com Remotion + XTTS v2.
+    Fundo: Pixabay por padrão; com ai_image=True, tenta ComfyUI primeiro (fallback Pixabay).
     Retorna (caminho_mp4, caption_instagram) ou (None, "")."""
     print(f"\n🎬 Gerando vídeo motion sobre: '{tema}'")
-    print("   (Gemini → roteiro | edge-tts → narração | Remotion → render)")
+    print("   (Gemini → roteiro | XTTS v2 → narração | %s → fundo | Remotion → render)"
+          % ("ComfyUI/Pixabay" if ai_image else "Pixabay"))
 
     script_py = MOTION_DIR / "gerar_motion.py"
     if not script_py.exists():
         print(f"❌ gerar_motion.py não encontrado em {MOTION_DIR}")
         return None, ""
 
+    cmd = [sys.executable, str(script_py), tema]
+    if ai_image:
+        cmd.append("--ai-image")
+
     try:
         resultado = subprocess.run(
-            [sys.executable, str(script_py), tema],
+            cmd,
             cwd=str(MOTION_DIR),
             timeout=600,
         )
@@ -548,7 +554,10 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="Só gera o vídeo, não posta")
     parser.add_argument("--video", metavar="CAMINHO", help="Posta um vídeo já gerado sem regerar")
     parser.add_argument("--make", action="store_true", help="Força o uso do Make.com (ignora Publora)")
-    parser.add_argument("--motion", action="store_true", help="Usa Remotion (motion graphics) ao invés do purffle-shorts")
+    parser.add_argument("--ai-image", action="store_true",
+                         help="Fundo com imagens geradas por IA (ComfyUI); cai para Pixabay se falhar")
+    parser.add_argument("--purffle", action="store_true",
+                         help="Usa o pipeline legado purffle-shorts + edge-tts em vez de Remotion + XTTS v2")
     args = parser.parse_args()
 
     # Validação de chaves
@@ -560,7 +569,7 @@ def main():
         if not MAKE_WEBHOOK: faltando.append("MAKE_WEBHOOK_URL")
 
     if not args.video:
-        if not args.motion and not PIXABAY_KEY: faltando.append("PIXABAY_API_KEY")
+        if not PIXABAY_KEY: faltando.append("PIXABAY_API_KEY")
         if not GEMINI_KEY:  faltando.append("GEMINI_API_KEY")
 
     if faltando and not args.dry_run:
@@ -603,18 +612,18 @@ def main():
     print("📱 PIPELINE INSTAGRAM REELS — FINANÇAS PESSOAIS")
     print("=" * 60)
     print(f"📌 Tema: {tema}")
-    if args.motion:
-        print("🎨 Modo: Remotion (motion graphics)")
+    if args.purffle:
+        print("🎨 Modo: purffle-shorts (legado, edge-tts)")
     if args.dry_run:
         print("🔍 Modo dry-run: vídeo será gerado mas não postado")
     print()
 
-    if args.motion:
-        video_path, caption_motion = gerar_video_motion(tema)
+    if args.purffle:
+        video_path = gerar_video_purffle(tema, VIDEOS_DIR)
+    else:
+        video_path, caption_motion = gerar_video_motion(tema, ai_image=args.ai_image)
         if caption_motion:
             caption = caption_motion
-    else:
-        video_path = gerar_video_purffle(tema, VIDEOS_DIR)
 
     if not video_path:
         print("\n❌ Falha na geração do vídeo.")

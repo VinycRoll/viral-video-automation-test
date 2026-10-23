@@ -5,8 +5,8 @@ Gera e posta Reels sobre finanças pessoais no Instagram automaticamente com um 
 **Tecnologias:**
 - 🤖 **Gemini** — gera o roteiro
 - 🔊 **XTTS v2 (Coqui TTS)** — narração em português, local e grátis (sem API key)
-- 🎬 **Pixabay** — footage de vídeo stock (ou fallback de imagens no modo `--motion --ai-image`)
-- 🖼️ **ComfyUI (SD 1.5)** — opcional: gera imagens de fundo com Ken Burns no modo `--motion --ai-image`
+- 🎬 **Pixabay** — imagens de fundo com Ken Burns, por padrão
+- 🖼️ **ComfyUI (SD 1.5)** — opcional: imagens de fundo geradas por IA no modo `--ai-image` (fallback Pixabay)
 - 📲 **Publora** — posta no Instagram via API
 
 ---
@@ -51,18 +51,23 @@ GEMINI_API_KEY=...         # https://aistudio.google.com (grátis)
 ## 🚀 Uso
 
 ```bash
-reel                        # tema aleatório
+reel                        # tema aleatório (Remotion + XTTS v2 + Pixabay)
 reel 'renda passiva'        # tema específico
 reel --dry-run              # só gera o vídeo, não posta
 reel --video caminho.mp4    # posta um vídeo já gerado (pula a geração)
-reel --motion               # usa Remotion (motion graphics) ao invés do purffle-shorts
-reel --motion --ai-image    # + imagens de fundo via ComfyUI (SD 1.5) com Ken Burns
-                             # (usa Pixabay automaticamente se o ComfyUI não estiver rodando em localhost:8188)
+reel --ai-image             # fundo com imagens de IA via ComfyUI (SD 1.5) com Ken Burns
+                             # (sobe o ComfyUI automaticamente se ele não estiver rodando, e o
+                             #  encerra ao final; usa Pixabay se o ComfyUI falhar/não existir)
+reel --purffle              # usa o pipeline legado purffle-shorts + edge-tts
 ```
 
 > **ComfyUI (opcional):** o `instalar.sh` pergunta se você quer instalar o ComfyUI automaticamente
 > (clona o repositório, instala dependências e baixa o checkpoint SD 1.5 fp16, ~2.1 GB — leve o
-> suficiente para GPUs com 4GB de VRAM). Para usar `--ai-image`, inicie-o antes:
+> suficiente para GPUs com 4GB de VRAM). Com `--ai-image`, o `gerar_motion.py` sobe o ComfyUI em
+> background sozinho (espera até ~`COMFYUI_AUTOSTART_TIMEOUT` segundos, 120 por padrão, ele ficar
+> pronto) e encerra o processo automaticamente ao fim da geração das imagens — não precisa abrir
+> outro terminal. Se já tiver um ComfyUI seu rodando em `COMFYUI_URL`, ele é reaproveitado e não é
+> encerrado por este script. Para subir manualmente (debug):
 > ```bash
 > cd ComfyUI && python3 main.py --lowvram   # http://localhost:8188
 > ```
