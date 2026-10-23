@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
 gerar_motion.py — Gera roteiro JSON via Gemini, narração via XTTS v2,
-imagens de fundo via ComfyUI (SD 1.5, com fallback Pixabay) e renderiza com Remotion.
+imagens de fundo via Pixabay (ou ComfyUI com --ai-image) e renderiza com Remotion.
 
 Uso:
-    python3 gerar_motion.py                    # tema aleatório
+    python3 gerar_motion.py                    # tema aleatório, fundo com imagens do Pixabay
     python3 gerar_motion.py "juros compostos"  # tema específico
     python3 gerar_motion.py --dry-run          # só gera JSON + áudios, não renderiza
-    python3 gerar_motion.py --ai-image         # gera imagens de fundo (ComfyUI/Pixabay) com Ken Burns
+    python3 gerar_motion.py --ai-image         # imagens de fundo geradas por IA (ComfyUI);
+                                                # cai para o Pixabay se o ComfyUI falhar/indisponível
 """
 
 import os
@@ -62,11 +63,13 @@ XTTS_SPEAKER_WAV = os.getenv("XTTS_SPEAKER_WAV", "")
 os.environ.setdefault("COQUI_TOS_AGREED", "1")
 
 # ComfyUI (SD 1.5 local) — fallback automático para Pixabay se não estiver rodando
+COMFYUI_DIR        = SCRIPT_DIR.parent / "ComfyUI"
 COMFYUI_URL        = os.getenv("COMFYUI_URL", "http://localhost:8188")
 COMFYUI_CHECKPOINT = os.getenv("COMFYUI_CHECKPOINT", "v1-5-pruned-emaonly-fp16.safetensors")
 COMFYUI_WIDTH      = int(os.getenv("COMFYUI_WIDTH", "512"))
 COMFYUI_HEIGHT     = int(os.getenv("COMFYUI_HEIGHT", "768"))
 COMFYUI_STEPS      = int(os.getenv("COMFYUI_STEPS", "20"))
+COMFYUI_AUTOSTART_TIMEOUT = int(os.getenv("COMFYUI_AUTOSTART_TIMEOUT", "120"))
 PIXABAY_KEY        = os.getenv("PIXABAY_API_KEY", "")
 
 # Endpoint OpenAI-compatible do Gemini (igual ao purffle-shorts — mais estável)
@@ -344,6 +347,53 @@ def _comfyui_disponivel() -> bool:
         return False
 
 
+def _iniciar_comfyui() -> "subprocess.Popen | None":
+    """Sobe o ComfyUI em background se ainda não estiver rodando em COMFYUI_URL.
+    Retorna o processo (para ser encerrado depois) ou None se já estava rodando
+    (não é nosso para derrubar) ou se não deu para subir — nesses casos o fluxo
+    segue e cai no fallback Pixabay."""
+    if _comfyui_disponivel():
+        print(f"\n🖼️  ComfyUI já está rodando em {COMFYUI_URL}")
+        return None
+
+    main_py = COMFYUI_DIR / "main.py"
+    if not main_py.exists():
+        print(f"\n🖼️  ComfyUI não encontrado em {COMFYUI_DIR} — usando Pixabay")
+        return None
+
+    print(f"\n🚀 Iniciando ComfyUI em background ({COMFYUI_DIR})...")
+    proc = subprocess.Popen(
+        [sys.executable, "main.py", "--lowvram"],
+        cwd=str(COMFYUI_DIR),
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    deadline = time.time() + COMFYUI_AUTOSTART_TIMEOUT
+    while time.time() < deadline:
+        if _comfyui_disponivel():
+            print("   ✅ ComfyUI pronto")
+            return proc
+        if proc.poll() is not None:
+            print("   ❌ ComfyUI encerrou antes de ficar pronto — usando Pixabay")
+            return None
+        time.sleep(2)
+
+    print(f"   ⚠️  ComfyUI não respondeu em {COMFYUI_AUTOSTART_TIMEOUT}s — usando Pixabay e encerrando-o")
+    proc.terminate()
+    return None
+
+
+def _parar_comfyui(proc: "subprocess.Popen | None") -> None:
+    """Encerra o ComfyUI, mas só se fomos nós que subimos o processo."""
+    if proc is None or proc.poll() is not None:
+        return
+    print("\n🛑 Encerrando ComfyUI...")
+    proc.terminate()
+    try:
+        proc.wait(timeout=15)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+
+
 def _comfyui_workflow(prompt: str, seed: int) -> dict:
     negativo = ("texto, palavras, letras, números, marca d'água, baixa qualidade, "
                 "deformado, borrado, membros extras, mal desenhado, assinatura")
@@ -452,9 +502,13 @@ def _pixabay_fallback(prompts: list, tema: str, dest_dir: Path) -> list:
     return caminhos
 
 
-def gerar_imagens(prompts: list, tema: str, dest_dir: Path) -> list:
-    """Gera imagens de fundo via ComfyUI (SD 1.5 local); se indisponível, usa Pixabay."""
+def gerar_imagens(prompts: list, tema: str, dest_dir: Path, usar_ia: bool = False) -> list:
+    """Gera imagens de fundo. Sem --ai-image (usar_ia=False): busca direto no Pixabay (padrão).
+    Com --ai-image: tenta ComfyUI (SD 1.5 local) primeiro e cai para o Pixabay se indisponível/falhar."""
     dest_dir.mkdir(parents=True, exist_ok=True)
+
+    if not usar_ia:
+        return _pixabay_fallback(prompts, tema, dest_dir)
 
     if not _comfyui_disponivel():
         print(f"\n🖼️  ComfyUI não detectado em {COMFYUI_URL}")
@@ -643,23 +697,27 @@ def main():
 
     script = gerar_audios(script, audio_dir)
 
-    # 2b. Imagens de fundo com Ken Burns (opcional, via --ai-image)
-    if ai_image:
-        imagens = gerar_imagens(image_prompts, tema, output_dir / "images")
+    # 2b. Imagens de fundo com Ken Burns (Pixabay por padrão; --ai-image sobe o ComfyUI
+    # automaticamente, usa, e derruba de novo ao final — só se fomos nós que subimos)
+    comfyui_proc = _iniciar_comfyui() if ai_image else None
+    try:
+        imagens = gerar_imagens(image_prompts, tema, output_dir / "images", usar_ia=ai_image)
         if imagens:
             aplicar_imagens_de_fundo(script, imagens)
         else:
-            print("⚠️  Nenhuma imagem disponível (ComfyUI e Pixabay falharam) — usando fundo padrão")
+            print("⚠️  Nenhuma imagem disponível (Pixabay/ComfyUI falharam) — usando fundo padrão")
 
-    # Salva JSON para inspeção (inclui _audio_path para debug)
-    json_out = SCRIPT_DIR / "ultimo_roteiro.json"
-    json_out.write_text(json.dumps(script, ensure_ascii=False, indent=2))
-    print(f"\n💾 JSON: {json_out}")
+        # Salva JSON para inspeção (inclui _audio_path para debug)
+        json_out = SCRIPT_DIR / "ultimo_roteiro.json"
+        json_out.write_text(json.dumps(script, ensure_ascii=False, indent=2))
+        print(f"\n💾 JSON: {json_out}")
 
-    if dry_run:
-        print("\n⏭️  --dry-run: pulando renderização")
-        print(f"   Áudios em: {audio_dir}")
-        return
+        if dry_run:
+            print("\n⏭️  --dry-run: pulando renderização")
+            print(f"   Áudios em: {audio_dir}")
+            return
+    finally:
+        _parar_comfyui(comfyui_proc)
 
     # 3. Monta script limpo para o Remotion:
     #    - remove _audio_path (campo privado Python)
