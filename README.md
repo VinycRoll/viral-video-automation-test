@@ -21,8 +21,8 @@ Gera e posta Reels sobre finanças pessoais no Instagram automaticamente com um 
 ### Passo a passo
 
 ```bash
-# 1. Clone o projeto com o submódulo
-git clone --recurse-submodules https://github.com/VinycRoll/viral-video-automation
+# 1. Clone o projeto
+git clone https://github.com/VinycRoll/viral-video-automation
 cd viral-video-automation
 
 # 2. Execute o instalador
@@ -96,5 +96,5 @@ instagram-reels/
 ├── instalar.sh               # instalador
 ├── .env                      # suas chaves (não sobe para o Git)
 ├── videos_gerados/           # vídeos gerados (não sobe para o Git)
-└── viral-video-automation/   # submódulo: engine de geração de vídeo
+└── viral-video-automation/   # engine de geração de vídeo (purffle-shorts)
 ```
