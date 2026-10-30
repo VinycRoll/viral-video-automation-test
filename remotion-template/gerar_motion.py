@@ -17,17 +17,20 @@ import json
 import copy
 import shutil
 import itertools
+import signal
 import subprocess
 import datetime
 import random
 import time
 import uuid
 import pathlib
+import re
 from pathlib import Path
 
 try:
     import requests
     from dotenv import load_dotenv
+    import numpy as np
     import soundfile as sf
     from TTS.api import TTS
 except ImportError:
@@ -53,8 +56,20 @@ XTTS_LANGUAGE    = os.getenv("XTTS_LANGUAGE", "pt")
 # Speaker embutido no modelo (não precisa de áudio de referência). Troque por
 # outro nome de tts.speakers, ou defina XTTS_SPEAKER_WAV (.wav de 6-10s) para
 # clonar uma voz específica em vez de usar um dos speakers pré-treinados.
-XTTS_SPEAKER     = os.getenv("XTTS_SPEAKER", "Ana Florence")
+XTTS_SPEAKER     = os.getenv("XTTS_SPEAKER", "Gilberto Mathias")
 XTTS_SPEAKER_WAV = os.getenv("XTTS_SPEAKER_WAV", "")
+# Parâmetros de inferência — speed um pouco acima de 1.0 e repetition_penalty
+# no valor recomendado pelo paper da XTTS v2 deixam a fala menos monótona.
+# O maior ganho de energia/expressividade, porém, vem de usar uma voz de
+# referência real (XTTS_SPEAKER_WAV) em vez de um speaker pré-treinado — os
+# speakers embutidos (como "Ana Florence") tendem a sair mais "planos".
+XTTS_TEMPERATURE        = float(os.getenv("XTTS_TEMPERATURE", "0.75"))
+XTTS_REPETITION_PENALTY = float(os.getenv("XTTS_REPETITION_PENALTY", "10.0"))
+XTTS_SPEED              = float(os.getenv("XTTS_SPEED", "1.05"))
+# Opt-in: ajusta os 3 parâmetros acima sozinho a cada geração, com base no
+# histórico de notas manuais + QA automático (.historico_geracoes.json).
+# Desligado (padrão) não muda nada; ligado, sem histórico cai nos defaults de cima.
+XTTS_AUTOTUNE           = os.getenv("XTTS_AUTOTUNE", "0") == "1"
 # XTTS v2 é distribuído sob a Coqui Public Model License (CPML - coqui.ai/cpml),
 # que tem restrições para uso comercial. Ao baixar o modelo pela 1a vez, a lib
 # pede confirmação interativa dos termos — isso trava um pipeline automatizado
@@ -72,8 +87,17 @@ COMFYUI_STEPS      = int(os.getenv("COMFYUI_STEPS", "20"))
 COMFYUI_AUTOSTART_TIMEOUT = int(os.getenv("COMFYUI_AUTOSTART_TIMEOUT", "120"))
 PIXABAY_KEY        = os.getenv("PIXABAY_API_KEY", "")
 
+# Render sem GPU (CPU-only) pode passar de 5 minutos tranquilamente — timeout
+# generoso para não abandonar um render que está progredindo normalmente.
+REMOTION_RENDER_TIMEOUT = int(os.getenv("REMOTION_RENDER_TIMEOUT", "1200"))
+
 # Endpoint OpenAI-compatible do Gemini (igual ao purffle-shorts — mais estável)
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+# Endpoint nativo do Gemini (não o compatível com OpenAI): desde a migração do
+# Google para chaves no formato "AQ.Ab..." (meados de 2026), essas chaves novas
+# são rejeitadas no endpoint /v1beta/openai/chat/completions com Authorization:
+# Bearer — só funcionam no endpoint nativo, autenticadas via header
+# x-goog-api-key. Chaves antigas "AIzaSy..." continuam funcionando aqui também.
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
 TEMAS_FINANCAS = [
     "juros compostos e como multiplicar dinheiro",
@@ -166,7 +190,7 @@ FORMATO JSON (retorne APENAS o JSON, sem markdown):
   ]
 }"""
 
-# ── Gemini (endpoint OpenAI-compatible) ──────────────────────────────────────
+# ── Gemini (endpoint nativo) ──────────────────────────────────────────────────
 def gerar_roteiro(tema: str) -> dict:
     print(f"\n🤖 Gerando roteiro via Gemini ({GEMINI_MODEL}): '{tema}'...")
 
@@ -175,25 +199,24 @@ def gerar_roteiro(tema: str) -> dict:
         sys.exit(1)
 
     payload = {
-        "model": GEMINI_MODEL,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user",   "content": f"Crie um roteiro sobre: {tema}"},
+        "contents": [
+            {"role": "user", "parts": [{"text": f"Crie um roteiro sobre: {tema}"}]},
         ],
-        "temperature": 0.85,
-        "max_tokens": 2000,
+        "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+        "generationConfig": {"temperature": 0.85, "maxOutputTokens": 2000},
     }
 
     headers = {
-        "Authorization": f"Bearer {GEMINI_API_KEY}",
+        "x-goog-api-key": GEMINI_API_KEY,
         "Content-Type": "application/json",
     }
+    url = GEMINI_URL.format(model=GEMINI_MODEL)
 
     # Retry automático em 503 e timeout
     r = None
     for tentativa in range(1, 4):
         try:
-            r = requests.post(GEMINI_URL, headers=headers, json=payload, timeout=90)
+            r = requests.post(url, headers=headers, json=payload, timeout=90)
         except requests.exceptions.Timeout:
             espera = tentativa * 10
             print(f"   ⏳ Timeout ({tentativa}/3), tentando novamente em {espera}s...")
@@ -213,7 +236,7 @@ def gerar_roteiro(tema: str) -> dict:
         print(f"❌ Gemini API erro {r.status_code}: {r.text[:400]}")
         r.raise_for_status()
 
-    raw = r.json()["choices"][0]["message"]["content"].strip()
+    raw = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
     if raw.startswith("```"):
         raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
 
@@ -277,34 +300,118 @@ def _palavras_fallback(texto: str, offset: float, duracao: float) -> list:
     return out
 
 
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
+_SILENCIO_ENTRE_FRASES = 0.25  # segundos de pausa entre frases concatenadas
+
+
+def _preparar_frases_tts(texto: str) -> list:
+    """Divide a narração em frases e remove o "." de cada uma.
+
+    O XTTS v2 tem um bug conhecido e sem correção oficial no fork Coqui
+    (coqui-ai/TTS#2952, #3598): a voz em português às vezes fala a palavra
+    "ponto" em vez de só pausar quando o texto contém ".", principalmente em
+    frases longas — mesmo quando o texto já chega como uma frase só (o que
+    split_sentences=True do TTS.api já faria por conta própria). Como a pausa
+    real é garantida pelo silêncio inserido entre as frases concatenadas, o
+    ponto final pode ser removido sem perda; "!" e "?" ficam, pois não
+    disparam o bug.
+    """
+    frases = [f.strip() for f in _SENTENCE_SPLIT_RE.split(texto.strip()) if f.strip()]
+    saida = []
+    for frase in frases:
+        # Remove marcações de destaque (*texto*/**texto**) que às vezes vazam da
+        # narração — são só pra legenda/texto na tela; o XTTS não deve "falar" o símbolo.
+        frase = frase.replace("*", "")
+        frase = frase.replace("...", ",").replace(". ", ", ")
+        if frase.endswith("."):
+            frase = frase[:-1].strip()
+        if frase:
+            saida.append(frase)
+    return saida or [texto.strip()]
+
+
 def _gerar_audio_xtts(texto: str, caminho: Path) -> list:
     model = _get_xtts_model()
-    kwargs = {"text": texto, "language": XTTS_LANGUAGE, "file_path": str(caminho)}
-    if XTTS_SPEAKER_WAV:
-        kwargs["speaker_wav"] = XTTS_SPEAKER_WAV
+    frases = _preparar_frases_tts(texto)
+
+    sample_rate = 24000
+    pedacos = []
+    for i, frase in enumerate(frases):
+        tmp_path = caminho.with_name(f"{caminho.stem}_tmp{i}.wav")
+        kwargs = {
+            "text": frase,
+            "language": XTTS_LANGUAGE,
+            "file_path": str(tmp_path),
+            "split_sentences": False,
+            "temperature": XTTS_TEMPERATURE,
+            "repetition_penalty": XTTS_REPETITION_PENALTY,
+            "speed": XTTS_SPEED,
+        }
+        if XTTS_SPEAKER_WAV:
+            kwargs["speaker_wav"] = XTTS_SPEAKER_WAV
+        else:
+            kwargs["speaker"] = XTTS_SPEAKER
+        model.tts_to_file(**kwargs)
+
+        audio, sample_rate = sf.read(str(tmp_path))
+        pedacos.append(audio)
+        tmp_path.unlink(missing_ok=True)
+
+    if len(pedacos) > 1:
+        gap = np.zeros(int(_SILENCIO_ENTRE_FRASES * sample_rate))
+        partes = []
+        for i, pedaco in enumerate(pedacos):
+            partes.append(pedaco)
+            if i < len(pedacos) - 1:
+                partes.append(gap)
+        audio_final = np.concatenate(partes)
     else:
-        kwargs["speaker"] = XTTS_SPEAKER
-    model.tts_to_file(**kwargs)
+        audio_final = pedacos[0]
+
+    sf.write(str(caminho), audio_final, sample_rate)
+    _normalizar_volume(caminho)
 
     # Timing por palavra estimado pela duração real do áudio gerado (sem
     # pred_dur como no Kokoro) — proporcional ao nº de caracteres de cada palavra.
-    try:
-        info = sf.info(str(caminho))
-        duracao = info.frames / info.samplerate
-    except Exception:
-        duracao = len(texto.split()) / 3  # ~3 palavras/s, só como último recurso
+    duracao = len(audio_final) / sample_rate if sample_rate else len(texto.split()) / 3
     return _palavras_fallback(texto, 0.0, duracao)
 
 
-def gerar_audios(script: dict, audio_dir: Path) -> dict:
+def _normalizar_volume(caminho: Path) -> None:
+    """Normaliza o volume (EBU R128) para ficar consistente entre cenas/vídeos.
+
+    loudnorm reamostra a saída (ex: 192kHz) por padrão — força -ar de volta
+    para a taxa original para não dessincronizar do resto do pipeline (24kHz)."""
+    tmp = caminho.with_suffix(".norm.wav")
+    try:
+        taxa = sf.info(str(caminho)).samplerate
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", str(caminho), "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
+             "-ar", str(taxa), str(tmp)],
+            capture_output=True, check=True, timeout=30,
+        )
+        tmp.replace(caminho)
+    except Exception as e:
+        print(f"   ⚠️  loudnorm falhou, mantendo áudio sem normalização: {e}")
+        tmp.unlink(missing_ok=True)
+
+
+def gerar_audios(script: dict, audio_dir: Path) -> tuple:
     """Gera um .wav por cena (XTTS v2) e salva o caminho absoluto em scene['_audio_path'].
 
     IMPORTANTE: NÃO define scene['audio'] — esse campo é lido pelo Remotion
     como URL (http://localhost:3000/...) e causaria erros 404 no bundle.
     O mix com ffmpeg usa '_audio_path' diretamente após o render mudo.
+
+    Retorna (script, qa) — qa junta os checks automáticos (silêncio/clipping/duração/
+    markdown) usados pelo histórico de gerações em .historico_geracoes.json.
     """
     audio_dir.mkdir(parents=True, exist_ok=True)
-    print(f"\n🎙️  Gerando narração com XTTS v2 (speaker='{XTTS_SPEAKER}', language='{XTTS_LANGUAGE}')...")
+    voz = f"speaker_wav='{XTTS_SPEAKER_WAV}'" if XTTS_SPEAKER_WAV else f"speaker='{XTTS_SPEAKER}'"
+    print(f"\n🎙️  Gerando narração com XTTS v2 ({voz}, language='{XTTS_LANGUAGE}')...")
+
+    qa = {"audio_silence": False, "audio_clipping": False,
+          "duration_mismatch": False, "duration_mismatch_max_ratio": 1.0}
 
     for i, scene in enumerate(script["scenes"]):
         narration = scene.pop("narration", "").strip()
@@ -327,6 +434,17 @@ def gerar_audios(script: dict, audio_dir: Path) -> dict:
         except Exception:
             real_dur = scene.get("duration", 3)
 
+        niveis = _qa_audio_niveis(audio_path)
+        qa["audio_silence"]  = qa["audio_silence"]  or niveis["silence"]
+        qa["audio_clipping"] = qa["audio_clipping"] or niveis["clipping"]
+
+        planned = scene.get("duration") or 3
+        ratio = real_dur / planned if planned else 1.0
+        if ratio < 0.5 or ratio > 2.0:
+            qa["duration_mismatch"] = True
+        desvio = max(ratio, 1 / ratio) if ratio else 1.0
+        qa["duration_mismatch_max_ratio"] = max(qa["duration_mismatch_max_ratio"], desvio)
+
         # Campos privados (não vão pro Remotion diretamente)
         scene["_audio_path"]     = str(audio_path)
         scene["_audio_duration"] = real_dur   # duração real em segundos
@@ -334,8 +452,10 @@ def gerar_audios(script: dict, audio_dir: Path) -> dict:
         scene["_caption"]        = narration
         scene["_words"]          = palavras
 
+    qa["caption_markdown_leak"] = _qa_caption_tem_asterisco(script)
+
     print("✅ Áudios gerados")
-    return script
+    return script, qa
 
 
 # ── ComfyUI (SD 1.5) + fallback Pixabay ──────────────────────────────────────
@@ -489,6 +609,8 @@ def _pixabay_fallback(prompts: list, tema: str, dest_dir: Path) -> list:
         if not hit:
             continue
         vistos.add(hit["id"])
+        # Só log/diagnóstico (pedido do usuário) — nunca influencia qual hit foi escolhido acima.
+        _ULTIMA_RELEVANCIA_PIXABAY.append(_pixabay_relevancia(query, hit.get("tags", "")))
 
         try:
             img_r = requests.get(hit["largeImageURL"], timeout=30)
@@ -642,24 +764,158 @@ def renderizar(script: dict, output_path: Path, total_frames: int = 0) -> bool:
     if total_frames > 0:
         cmd += ["--frames", f"0-{total_frames - 1}"]
 
+    # Usamos Popen (não subprocess.run) com um grupo de processos próprio:
+    # se o render exceder REMOTION_RENDER_TIMEOUT, matamos a árvore inteira
+    # (npx -> node -> workers) via os.killpg. Com subprocess.run(timeout=...),
+    # o timeout mata só o processo filho direto (npx) e os processos-nietos
+    # continuam renderizando "órfãos" em background, terminando sozinhos
+    # depois do Python já ter desistido — foi o que causava vídeos mudos
+    # (sem a mixagem de áudio, que só roda se renderizar() retornar True).
+    proc = subprocess.Popen(cmd, cwd=SCRIPT_DIR, start_new_session=True)
     try:
-        result = subprocess.run(
-            cmd,
-            cwd=SCRIPT_DIR,
-            timeout=300,
-        )
+        returncode = proc.wait(timeout=REMOTION_RENDER_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        print(f"\n❌ Remotion não terminou em {REMOTION_RENDER_TIMEOUT}s — encerrando processo e filhos")
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        proc.wait()
         props_file.unlink(missing_ok=True)
-
-        if result.returncode == 0:
-            print(f"\n✅ Vídeo mudo: {output_path}")
-            return True
-        else:
-            print(f"\n❌ Remotion falhou (código {result.returncode})")
-            return False
+        return False
     except Exception as e:
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except ProcessLookupError:
+            pass
         props_file.unlink(missing_ok=True)
         print(f"\n❌ Erro: {e}")
         return False
+
+    props_file.unlink(missing_ok=True)
+    if returncode == 0:
+        print(f"\n✅ Vídeo mudo: {output_path}")
+        return True
+    else:
+        print(f"\n❌ Remotion falhou (código {returncode})")
+        return False
+
+
+# ── Histórico de gerações + QA automático (feedback loop do XTTS v2) ────────
+# Mesmo padrão simples (JSON, sem SQLite) do .historico.json em post_reel.py —
+# volume de ~1 vídeo/dia não justifica nada mais pesado. Alimenta avaliar_video.py
+# (nota manual 1-5) e _selecionar_parametros_xtts() (XTTS_AUTOTUNE).
+HISTORICO_GERACOES = SCRIPT_DIR.parent / ".historico_geracoes.json"
+
+
+def carregar_historico_geracoes() -> list:
+    if HISTORICO_GERACOES.exists():
+        try:
+            return json.loads(HISTORICO_GERACOES.read_text())
+        except Exception:
+            pass
+    return []
+
+
+def salvar_historico_geracoes(geracao: dict) -> None:
+    historico = carregar_historico_geracoes()
+    historico.append(geracao)
+    historico = historico[-200:]
+    HISTORICO_GERACOES.write_text(json.dumps(historico, ensure_ascii=False, indent=2))
+
+
+_VOLUME_RE = re.compile(r"(mean|max)_volume:\s*(-?[\d.]+) dB")
+
+
+def _qa_audio_niveis(caminho: Path) -> dict:
+    """Mede nível médio/pico do .wav (ffmpeg volumedetect) p/ pegar cena muda
+    (XTTS gerou áudio vazio) ou com clipping (loudnorm, TP=-1.5, não segurou o pico)."""
+    try:
+        r = subprocess.run(
+            ["ffmpeg", "-i", str(caminho), "-af", "volumedetect", "-f", "null", "-"],
+            capture_output=True, text=True, timeout=30,
+        )
+        niveis = dict(_VOLUME_RE.findall(r.stderr))
+        mean_db = float(niveis.get("mean", "0"))
+        max_db  = float(niveis.get("max", "0"))
+    except Exception:
+        return {"silence": False, "clipping": False}
+    return {"silence": mean_db < -50, "clipping": max_db > -1.0}
+
+
+def _qa_caption_tem_asterisco(script: dict) -> bool:
+    """Guarda de regressão pro bug de '*texto*' vazando pra legenda/narração."""
+    for scene in script["scenes"]:
+        if "*" in scene.get("_caption", ""):
+            return True
+        if any("*" in w.get("text", "") for w in scene.get("_words", [])):
+            return True
+    return False
+
+
+_TOKEN_RE = re.compile(r"[a-zà-úA-ZÀ-Ú0-9]+")
+_ULTIMA_RELEVANCIA_PIXABAY: list = []
+
+
+def _relevance_tokens(texto: str) -> set:
+    return {w.lower() for w in _TOKEN_RE.findall(texto or "") if len(w) > 2}
+
+
+def _pixabay_relevancia(query: str, tags: str) -> float:
+    """Sobreposição de tokens busca x tags do Pixabay — só log/diagnóstico (pedido
+    do usuário), nunca decide qual imagem é baixada."""
+    q, t = _relevance_tokens(query), _relevance_tokens(tags)
+    if not q or not t:
+        return 0.0
+    return len(q & t) / len(q)
+
+
+_XTTS_GRADES = {
+    "temperature":        [0.65, 0.70, 0.75, 0.80, 0.85],
+    "speed":              [0.95, 1.00, 1.05, 1.10, 1.15],
+    "repetition_penalty": [8.0, 9.0, 10.0, 11.0, 12.0],
+}
+_XTTS_DEFAULTS = {"temperature": 0.75, "speed": 1.05, "repetition_penalty": 10.0}
+_XTTS_EPSILON  = 0.2
+
+
+def _selecionar_parametros_xtts() -> tuple:
+    """Bandit epsilon-greedy independente por knob (temperature/speed/repetition_penalty).
+    Score por entrada do histórico: nota manual (1-5) se existir; senão 1 se algum QA
+    automático pegou problema; senão a entrada é ignorada (sem nota e sem problema não
+    deve inflar a média). Sem nenhuma entrada avaliável pro knob, usa o default direto
+    (sem explorar) — garante zero regressão mesmo com XTTS_AUTOTUNE=1 ligado sem histórico."""
+    historico = carregar_historico_geracoes()
+
+    escolhidos = {}
+    for knob, grade in _XTTS_GRADES.items():
+        pontos: dict = {}
+        for g in historico:
+            valor = (g.get("xtts_params") or {}).get(knob)
+            if valor is None:
+                continue
+            qa = g.get("qa") or {}
+            if g.get("rating") is not None:
+                score = g["rating"]
+            elif qa.get("audio_silence") or qa.get("audio_clipping") or qa.get("duration_mismatch") or qa.get("caption_markdown_leak"):
+                score = 1
+            else:
+                continue
+            pontos.setdefault(round(valor, 4), []).append(score)
+
+        total_entradas = sum(len(s) for s in pontos.values())
+        if not pontos:
+            escolhidos[knob] = _XTTS_DEFAULTS[knob]
+        elif total_entradas < 3 or random.random() < _XTTS_EPSILON:
+            escolhidos[knob] = random.choice(grade)
+        else:
+            medias = {v: sum(s) / len(s) for v, s in pontos.items()}
+            melhor = max(medias.values())
+            empate = [v for v, m in medias.items() if m == melhor]
+            escolhidos[knob] = min(empate, key=lambda v: abs(v - _XTTS_DEFAULTS[knob]))
+
+    return escolhidos["temperature"], escolhidos["speed"], escolhidos["repetition_penalty"]
+
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
@@ -667,101 +923,146 @@ def main():
     dry_run  = "--dry-run" in sys.argv
     ai_image = "--ai-image" in sys.argv
 
+    global XTTS_TEMPERATURE, XTTS_SPEED, XTTS_REPETITION_PENALTY
+    if XTTS_AUTOTUNE:
+        XTTS_TEMPERATURE, XTTS_SPEED, XTTS_REPETITION_PENALTY = _selecionar_parametros_xtts()
+        print(f"🎛️  XTTS_AUTOTUNE: temperature={XTTS_TEMPERATURE} speed={XTTS_SPEED} repetition_penalty={XTTS_REPETITION_PENALTY}")
+
     tema = " ".join(args) if args else random.choice(TEMAS_FINANCAS)
 
-    # 1. Roteiro
-    script = gerar_roteiro(tema)
-
-    image_prompts = script.pop("imagePrompts", None) or []
-    if not image_prompts:
-        image_prompts = _prompts_fallback(script, tema)
-    image_prompts = image_prompts[:8]
-    if len(image_prompts) < 5:
-        image_prompts = (image_prompts * 5)[:5]
-
-    print("\n📋 Cenas:")
-    for i, scene in enumerate(script["scenes"]):
-        label = (
-            scene.get("title")
-            or scene.get("text")
-            or scene.get("cardTitle")
-            or (scene.get("items") or [""])[0]
-            or ""
-        )
-        print(f"   [{i+1}] {scene['type']:10} {scene['duration']}s | {label[:45]}")
-
-    # 2. Áudios (salvos em output_dir/audios/, caminho em scene['_audio_path'])
     ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir = SCRIPT_DIR.parent / "videos_gerados" / f"motion_{ts}"
     audio_dir  = output_dir / "audios"
 
-    script = gerar_audios(script, audio_dir)
-
-    # 2b. Imagens de fundo com Ken Burns (Pixabay por padrão; --ai-image sobe o ComfyUI
-    # automaticamente, usa, e derruba de novo ao final — só se fomos nós que subimos)
-    comfyui_proc = _iniciar_comfyui() if ai_image else None
+    # Registrado em .historico_geracoes.json no finally abaixo, sempre — mesmo em
+    # --dry-run ou falha (sys.exit(1) levanta SystemExit, que o finally também cobre).
+    geracao = {
+        "run_id": uuid.uuid4().hex[:8],
+        "tema": tema,
+        "timestamp": datetime.datetime.now().isoformat(),
+        "xtts_params": {
+            "temperature": XTTS_TEMPERATURE,
+            "speed": XTTS_SPEED,
+            "repetition_penalty": XTTS_REPETITION_PENALTY,
+        },
+        "qa": {},
+        "rating": None,
+        "status": "failed",
+        "output_dir": str(output_dir),
+        "video_path": None,
+    }
     try:
-        imagens = gerar_imagens(image_prompts, tema, output_dir / "images", usar_ia=ai_image)
-        if imagens:
-            aplicar_imagens_de_fundo(script, imagens)
-        else:
-            print("⚠️  Nenhuma imagem disponível (Pixabay/ComfyUI falharam) — usando fundo padrão")
+        # 1. Roteiro
+        script = gerar_roteiro(tema)
 
-        # Salva JSON para inspeção (inclui _audio_path para debug)
-        json_out = SCRIPT_DIR / "ultimo_roteiro.json"
-        json_out.write_text(json.dumps(script, ensure_ascii=False, indent=2))
-        print(f"\n💾 JSON: {json_out}")
+        image_prompts = script.pop("imagePrompts", None) or []
+        if not image_prompts:
+            image_prompts = _prompts_fallback(script, tema)
+        image_prompts = image_prompts[:8]
+        if len(image_prompts) < 5:
+            image_prompts = (image_prompts * 5)[:5]
 
-        if dry_run:
-            print("\n⏭️  --dry-run: pulando renderização")
-            print(f"   Áudios em: {audio_dir}")
-            return
-    finally:
-        _parar_comfyui(comfyui_proc)
+        print("\n📋 Cenas:")
+        for i, scene in enumerate(script["scenes"]):
+            label = (
+                scene.get("title")
+                or scene.get("text")
+                or scene.get("cardTitle")
+                or (scene.get("items") or [""])[0]
+                or ""
+            )
+            print(f"   [{i+1}] {scene['type']:10} {scene['duration']}s | {label[:45]}")
 
-    # 3. Monta script limpo para o Remotion:
-    #    - remove _audio_path (campo privado Python)
-    #    - remove audio (se Gemini gerou, causaria 404 no bundle)
-    #    - promove _caption → caption para exibir como legenda na tela
-    #    - ajusta scene.duration para max(visual, audio) p/ Remotion renderizar frames suficientes
-    #    - backgroundImage (se houver) passa direto para o Remotion aplicar o Ken Burns
-    fps = 30
-    script_remotion = copy.deepcopy(script)
-    for scene in script_remotion["scenes"]:
-        scene.pop("audio", None)
-        audio_dur = scene.pop("_audio_duration", None)
-        if "_caption" in scene:
-            scene["caption"] = scene.pop("_caption")
-            if audio_dur is not None:
-                # Garante que a cena dure pelo menos o tempo do áudio
-                scene["duration"] = max(scene["duration"], audio_dur)
-                scene["captionFrames"] = int(audio_dur * fps)
+        # 2. Áudios (salvos em output_dir/audios/, caminho em scene['_audio_path'])
+        script, qa_audio = gerar_audios(script, audio_dir)
+        geracao["qa"].update(qa_audio)
+
+        # 2b. Imagens de fundo com Ken Burns (Pixabay por padrão; --ai-image sobe o ComfyUI
+        # automaticamente, usa, e derruba de novo ao final — só se fomos nós que subimos)
+        comfyui_proc = _iniciar_comfyui() if ai_image else None
+        try:
+            imagens = gerar_imagens(image_prompts, tema, output_dir / "images", usar_ia=ai_image)
+            if imagens:
+                aplicar_imagens_de_fundo(script, imagens)
             else:
-                scene["captionFrames"] = int(scene["duration"] * fps)
-        if "_words" in scene:
-            # Timing por palavra (estimado proporcionalmente, XTTS não tem pred_dur) p/ karaokê
-            scene["words"] = scene.pop("_words")
-        scene.pop("_audio_path", None)
+                print("⚠️  Nenhuma imagem disponível (Pixabay/ComfyUI falharam) — usando fundo padrão")
 
-    # Duração total real em frames para o Remotion
-    total_frames = sum(int(s["duration"] * fps) for s in script_remotion["scenes"])
+            # Relevância Pixabay: só log/estatística (ver _pixabay_relevancia) — vazio
+            # quando --ai-image usou o ComfyUI e não chamou o Pixabay.
+            if _ULTIMA_RELEVANCIA_PIXABAY:
+                geracao["qa"]["pixabay_relevance_avg"] = sum(_ULTIMA_RELEVANCIA_PIXABAY) / len(_ULTIMA_RELEVANCIA_PIXABAY)
+                geracao["qa"]["pixabay_relevance_min"] = min(_ULTIMA_RELEVANCIA_PIXABAY)
+                geracao["qa"]["pixabay_relevance_low_count"] = sum(1 for s in _ULTIMA_RELEVANCIA_PIXABAY if s < 0.2)
+            else:
+                geracao["qa"]["pixabay_relevance_avg"] = None
+                geracao["qa"]["pixabay_relevance_min"] = None
+                geracao["qa"]["pixabay_relevance_low_count"] = None
 
-    # 4. Renderiza vídeo mudo
-    video_mudo  = output_dir / "reel_mudo.mp4"
-    output_path = output_dir / "reel.mp4"
+            # Salva JSON para inspeção (inclui _audio_path para debug)
+            json_out = SCRIPT_DIR / "ultimo_roteiro.json"
+            json_out.write_text(json.dumps(script, ensure_ascii=False, indent=2))
+            print(f"\n💾 JSON: {json_out}")
 
-    ok = renderizar(script_remotion, video_mudo, total_frames)
+            if dry_run:
+                print("\n⏭️  --dry-run: pulando renderização")
+                print(f"   Áudios em: {audio_dir}")
+                geracao["status"] = "dry_run"
+                return
+        finally:
+            _parar_comfyui(comfyui_proc)
 
-    if ok:
-        # 5. Mixa áudio com ffmpeg
-        ok = mixar_audio(script, video_mudo, output_path)
-        video_mudo.unlink(missing_ok=True)
+        # 3. Monta script limpo para o Remotion:
+        #    - remove _audio_path (campo privado Python)
+        #    - remove audio (se Gemini gerou, causaria 404 no bundle)
+        #    - promove _caption → caption para exibir como legenda na tela
+        #    - ajusta scene.duration para max(visual, audio) p/ Remotion renderizar frames suficientes
+        #    - backgroundImage (se houver) passa direto para o Remotion aplicar o Ken Burns
+        fps = 30
+        script_remotion = copy.deepcopy(script)
+        for scene in script_remotion["scenes"]:
+            scene.pop("audio", None)
+            audio_dur = scene.pop("_audio_duration", None)
+            if "_caption" in scene:
+                scene["caption"] = scene.pop("_caption")
+                if audio_dur is not None:
+                    # Garante que a cena dure pelo menos o tempo do áudio
+                    scene["duration"] = max(scene["duration"], audio_dur)
+                    scene["captionFrames"] = int(audio_dur * fps)
+                else:
+                    scene["captionFrames"] = int(scene["duration"] * fps)
+            if "_words" in scene:
+                # Timing por palavra (estimado proporcionalmente, XTTS não tem pred_dur) p/ karaokê
+                scene["words"] = scene.pop("_words")
+            scene.pop("_audio_path", None)
 
-    if ok:
-        caption = script.get("caption", "")
-        if caption:
-            print(f"\n📝 Legenda sugerida:\n{caption}")
-        print(f"\n🎥 Para postar: reel --video '{output_path}'")
+        # Duração total real em frames para o Remotion
+        total_frames = sum(int(s["duration"] * fps) for s in script_remotion["scenes"])
+
+        # 4. Renderiza vídeo mudo
+        video_mudo  = output_dir / "reel_mudo.mp4"
+        output_path = output_dir / "reel.mp4"
+
+        ok = renderizar(script_remotion, video_mudo, total_frames)
+
+        if ok:
+            # 5. Mixa áudio com ffmpeg
+            ok = mixar_audio(script, video_mudo, output_path)
+            video_mudo.unlink(missing_ok=True)
+
+        if ok:
+            geracao["status"] = "ok"
+            geracao["video_path"] = str(output_path)
+            caption = script.get("caption", "")
+            if caption:
+                print(f"\n📝 Legenda sugerida:\n{caption}")
+            print(f"\n🎥 Para postar: reel --video '{output_path}'")
+        else:
+            # Sinaliza falha de verdade: sem isso, o post_reel.py via returncode==0
+            # como "sucesso" e acabava reaproveitando um reel.mp4 antigo de outra pasta.
+            print(f"\n❌ Geração do vídeo falhou — sem reel.mp4 final em {output_dir}")
+            sys.exit(1)
+    finally:
+        salvar_historico_geracoes(geracao)
 
 if __name__ == "__main__":
     main()

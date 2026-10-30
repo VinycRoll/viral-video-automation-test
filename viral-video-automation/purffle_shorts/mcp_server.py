@@ -56,10 +56,15 @@ TOOLS: list[dict] = [
          "emoji": {"type": "boolean", "description": "An emoji per scene above the captions. Default true."},
          "upload": {"type": "boolean", "description": "Publish when done: to YouTube and the other networks in "
                                                       "PUBLISH_TO (TikTok, Instagram...). Default false."},
-         "demo": {"type": "boolean", "description": "No-key demo: sample script and generated backgrounds."}}}},
+         "demo": {"type": "boolean", "description": "No-key demo: sample script and generated backgrounds."},
+         "approved_divergence": {"type": "boolean", "description": "If draft_script (or this call's own first "
+                                 "attempt) reported divergence=true — the script's angle differs from topic — "
+                                 "set this to true only after that angle has been reviewed and approved. "
+                                 "Otherwise a diverging script is not rendered."}}}},
     {"name": "draft_script",
-     "description": "Write (and self-review) a video script without rendering it. Returns the script JSON, which "
-                    "can be edited and passed to make_short.",
+     "description": "Write (and self-review) a video script without rendering it. Returns the script JSON plus "
+                    "the original subject and whether the AI's angle diverges from it. The script can be edited "
+                    "and passed to make_short (with approved_divergence: true if it diverges and that's fine).",
      "inputSchema": {"type": "object", "properties": {
          "topic": {"type": "string"}, "url": {"type": "string"}, "style": _STYLE,
          "language": {"type": "string"}, "duration_seconds": {"type": "integer", "minimum": 10, "maximum": 170}}}},
@@ -119,9 +124,28 @@ class Server:
         s = self._settings(a)
         studio = Studio(s)
         script = script_from_data(a["script"], s) if isinstance(a.get("script"), dict) else None
+        approved = bool(a.get("approved_divergence"))
+        review: dict = {}
+
+        def _gate(draft_script, pick, writer) -> bool:
+            if approved:
+                return True
+            review.update(subject=pick.subject, topic=draft_script.topic, divergence=pick.divergence)
+            return False
+
         r = studio.make(a.get("topic") or None, url=a.get("url") or None, script=script,
                         style=s.style if s.style in STYLES else None,
-                        upload=bool(a.get("upload")) and not s.offline, languages=a.get("also_languages") or [])
+                        upload=bool(a.get("upload")) and not s.offline, languages=a.get("also_languages") or [],
+                        on_divergence=_gate)
+        if r.status == "needs_review":
+            if review.get("subject"):
+                return (f"Needs review: the script's angle (\"{review['topic']}\") diverges from the requested "
+                        f"subject (\"{review['subject']}\"). Call make_short again with the same script and "
+                        f"approved_divergence: true to render it anyway, or with a new topic/script to change it.")
+            return (f"Needs review: a script was submitted with no topic to compare it against, so its angle "
+                    f"(\"{review['topic']}\") cannot be confirmed as what was actually requested. Call make_short "
+                    f"again with the same script and approved_divergence: true to render it anyway, or pass a "
+                    f"topic describing what the script is supposed to be about.")
         if not r.ok:
             raise RuntimeError(r.error or "the video failed")
         lines = [_describe(r)] + [_describe(v) for v in r.variants]
@@ -130,7 +154,8 @@ class Server:
     def draft_script(self, a: dict) -> str:
         from .pipeline import Studio
         script, pick, writer = Studio(self._settings(a)).draft(a.get("topic") or None, url=a.get("url") or None)
-        return json.dumps(script.to_dict(), indent=2, ensure_ascii=False)
+        out = {"script": script.to_dict(), "subject": pick.subject, "divergence": pick.divergence}
+        return json.dumps(out, indent=2, ensure_ascii=False)
 
     def clip_video(self, a: dict) -> str:
         from .clipper import make_clips

@@ -45,7 +45,7 @@ class Job:
     kind: str                       # make | draft | clip | plan | upload | stats
     params: dict
     label: str = ""
-    status: str = "queued"          # queued | running | done | failed | cancelled
+    status: str = "queued"          # queued | running | done | failed | cancelled | needs_review
     stage: str = ""
     pct: int = 0
     message: str = ""
@@ -230,7 +230,8 @@ class StudioServer:
                     studio = Studio(s, progress=self._progress(job))
                     job.eta_fn = studio.eta
                     ok = self._run(job, studio, s, p)
-                job.status = "done" if ok else "failed"
+                if job.status == "running":  # _run may already have set a terminal status (e.g. needs_review)
+                    job.status = "done" if ok else "failed"
             except Cancelled:
                 job.status, job.message = "cancelled", "cancelled while running"
             except Exception as e:
@@ -238,7 +239,7 @@ class StudioServer:
                 log.exception("Studio job %d failed", job.id)
             finally:
                 job.finished, job.eta_fn = time.time(), None
-                if job.status == "done":
+                if job.status in ("done", "needs_review"):
                     job.pct = 100
                 self.current = None
                 CANCEL.clear()
@@ -249,8 +250,9 @@ class StudioServer:
         if job.kind == "draft":
             script, pick, writer = studio.draft(p.get("topic") or None, source=p.get("source") or None,
                                                 style=s.style if s.style != "auto" else None,
-                                                url=p.get("url") or None)
-            job.result = {"script": script.to_dict(), "source": pick.source, "llm": writer}
+                                                url=p.get("url") or None, pin_subject=bool(p.get("pin_subject")))
+            job.result = {"script": script.to_dict(), "source": pick.source, "llm": writer,
+                          "subject": pick.subject, "divergence": pick.divergence}
             job.stage, job.pct = "done", 100
             return True
         if job.kind == "plan":
@@ -272,11 +274,33 @@ class StudioServer:
         langs = p.get("also_langs")
         if isinstance(langs, str):
             langs = [x.strip().lower() for x in langs.split(",") if x.strip()]
+        review_info: dict = {}
+        approved_subject = str(p.get("approved_subject") or "").strip()
+        approved_topic = str(p.get("approved_topic") or "").strip()
+
+        def _gate(draft_script, pick, writer) -> bool:
+            # Approval is tied to the exact subject+angle pair the human reviewed, recomputed fresh
+            # from this request — editing the script's topic after approving invalidates it again.
+            # Gated on approved_topic (never legitimately empty for a real script), not
+            # approved_subject: an old draft can have a genuinely empty, unrecoverable subject, and
+            # that must still be approvable — requiring approved_subject itself to be truthy would
+            # make an explicit approval of an empty subject indistinguishable from "never approved",
+            # leaving it stuck in needs_review forever.
+            if approved_topic and approved_subject == pick.subject and approved_topic == draft_script.topic:
+                return True
+            review_info.update(script=draft_script.to_dict(), subject=pick.subject,
+                               divergence=pick.divergence, llm=writer)
+            return False  # always stop for review; the human decides via a separate request
+
         # UPLOAD=false in .env is a hard stop, whatever a request asks for
         r = studio.make(p.get("topic") or None, source=p.get("source") or None,
                         upload=bool(p.get("upload")) and s.upload,
                         style=s.style if s.style != "auto" else None, script=script, url=p.get("url") or None,
-                        languages=[str(x)[:8] for x in (langs or [])][:6])
+                        languages=[str(x)[:8] for x in (langs or [])][:6], pin_subject=bool(p.get("pin_subject")),
+                        on_divergence=_gate)
+        if r.status == "needs_review":
+            job.result, job.status = review_info, "needs_review"
+            return True
         job.result = _result(r)
         return r.ok
 

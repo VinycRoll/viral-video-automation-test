@@ -34,6 +34,7 @@ from .script import (
     load_script,
     localize_metadata,
     review_script,
+    topic_divergence,
     translate_script,
     write_script,
 )
@@ -180,6 +181,12 @@ def _media_for(shots, media_map: dict[tuple[int, int], MediaItem]) -> list[Media
     return out
 
 
+def _refuse_manual_divergence(script: Script, pick: Topic, writer: str) -> bool:
+    log.warning("Manual topic %r diverged to %r (%s) — needs review, skipping it in this batch",
+                pick.subject, script.topic, writer)
+    return False
+
+
 class Studio:
     def __init__(self, settings: Settings, progress: ProgressFn | None = None):
         self.s = settings
@@ -284,7 +291,8 @@ class Studio:
 
     # ------------------------------------------------------------------ script only
     def draft(self, topic: str | None = None, *, source: str | None = None, style: str | None = None,
-              url: str | None = None, document: str | Path | None = None) -> tuple[Script, Topic, str]:
+              url: str | None = None, document: str | Path | None = None,
+              pin_subject: bool = False) -> tuple[Script, Topic, str]:
         """Pick a topic, write the script and let the Script Doctor improve it. Nothing is rendered."""
         s = self.s
         standalone = not self._plan  # a draft on its own (Studio "Draft"), not the first half of make()
@@ -316,10 +324,12 @@ class Studio:
                     log.info("YouTube searches: %s", "; ".join(pick.keywords[:4]))
             script = write_script(self.llm, pick.subject, s, source=pick.source, avoid=self.history.recent_titles(),
                                   context=pick.context, style=style, insights=insights,
-                                  keywords=seo.keywords_block(pick.keywords))
+                                  keywords=seo.keywords_block(pick.keywords), pin_subject=pin_subject)
             if self.llm is not None and s.script_review != "off":
                 self._step("review", "Script Doctor")
                 script = review_script(self.llm, script, s)
+            if pick.source == "manual":
+                pick.divergence = topic_divergence(pick.subject, script.topic)
         except BaseException:
             if pick.idea_id:
                 self.history.release_idea(pick.idea_id)
@@ -332,7 +342,8 @@ class Studio:
     def make(self, topic: str | None = None, *, source: str | None = None, upload: bool | None = None,
              style: str | None = None, script_file: str | Path | None = None, script: Script | None = None,
              url: str | None = None, document: str | Path | None = None,
-             languages: list[str] | None = None) -> Result:
+             languages: list[str] | None = None, pin_subject: bool = False,
+             on_divergence: Callable[[Script, Topic, str], bool] | None = None) -> Result:
         t0 = time.time()
         s = self.s
         upload = s.upload if upload is None else upload
@@ -348,10 +359,42 @@ class Studio:
             if script is not None or script_file:
                 if script is None:
                     script = load_script(script_file, s)
-                pick, writer = Topic(script.topic, "script"), ("script file" if script_file else "editor")
+                subject = (topic or "").strip()
+                writer = "script file" if script_file else "editor"
+                if not subject:
+                    # script_file has no separate "original subject" to compare against: the file
+                    # itself is the request, so its own topic is trivially the subject (unchanged
+                    # from before). Likewise, a caller with no on_divergence gate at all has no
+                    # approval to bypass in the first place, so the old default is harmless there
+                    # too (keeps CLI/MCP callers that never wire up a gate working unchanged). But
+                    # an in-memory script WITH a gate wired in is normally the web/MCP "edit the
+                    # draft" flow, which already saw a subject — a missing topic there must NOT be
+                    # read as "no divergence" (that would let a script quietly swap in whatever
+                    # angle it likes), so it's flagged for review instead of silently approved.
+                    subject, divergence = ((script.topic, None) if script_file or on_divergence is None else
+                                           ("", {"diverges": True, "overlap": 0.0, "relation": "unknown"}))
+                else:
+                    divergence = (topic_divergence(subject, script.topic)
+                                  if subject.casefold() != script.topic.casefold() else None)
+                pick = Topic(subject, "script", divergence=divergence)
                 log.info("Script from %s (%d scenes): %s", script_file or "editor", len(script.scenes), script.title)
             else:
-                script, pick, writer = self.draft(topic, source=source, style=style, url=url, document=document)
+                script, pick, writer = self.draft(topic, source=source, style=style, url=url, document=document,
+                                                   pin_subject=pin_subject)
+                divergence = pick.divergence
+
+            needs_approval = bool(divergence and divergence.get("diverges"))
+            state["approval_required"] = needs_approval
+            if needs_approval:
+                if on_divergence is None:
+                    # No gate wired in at all (older/offline call sites) — proceed as before, but
+                    # record that this was never actually reviewed by anyone.
+                    state["approved"] = False
+                elif on_divergence(script, pick, writer):
+                    state["approved"] = True
+                else:
+                    return Result(False, script.title, status="needs_review", seconds=time.time() - t0,
+                                  score=script.score, language=script.language)
             return self.produce(script, pick, writer, upload=upload, t0=t0, languages=languages, state=state)
         except (youtube.NotAuthorized, LLMConfigError, KeyboardInterrupt):
             raise  # setup problems stop the run instead of failing every video the same way
@@ -487,7 +530,8 @@ class Studio:
             meta = {
                 "title": title, "description": description, "tags": script.tags,
                 "category_id": script.category_id, "language": s.language,
-                "topic": script.topic, "source": pick.source, "style": script.style,
+                "topic": script.topic, "subject": pick.subject, "topic_divergence": pick.divergence,
+                "source": pick.source, "style": script.style,
                 "duration": round(info["duration"], 2), "resolution": f"{s.width}x{s.height}",
                 "llm": writer, "score": script.score, "rubric": script.rubric, "review": script.review,
                 "search_keywords": pick.keywords, "localizations": localizations, "cover_at": round(cover_at, 2),
@@ -503,7 +547,9 @@ class Studio:
                 subject=pick.subject, source=pick.source, topic=script.topic, style=script.style,
                 language=s.language, title=title, description=description, tags=script.tags,
                 folder=str(folder), video_path=str(video), duration=info["duration"],
-                llm=meta["llm"], voice=meta["voice"], status="rendered", score=script.score, parent_id=parent_id)
+                llm=meta["llm"], voice=meta["voice"], status="rendered", score=script.score, parent_id=parent_id,
+                topic_divergence=json.dumps(pick.divergence) if pick.divergence else None,
+                approval_required=state.get("approval_required"), approved=state.get("approved"))
             state["record_id"] = rid
             if not media_map:
                 self.history.mark_media([m.key for m in media if m.source not in REUSABLE_SOURCES])
@@ -703,9 +749,16 @@ class Studio:
 
     # ------------------------------------------------------------------ autopilot
     def autopilot(self, *, count: int | None = None, once: bool = False, upload: bool | None = None,
-                  topic: str | None = None, source: str | None = None) -> int:
+                  topic: str | None = None, source: str | None = None,
+                  on_divergence: Callable[[Script, Topic, str], bool] | None = None) -> int:
         s = self.s
         upload = s.upload if upload is None else upload
+        # autopilot runs batches concurrently in a thread pool, where a blocking interactive
+        # approval prompt is unsafe (several worker threads would call input() at once and their
+        # prompts/answers would interleave). A manual topic that diverges is therefore always
+        # refused here rather than guessed at or silently rendered; this never fires for topics
+        # pulled from the niche/idea queue, since those have no original subject to diverge from.
+        gate = on_divergence if on_divergence is not None else _refuse_manual_divergence
         produced, batch, empty_batches = 0, 0, 0
         mode = "upload" if upload else "no-upload"
         _ = self.llm  # fail fast on LLM configuration problems
@@ -730,7 +783,8 @@ class Studio:
                 with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as ex:
                     # Parallel videos each get their own Studio: progress, timing and cancel state are per video.
                     makers = [self] if workers == 1 else [Studio(s) for _ in range(n)]
-                    futs = [ex.submit(makers[i % len(makers)].make, topic, source=source, upload=upload)
+                    futs = [ex.submit(makers[i % len(makers)].make, topic, source=source, upload=upload,
+                                      on_divergence=gate)
                             for i in range(n)]
                     results = [f.result() for f in futs]
                 ok = sum(r.ok for r in results)

@@ -3,13 +3,18 @@
 import http.client
 import json
 import logging
+import re
 import threading
 import time
 from http.server import ThreadingHTTPServer
+from pathlib import Path
 
 import pytest
 
+from purffle_shorts import pipeline as P
 from purffle_shorts import studio as ST
+
+from .conftest import needs_ffmpeg
 
 
 @pytest.fixture
@@ -102,6 +107,34 @@ def _job(port, jid, until=("done", "failed", "cancelled"), tries=600):
     for _ in range(tries):
         job = json.loads(req(port, "GET", f"/api/jobs/{jid}")[2])
         if job["status"] in until:
+            return job
+        time.sleep(0.05)
+    return job
+
+
+class _FakeLLM:
+    """Always writes about "Octopus hearts", no matter what subject it's asked for — used to
+    exercise the topic-divergence gate without touching a real LLM."""
+    def __init__(self, settings):
+        self.providers, self.label = [object()], "fake:model"
+
+    def complete_json(self, system, user, schema=None, max_tokens=4000):
+        return json.loads(json.dumps({
+            "topic": "Octopus hearts", "title": "Why Octopuses Have Three Hearts", "hook_text": "3 HEARTS?!",
+            "scenes": [{"narration": "An octopus has three hearts.", "search_query": "octopus",
+                       "image_prompt": "octopus"}],
+            "description": "Three hearts, one octopus.", "hashtags": ["#octopus"], "tags": ["octopus"],
+            "category": "science",
+        }))
+
+
+def _run_job(port, token, path, body, timeout=5.0):
+    status, _, resp = req(port, "POST", path, body, token)
+    jid = json.loads(resp)["job"]
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        job = json.loads(req(port, "GET", f"/api/jobs/{jid}")[2])
+        if job["status"] in ("done", "failed", "needs_review"):
             return job
         time.sleep(0.05)
     return job
@@ -210,3 +243,108 @@ def test_page_has_no_inline_styles_or_scripts(server):
     js = req(port, "GET", "/static/app.js")[2].decode()
     assert not re.search(r"\sstyle=", html) and not re.search(r"<script>(?!\s*</script>)", html)
     assert not re.search(r"""\sstyle=["']""", js)
+
+
+def test_make_job_needs_review_for_diverging_manual_topic(server, monkeypatch):
+    app, port = server
+    monkeypatch.setattr(P, "LLM", _FakeLLM)
+    job = _run_job(port, app.token, "/api/make", {"topic": "Why do airplanes fly"})
+    assert job["status"] == "needs_review", job
+    assert job["result"]["subject"] == "Why do airplanes fly"
+    assert job["result"]["divergence"]["diverges"] is True
+    assert job["result"]["script"]["topic"] == "Octopus hearts"
+
+
+def test_draft_job_surfaces_subject_and_divergence(server, monkeypatch):
+    app, port = server
+    monkeypatch.setattr(P, "LLM", _FakeLLM)
+    job = _run_job(port, app.token, "/api/draft", {"topic": "Why do airplanes fly"})
+    assert job["status"] == "done", job
+    assert job["result"]["subject"] == "Why do airplanes fly"
+    assert job["result"]["divergence"]["diverges"] is True
+
+
+_SCRIPT_DATA = {
+    "topic": "Octopus hearts", "title": "Why Octopuses Have Three Hearts", "hook_text": "3 HEARTS?!",
+    "scenes": [{"narration": "An octopus has three hearts.", "search_query": "octopus", "image_prompt": "octopus"}],
+    "description": "Three hearts, one octopus.", "hashtags": ["#octopus"], "tags": ["octopus"], "category": "science",
+}
+
+
+def test_make_job_blocks_script_render_without_approval(server):
+    app, port = server
+    job = _run_job(port, app.token, "/api/make",
+                   {"topic": "Why do airplanes fly", "script": _SCRIPT_DATA, "offline": True})
+    assert job["status"] == "needs_review", job
+    assert job["result"]["subject"] == "Why do airplanes fly"
+    assert job["result"]["script"]["topic"] == "Octopus hearts"
+
+
+def test_make_job_rejects_stale_approval_after_topic_edit(server):
+    app, port = server
+    edited = dict(_SCRIPT_DATA, topic="Why cats purr when happy")
+    job = _run_job(port, app.token, "/api/make", {
+        "topic": "Why do airplanes fly", "script": edited, "offline": True,
+        "approved_subject": "Why do airplanes fly", "approved_topic": "Octopus hearts",
+    })
+    assert job["status"] == "needs_review", job
+
+
+def test_make_job_with_unrecoverable_empty_subject_needs_review(server):
+    # An old draft whose original subject can't be recovered from any metadata ends up with
+    # subject == "" — this must still be flagged for review, never treated as auto-approved.
+    app, port = server
+    job = _run_job(port, app.token, "/api/make", {"script": _SCRIPT_DATA, "offline": True})
+    assert job["status"] == "needs_review", job
+    assert job["result"]["subject"] == ""
+
+
+@needs_ffmpeg
+def test_make_job_can_explicitly_approve_unrecoverable_empty_subject(server):
+    # Once a human explicitly approves that exact (empty subject, script topic) pair, it must
+    # actually render — not loop back into needs_review forever just because subject is "".
+    app, port = server
+    job = _run_job(port, app.token, "/api/make", {
+        "script": _SCRIPT_DATA, "offline": True,
+        "approved_subject": "", "approved_topic": _SCRIPT_DATA["topic"],
+    }, timeout=60.0)
+    assert job["status"] == "done", job
+
+
+@needs_ffmpeg
+def test_make_job_renders_script_with_matching_approval(server):
+    app, port = server
+    job = _run_job(port, app.token, "/api/make", {
+        "topic": "Why do airplanes fly", "script": _SCRIPT_DATA, "offline": True,
+        "approved_subject": "Why do airplanes fly", "approved_topic": "Octopus hearts",
+    }, timeout=60.0)
+    assert job["status"] == "done", job
+
+
+# ------------------------------------------------------------------ Storyboard
+def test_storyboard_card_renders_scene_number_narration_and_media_status():
+    src = Path(__file__).parent.parent / "purffle_shorts" / "web" / "app.js"
+    text = src.read_text(encoding="utf-8")
+    assert "function storyboardCard(s, n)" in text
+    assert 'storyboard">${d.scenes.map((s, n) => storyboardCard(s, n))' in text
+    # empty-state: a script with no scenes yet must not render an empty grid
+    assert "No scenes yet" in text
+    fn_start = text.index("function storyboardCard(s, n)")
+    fn_body = text[fn_start:text.index("function drawEditor", fn_start)]
+    assert "No visual source" in fn_body and "Not verified yet" in fn_body
+    assert "s.narration" in fn_body
+
+
+# ------------------------------------------------------------------ Library "Edit & re-render" flow
+def test_library_edit_handler_recovers_the_original_subject():
+    # app.js has no test runner of its own, so this guards the one-line fix directly: the
+    # "Edit & re-render" button used to build S.draft from the script alone, with no `_subject` at
+    # all — so re-rendering an edited library video always sent topic: "" and could never be
+    # checked against the video's real original subject, nor correctly re-flag a material edit.
+    src = Path(__file__).parent.parent / "purffle_shorts" / "web" / "app.js"
+    text = src.read_text(encoding="utf-8")
+    start = text.index("const ed = $(\"#d-edit\")")
+    handler = text[start:text.index("saveDraft();", start)]
+    assert re.search(r"_subject\s*:\s*v\.subject\s*\|\|\s*m\.subject\s*\|\|\s*sc\.topic", handler)
+    assert "_divergence: null" in handler
+    assert "_approved_subject: null" in handler and "_approved_topic: null" in handler

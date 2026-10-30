@@ -216,10 +216,25 @@ def cmd_run(args, s: Settings) -> int:
         studio = Studio(s, progress=line)
         if line:
             line.eta_fn = studio.eta
-        produced = studio.autopilot(count=args.count, once=args.once, topic=args.topic, source=args.source)
+        # A manual --topic can be interactively confirmed like `make` does, but only when batches run
+        # one at a time: with more than one worker, autopilot's thread pool could call input() from
+        # several threads at once, so it falls back to its own safe (never silently approve) default.
+        gate = _confirm_divergence if (args.topic and s.workers <= 1) else None
+        produced = studio.autopilot(count=args.count, once=args.once, topic=args.topic, source=args.source,
+                                    on_divergence=gate)
     finally:
         end_live(line)
     return 0 if produced or not (args.count or args.once) else 1
+
+
+def _confirm_divergence(script, pick, writer) -> bool:
+    """The AI wrote about a different, more specific angle than the subject that was asked for.
+    Interactively, ask before rendering it; non-interactively (e.g. cron, CI), default to no so an
+    unattended run never ships an angle nobody reviewed."""
+    if not sys.stdin.isatty():
+        return False
+    print(f"\nYou asked for: {pick.subject}\nIt wrote about: {script.topic}")
+    return input("Render it anyway? [y/N] ").strip().lower() in ("y", "yes")
 
 
 def cmd_make(args, s: Settings) -> int:
@@ -232,7 +247,7 @@ def cmd_make(args, s: Settings) -> int:
     try:
         for _ in range(max(1, args.count or 1)):
             r = studio.make(args.topic, source=args.source, script_file=args.script, url=args.url,
-                            document=args.from_file)
+                            document=args.from_file, on_divergence=_confirm_divergence)
             end_live(line)
             for x in [r, *r.variants]:
                 ok += x.ok
@@ -250,6 +265,9 @@ def _posts(r) -> str:
 
 
 def print_result(r) -> None:
+    if r.status == "needs_review":
+        print("\n⚠ needs review: the AI's angle wasn't approved, so nothing was rendered.")
+        return
     if not r.ok:
         print(f"\n✘ {r.language + ' ' if r.language else ''}failed: {r.error}" + _posts(r))
         return

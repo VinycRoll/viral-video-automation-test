@@ -222,7 +222,7 @@ def _format_rules(style: str) -> str:
 
 
 def build_prompt(subject: str, style: str, settings: Settings, avoid: list[str], context: str = "",
-                 insights: str = "", keywords: str = "") -> tuple[str, str]:
+                 insights: str = "", keywords: str = "", pin_subject: bool = False) -> tuple[str, str]:
     lang = LANGUAGES.get(settings.language, settings.language)
     words, n_scenes = scene_plan(style, settings.target_seconds)
     system = (
@@ -235,10 +235,16 @@ def build_prompt(subject: str, style: str, settings: Settings, avoid: list[str],
     ctx = f"Background information (use it, don't invent beyond it):\n{context.strip()}\n\n" if context else ""
     ins = f"{insights.strip()}\n\n" if insights else ""
     ins += f"{keywords.strip()}\n\n" if keywords else ""
+    subject_rule = (
+        "Stay exactly on this subject — do not narrow it to a different, more specific topic. "
+        'Return this same subject in "topic".'
+        if pin_subject else
+        "If the subject is broad, choose ONE specific, surprising, lesser-known topic inside it."
+    )
     user = f"""Write one YouTube Short.
 
 Subject: {subject}
-If the subject is broad, choose ONE specific, surprising, lesser-known topic inside it.
+{subject_rule}
 Format: {STYLES[style]}
 Audience: {settings.audience}
 Language: {lang} for narration, title, hook_text, cast and description. search_query and image_prompt are ALWAYS English.
@@ -413,16 +419,78 @@ def word_count(text: str, language: str = "en") -> int:
 
 def write_script(llm, subject: str, settings: Settings, *, source: str = "niche",
                  avoid: list[str] | None = None, context: str = "", style: str | None = None,
-                 insights: str = "", keywords: str = "") -> Script:
+                 insights: str = "", keywords: str = "", pin_subject: bool = False) -> Script:
     style = style if style in STYLES else pick_style(settings, source)
     if llm is None:
         return offline_script(subject, settings, style)
-    system, user = build_prompt(subject, style, settings, avoid or [], context, insights, keywords)
+    system, user = build_prompt(subject, style, settings, avoid or [], context, insights, keywords, pin_subject)
     data = llm.complete_json(system, user, SCRIPT_SCHEMA)
     script = normalize(data, subject, style, settings.language)
     log.info("Script (%s, %d words, %d scenes): %s", style, word_count(script.narration, settings.language),
              len(script.scenes), script.title)
     return script
+
+
+# --------------------------------------------------------------------------------------------------
+# Topic fidelity — a manual topic can be narrowed by the LLM into a different, more specific angle.
+# This is often an improvement, but it must be surfaced for approval rather than applied silently.
+# --------------------------------------------------------------------------------------------------
+_DIVERGENCE_STOP_WORDS = {
+    "the", "a", "an", "of", "and", "or", "in", "on", "with", "for", "to", "at", "by", "from",
+    "about", "how", "what", "why", "when", "where", "who", "which", "this", "that", "these",
+    "those", "is", "are", "was", "were", "be", "been", "being", "it", "its", "our", "your",
+    "their", "we", "you", "they", "he", "she", "i", "us", "them", "do", "does", "did",
+    "can", "could", "would", "should", "will", "shall", "into", "out", "up", "down",
+}
+
+# Plurals that the generic "-s" stripping rule below gets wrong (it would turn "lives" into
+# "live", while "life" stays unstemmed, so the two never match even though they mean the same).
+_IRREGULAR_PLURALS = {
+    "lives": "life", "knives": "knife", "wives": "wife", "leaves": "leaf", "loaves": "loaf",
+    "thieves": "thief", "wolves": "wolf", "elves": "elf", "shelves": "shelf", "calves": "calf",
+    "halves": "half", "selves": "self", "scarves": "scarf", "hooves": "hoof",
+}
+
+
+def _divergence_tokens(text: str) -> set[str]:
+    out = set()
+    for word in re.findall(r"[a-z0-9]+", (text or "").lower()):
+        if len(word) < 2 or word in _DIVERGENCE_STOP_WORDS:
+            continue
+        if word in _IRREGULAR_PLURALS:
+            word = _IRREGULAR_PLURALS[word]
+        elif len(word) > 5 and word.endswith("uses"):  # octopuses -> octopus, not "octopuse"
+            word = word[:-2]
+        elif len(word) > 4 and word.endswith("s") and not word.endswith(("ss", "us", "is")):
+            word = word[:-1]
+        out.add(word)
+    return out
+
+
+def topic_divergence(subject: str, topic: str) -> dict:
+    """Heuristic check for whether `topic` (what got written) has drifted away from `subject`
+    (what was asked for). Two signals, not one single word-overlap ratio: `recall` is how much of
+    the subject's own words survive in the topic (low recall = the subject's content was dropped,
+    not just reworded); `added` is how much of the topic is content the subject never mentioned at
+    all (high added = the topic narrowed into new specific territory, even while sharing some
+    words with the subject). Only a rephrasing that keeps most of the subject's content AND doesn't
+    pile on much new specific material counts as "equivalent" (no approval needed) — any other
+    narrowing or angle change needs approval, labelled "narrower" when some real connection to the
+    subject remains, or "divergent" when the topic shares essentially nothing with it."""
+    subj_terms = _divergence_tokens(subject)
+    topic_terms = _divergence_tokens(topic)
+    if not subj_terms or not topic_terms:
+        return {"diverges": False, "overlap": 1.0, "relation": "equivalent"}
+    shared = subj_terms & topic_terms
+    recall = len(shared) / len(subj_terms)
+    added = len(topic_terms - shared) / len(topic_terms)
+    if recall >= 0.5 and added <= 0.5:
+        relation, diverges = "equivalent", False
+    elif recall > 0.3:
+        relation, diverges = "narrower", True
+    else:
+        relation, diverges = "divergent", True
+    return {"diverges": diverges, "overlap": round(recall, 2), "relation": relation}
 
 
 # --------------------------------------------------------------------------------------------------

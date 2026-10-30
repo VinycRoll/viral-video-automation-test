@@ -46,6 +46,7 @@ class Topic:
     style: str = ""
     idea_id: int | None = None
     keywords: list[str] = field(default_factory=list)  # real YouTube searches handed to the script writer
+    divergence: dict | None = None
 
 
 def _weighted_sources(settings: Settings) -> list[tuple[str, float]]:

@@ -1,0 +1,19 @@
+{
+  "squad": "reels-financas",
+  "status": "running",
+  "step": { "current": 6, "total": 9, "label": "Geração do Vídeo (Dry-Run) — retry" },
+  "agents": [
+    { "id": "victor-viral", "name": "Victor Viral", "icon": "🔍", "status": "done", "desk": { "col": 1, "row": 1 } },
+    { "id": "angela-angulo", "name": "Ângela Ângulo", "icon": "💡", "status": "done", "desk": { "col": 2, "row": 1 } },
+    { "id": "rafael-render", "name": "Rafael Render", "icon": "🎬", "status": "working", "desk": { "col": 3, "row": 1 } },
+    { "id": "paula-parecer", "name": "Paula Parecer", "icon": "✅", "status": "idle", "desk": { "col": 1, "row": 2 } }
+  ],
+  "handoff": {
+    "from": "user",
+    "to": "rafael-render",
+    "message": "Dependência coqui-tts instalada. Retentando geração do vídeo.",
+    "completedAt": "2026-10-30T12:50:00-03:00"
+  },
+  "startedAt": "2026-10-30T12:41:08-03:00",
+  "updatedAt": "2026-10-30T12:50:00-03:00"
+}

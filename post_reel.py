@@ -145,24 +145,27 @@ def gerar_video_motion(tema: str, ai_image: bool = False) -> "tuple[Path | None,
     if ai_image:
         cmd.append("--ai-image")
 
+    inicio = time.time()
     try:
         resultado = subprocess.run(
             cmd,
             cwd=str(MOTION_DIR),
-            timeout=600,
+            timeout=1800,
         )
 
         if resultado.returncode != 0:
             print(f"❌ gerar_motion.py falhou (código {resultado.returncode})")
             return None, ""
 
-        # O vídeo vai para videos_gerados/motion_TIMESTAMP/reel.mp4
+        # O vídeo vai para videos_gerados/motion_TIMESTAMP/reel.mp4. Filtra por
+        # mtime >= início desta chamada para nunca reaproveitar um reel.mp4
+        # de uma execução anterior (ex: se este run falhar silenciosamente).
         mp4s = sorted(
-            (SCRIPT_DIR / "videos_gerados").rglob("reel.mp4"),
+            (p for p in (SCRIPT_DIR / "videos_gerados").rglob("reel.mp4") if p.stat().st_mtime >= inicio),
             key=lambda p: p.stat().st_mtime,
         )
         if not mp4s:
-            print("❌ reel.mp4 não encontrado após geração")
+            print("❌ reel.mp4 não encontrado após geração (dessa execução)")
             return None, ""
 
         video = mp4s[-1]
@@ -184,7 +187,7 @@ def gerar_video_motion(tema: str, ai_image: bool = False) -> "tuple[Path | None,
         return video, caption
 
     except subprocess.TimeoutExpired:
-        print("❌ Timeout: geração demorou mais de 10 minutos")
+        print("❌ Timeout: geração demorou mais de 30 minutos")
         return None, ""
     except Exception as e:
         print(f"❌ Erro ao chamar gerar_motion.py: {e}")
@@ -369,24 +372,64 @@ def publicar_agora(post_group_id: str) -> bool:
 
 
 def upload_0x0(video_path: Path) -> "str | None":
-    """Faz upload do vídeo para o 0x0.st e retorna a URL permanente."""
-    print("\n📤 Fazendo upload para 0x0.st...")
+    """Faz upload do vídeo tentando múltiplos serviços como fallback."""
     tamanho_mb = video_path.stat().st_size / (1024 * 1024)
+
+    # ── 1. catbox.moe (suporta até 200 MB, permanente) ────────────────────────
+    print("\n📤 Fazendo upload para catbox.moe...")
     print(f"   Enviando {video_path.name} ({tamanho_mb:.1f} MB)...")
+    try:
+        with open(video_path, "rb") as f:
+            r = requests.post(
+                "https://catbox.moe/user/api.php",
+                data={"reqtype": "fileupload", "userhash": ""},
+                files={"fileToUpload": (video_path.name, f, "video/mp4")},
+                timeout=300,
+            )
+        if r.ok and r.text.strip().startswith("https://"):
+            url = r.text.strip()
+            print(f"✅ Upload catbox.moe concluído: {url}")
+            return url
+        print(f"   ⚠️  catbox.moe falhou: {r.status_code} — {r.text[:100]}")
+    except Exception as e:
+        print(f"   ⚠️  catbox.moe erro: {e}")
 
-    with open(video_path, "rb") as f:
-        r = requests.post(
-            "https://0x0.st",
-            files={"file": (video_path.name, f, "video/mp4")},
-            timeout=300,
-        )
+    # ── 2. 0x0.st (fallback) ──────────────────────────────────────────────────
+    print("📤 Tentando 0x0.st...")
+    try:
+        with open(video_path, "rb") as f:
+            r = requests.post(
+                "https://0x0.st",
+                files={"file": (video_path.name, f, "video/mp4")},
+                timeout=300,
+            )
+        if r.ok and r.text.strip().startswith("https://"):
+            url = r.text.strip()
+            print(f"✅ Upload 0x0.st concluído: {url}")
+            return url
+        print(f"   ⚠️  0x0.st falhou: {r.status_code} — {r.text[:100]}")
+    except Exception as e:
+        print(f"   ⚠️  0x0.st erro: {e}")
 
-    if r.ok and r.text.strip().startswith("https://"):
-        url = r.text.strip()
-        print(f"✅ Upload 0x0.st concluído: {url}")
-        return url
+    # ── 3. litterbox.catbox.moe (temporário 72h) ──────────────────────────────
+    print("📤 Tentando litterbox.catbox.moe (72h)...")
+    try:
+        with open(video_path, "rb") as f:
+            r = requests.post(
+                "https://litterbox.catbox.moe/resources/internals/api.php",
+                data={"reqtype": "fileupload", "time": "72h"},
+                files={"fileToUpload": (video_path.name, f, "video/mp4")},
+                timeout=300,
+            )
+        if r.ok and r.text.strip().startswith("https://"):
+            url = r.text.strip()
+            print(f"✅ Upload litterbox concluído: {url}")
+            return url
+        print(f"   ⚠️  litterbox falhou: {r.status_code} — {r.text[:100]}")
+    except Exception as e:
+        print(f"   ⚠️  litterbox erro: {e}")
 
-    print(f"❌ Erro no upload 0x0.st: {r.status_code} — {r.text[:200]}")
+    print("❌ Todos os serviços de upload falharam.")
     return None
 
 

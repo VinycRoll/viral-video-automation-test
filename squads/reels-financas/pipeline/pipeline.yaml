@@ -1,0 +1,97 @@
+pipeline:
+  name: "Reels de Finanças com Aprovação — Pipeline de Produção"
+  squad: "reels-financas"
+
+  steps:
+    - step: 1
+      name: "Foco da Pesquisa"
+      type: "checkpoint"
+      file: "pipeline/steps/step-01-foco-pesquisa.md"
+      output_file: "squads/reels-financas/output/foco-pesquisa.md"
+      on_reject: ""
+
+    - step: 2
+      name: "Pesquisa de Padrões Virais"
+      type: "agent"
+      file: "pipeline/steps/step-02-pesquisa-padroes.md"
+      agent: "victor-viral"
+      execution: "subagent"
+      model_tier: "powerful"
+      input_file: "squads/reels-financas/output/foco-pesquisa.md"
+      output_file: "squads/reels-financas/output/padroes-virais.md"
+      on_reject: ""
+
+    - step: 3
+      name: "Seleção do Ângulo"
+      type: "checkpoint"
+      file: "pipeline/steps/step-03-selecao-angulo.md"
+      input_file: "squads/reels-financas/output/padroes-virais.md"
+      output_file: "squads/reels-financas/output/angulo-escolhido.md"
+      on_reject: "2"
+
+    - step: 4
+      name: "Definição de Tema e Legenda"
+      type: "agent"
+      file: "pipeline/steps/step-04-definicao-tema.md"
+      agent: "angela-angulo"
+      execution: "inline"
+      format: "instagram-reels"
+      input_file: "squads/reels-financas/output/angulo-escolhido.md"
+      output_file: "squads/reels-financas/output/tema-definido.md"
+      on_reject: ""
+
+    - step: 5
+      name: "Aprovação do Conteúdo"
+      type: "checkpoint"
+      file: "pipeline/steps/step-05-aprovacao-conteudo.md"
+      input_file: "squads/reels-financas/output/tema-definido.md"
+      output_file: "squads/reels-financas/output/aprovacao-conteudo.md"
+      on_reject: "4"
+
+    - step: 6
+      name: "Geração do Vídeo (Dry-Run)"
+      type: "agent"
+      file: "pipeline/steps/step-06-geracao-video.md"
+      agent: "rafael-render"
+      execution: "subagent"
+      model_tier: "fast"
+      input_file: "squads/reels-financas/output/tema-definido.md"
+      output_file: "squads/reels-financas/output/video-gerado.md"
+      on_reject: ""
+
+    - step: 7
+      name: "Revisão de Qualidade"
+      type: "agent"
+      file: "pipeline/steps/step-07-revisao-qualidade.md"
+      agent: "paula-parecer"
+      execution: "subagent"
+      model_tier: "powerful"
+      format: "instagram-reels"
+      input_file: "squads/reels-financas/output/video-gerado.md"
+      output_file: "squads/reels-financas/output/revisao-qualidade.md"
+      on_reject: ""
+
+    - step: 8
+      name: "Aprovação Final"
+      type: "checkpoint"
+      file: "pipeline/steps/step-08-aprovacao-final.md"
+      input_file: "squads/reels-financas/output/revisao-qualidade.md"
+      output_file: "squads/reels-financas/output/aprovacao-final.md"
+      on_reject: "6"
+
+    - step: 9
+      name: "Publicação"
+      type: "agent"
+      file: "pipeline/steps/step-09-publicacao.md"
+      agent: "rafael-render"
+      execution: "subagent"
+      model_tier: "fast"
+      input_file: "squads/reels-financas/output/aprovacao-final.md"
+      output_file: "squads/reels-financas/output/publicacao.md"
+      on_reject: ""
+
+  checkpoints:
+    - 1
+    - 3
+    - 5
+    - 8

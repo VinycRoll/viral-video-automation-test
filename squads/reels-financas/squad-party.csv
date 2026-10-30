@@ -1,0 +1,5 @@
+id,name,title,icon,execution,path
+victor-viral,Victor Viral,Pesquisador de Padrões Virais,🔍,subagent,./agents/victor-viral.agent.md
+angela-angulo,Ângela Ângulo,Roteirista de Ângulo,💡,inline,./agents/angela-angulo.agent.md
+rafael-render,Rafael Render,Operador do Pipeline,🎬,subagent,./agents/rafael-render.agent.md
+paula-parecer,Paula Parecer,Revisora de Qualidade,✅,subagent,./agents/paula-parecer.agent.md

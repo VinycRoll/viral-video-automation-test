@@ -124,7 +124,8 @@ def pexels_photos(query: str, key: str, orientation: str = "portrait") -> list[M
         url += ("&" if "?" in url else "?") + "auto=compress&cs=tinysrgb&h=2400"
         items.append(MediaItem("pexels-photo", str(p["id"]), "image", url, p.get("width", 0), p.get("height", 0),
                                credit=p.get("photographer", ""), query=query, rank=rank,
-                               text=f"{p.get('alt') or ''} {_slug_words(p.get('url', ''))}".strip()))
+                               text=f"{p.get('alt') or ''} {_slug_words(p.get('url', ''))}".strip(),
+                               extra={"tags": str(p.get("alt") or "")}))
     return items
 
 
@@ -142,7 +143,7 @@ def pixabay_videos(query: str, key: str, prefer_4k: bool = False) -> list[MediaI
             continue
         items.append(MediaItem("pixabay", str(h["id"]), "video", f["url"], f.get("width", 0), f.get("height", 0),
                                float(h.get("duration") or 0), h.get("user", ""), query=query, rank=rank,
-                               text=str(h.get("tags") or "")))
+                               text=str(h.get("tags") or ""), extra={"tags": str(h.get("tags") or "")}))
     return items
 
 
@@ -154,7 +155,7 @@ def pixabay_photos(query: str, key: str, orientation: str = "portrait") -> list[
     raise_for_status(r, "Pixabay photo search")
     return [MediaItem("pixabay-photo", str(h["id"]), "image", h["largeImageURL"], h.get("imageWidth", 0),
                       h.get("imageHeight", 0), credit=h.get("user", ""), query=query, rank=rank,
-                      text=str(h.get("tags") or ""))
+                      text=str(h.get("tags") or ""), extra={"tags": str(h.get("tags") or "")})
             for rank, h in enumerate(r.json().get("hits", [])) if h.get("largeImageURL")]
 
 
@@ -250,6 +251,83 @@ def _shape(item: MediaItem) -> str:
     return "landscape" if item.width > item.height else "square"
 
 
+_RELEVANCE_STOP_WORDS = STOP_WORDS | {
+    "how", "what", "why", "when", "where", "who", "can", "could",
+    "would", "should", "their", "they", "them", "this", "that",
+    "these", "those", "seconds", "second", "minutes", "minute",
+    "rapidly", "completely", "microscopic", "tiny", "millions",
+    "called", "literally", "craziest", "part", "macro", "close",
+    "up", "4k", "uhd", "hd", "video", "footage", "clip",
+}
+
+_WORD_NORMALIZATION = {
+    "octopuses": "octopus",
+    "changing": "change",
+    "changed": "change",
+    "changes": "change",
+    "swimming": "swim",
+    "swims": "swim",
+    "eyes": "eye",
+    "glowing": "glow",
+    "glows": "glow",
+    "colors": "color",
+    "colours": "colour",
+}
+
+
+def _relevance_tokens(text: str) -> list[str]:
+    result = []
+    for word in re.findall(r"[a-z0-9]+", (text or "").lower()):
+        word = _WORD_NORMALIZATION.get(word, word)
+        if word in _RELEVANCE_STOP_WORDS:
+            continue
+        if len(word) > 4 and word.endswith("s") and not word.endswith(("ss", "us", "is")):
+            word = word[:-1]
+        if word and word not in result:
+            result.append(word)
+    return result
+
+
+# Sources whose API actually gives us text to judge relevance against: Pixabay's "tags" field,
+# and Pexels photos' "alt" text (captured into the same extra["tags"] slot). Pexels *videos* carry
+# no tags or description at all, so there's no honest basis to call them relevant or not.
+_TAGGED_SOURCES = ("pixabay", "pexels-photo")
+
+
+def _relevance_score(item: MediaItem, query: str) -> float | None:
+    if not item.source.startswith(_TAGGED_SOURCES):
+        return None
+    query_terms = set(_relevance_tokens(query))
+    tag_terms = set(_relevance_tokens(str(item.extra.get("tags") or "")))
+    if not query_terms or not tag_terms:
+        return 0.0
+    return len(query_terms & tag_terms) / len(query_terms)
+
+
+def _is_relevant(item: MediaItem, query: str) -> bool:
+    if not item.source.startswith(_TAGGED_SOURCES):
+        return True
+
+    query_terms = _relevance_tokens(query)
+    tag_terms = set(_relevance_tokens(str(item.extra.get("tags") or "")))
+
+    if not query_terms or not tag_terms:
+        return False
+
+    # The most distinctive query word — the longest, not necessarily the first — must appear in
+    # the tags. Using length instead of position means the check doesn't depend on word order.
+    anchor = max(query_terms, key=len)
+    if anchor not in tag_terms:
+        return False
+
+    if len(query_terms) == 1:
+        misleading = {"carousel", "fairground", "amusement", "festival"}
+        return not bool(tag_terms & misleading)
+
+    matches = set(query_terms) & tag_terms
+    return len(matches) >= 2 and len(matches) / len(set(query_terms)) >= 0.4
+
+
 def _score(item: MediaItem, need: float, orientation: str = "portrait", query: str = "") -> float:
     """Higher is better. Relevance to the scene matters most, then the search engine's own ranking, then
     whether the clip fits the frame and lasts long enough."""
@@ -293,8 +371,11 @@ class Visuals:
             elif source == "pexels-photos" and s.pexels_api_key:
                 items = pexels_photos(query, s.pexels_api_key, orientation=o)
             elif source == "pixabay" and s.pixabay_api_key:
-                items = (pixabay_videos(query, s.pixabay_api_key, s.prefer_4k)
-                         or pixabay_photos(query, s.pixabay_api_key, orientation=o))
+                videos = pixabay_videos(query, s.pixabay_api_key, s.prefer_4k)
+                if any(_is_relevant(item, query) for item in videos):
+                    items = videos
+                else:
+                    items = pixabay_photos(query, s.pixabay_api_key, orientation=o)
             elif source == "pixabay-photos" and s.pixabay_api_key:
                 items = pixabay_photos(query, s.pixabay_api_key, orientation=o)
             elif source == "local":
@@ -335,11 +416,23 @@ class Visuals:
 
     def _claim(self, candidates: list[MediaItem], need: float, query: str = "") -> MediaItem | None:
         with self.lock:
+            if query:
+                candidates = [c for c in candidates if _is_relevant(c, query)]
+
             fresh = [c for c in candidates if c.key not in self.used]
             if not fresh:
                 return None
+
             if fresh[0].source == "local":
                 best = fresh[0] if fresh[0].extra.get("overlap") else random.choice(fresh)
+            elif query and fresh[0].source.startswith(_TAGGED_SOURCES):
+                best = max(
+                    fresh,
+                    key=lambda c: (
+                        _relevance_score(c, query) or 0.0,
+                        _score(c, need, self.s.orientation, query),
+                    ),
+                )
             else:
                 best = max(fresh, key=lambda c: _score(c, need, self.s.orientation, query))
             self.used.add(best.key)
@@ -387,12 +480,17 @@ class Visuals:
             q = (q or "").strip()
             if q and q.lower() not in [x.lower() for x in queries]:
                 queries.append(q)
+        # A tagged source (pixabay, pexels-photo) can be verified relevant and is returned right
+        # away. An untagged source (pexels video) is unverifiable either way, so its first hit is
+        # kept only as a fallback while later sources still get a chance to offer a verified one.
+        fallback: MediaItem | None = None
         for source in list(self.sources):
             if source in ("openai-images", "ai", "dalle", "gpt-image", "pollinations"):
                 item = self._ai(source, image_prompt or query, dest_dir, idx)
                 if item:
                     return item
                 continue
+            claimed = None
             for q in queries:
                 cand = self._search(source, q)
                 item = self._claim(cand, need, query)  # always judged against the scene's own query
@@ -403,12 +501,24 @@ class Visuals:
                 except Exception as e:
                     log.warning("Download failed for %s: %s", item.key, redact(e))
                     continue
-                if item.source.startswith("pexels"):
-                    self.credits.add("Pexels")
-                elif item.source.startswith("pixabay"):
-                    self.credits.add("Pixabay")
+                claimed = (item, q)
+                break
+            if claimed is None:
+                continue
+            item, q = claimed
+            if item.source.startswith("pexels"):
+                self.credits.add("Pexels")
+            elif item.source.startswith("pixabay"):
+                self.credits.add("Pixabay")
+            if item.source.startswith(_TAGGED_SOURCES):
                 log.info("Scene %d: %s %s (%r)", idx + 1, item.source, item.kind, q)
                 return item
+            if fallback is None:
+                fallback = item
+        if fallback is not None:
+            log.info("Scene %d: %s %s — no source gave a verifiably relevant match; using the closest candidate",
+                     idx + 1, fallback.source, fallback.kind)
+            return fallback
         log.info("Scene %d: no footage found for %r — using an animated background", idx + 1, query)
         return MediaItem("generated", f"gradient-{idx}", "generated", query=query)
 

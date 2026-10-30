@@ -1,402 +1,558 @@
 {
-  "title": "Como Fazer Renda Extra em 2024",
+  "title": "A Realidade da Reserva de Emergência no Brasil",
   "accentColor": "#FFD700",
-  "caption": "Quer aprender a fazer uma renda extra mas não sabe por onde começar? 💸 Salva esse vídeo e já compartilha com aquele amigo que precisa saber disso! 🚀 #rendaextra #finanças #dinheiro #empreendedorismo",
+  "caption": "Você faz parte dessa estatística? 😳 31% dos brasileiros simplesmente não têm NADA guardado para imprevistos. E o pior: dos que têm, metade não aguenta nem 3 meses se perder a renda. O buraco é mais embaixo, mas dá tempo de mudar isso! Me conta nos comentários: você já tem a sua reserva pronta? ⬇️💸\n\n#finanças #educaçãofinanceira #dinheiro #reservadeemergência #investimentos #planejamentofinanceiro",
   "scenes": [
     {
       "type": "intro",
       "duration": 3,
       "channel": "VinyBruno.ia",
-      "title": "RENDA EXTRA REAL",
-      "subtitle": "sem fórmulas mágicas",
-      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261021_170258/audios/cena_00.wav",
-      "_audio_duration": 4.267333,
-      "_caption": "quer uma renda extra de verdade mas não sabe por onde começar?",
+      "title": "ALERTA VERMELHO",
+      "subtitle": "dados chocantes",
+      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261030_145629/audios/cena_00.wav",
+      "_audio_duration": 4.544667,
+      "_caption": "você tem ideia de como está a conta bancária da maioria dos brasileiros?",
       "_words": [
         {
-          "text": "quer",
+          "text": "você",
           "start": 0.0,
-          "end": 0.335
+          "end": 0.303
         },
         {
-          "text": "uma",
-          "start": 0.335,
-          "end": 0.586
+          "text": "tem",
+          "start": 0.303,
+          "end": 0.53
         },
         {
-          "text": "renda",
-          "start": 0.586,
-          "end": 1.004
-        },
-        {
-          "text": "extra",
-          "start": 1.004,
-          "end": 1.422
+          "text": "ideia",
+          "start": 0.53,
+          "end": 0.909
         },
         {
           "text": "de",
-          "start": 1.422,
-          "end": 1.59
+          "start": 0.909,
+          "end": 1.06
         },
         {
-          "text": "verdade",
-          "start": 1.59,
-          "end": 2.176
+          "text": "como",
+          "start": 1.06,
+          "end": 1.363
         },
         {
-          "text": "mas",
-          "start": 2.176,
-          "end": 2.427
+          "text": "está",
+          "start": 1.363,
+          "end": 1.666
         },
         {
-          "text": "não",
-          "start": 2.427,
-          "end": 2.678
+          "text": "a",
+          "start": 1.666,
+          "end": 1.742
         },
         {
-          "text": "sabe",
-          "start": 2.678,
-          "end": 3.012
+          "text": "conta",
+          "start": 1.742,
+          "end": 2.121
         },
         {
-          "text": "por",
-          "start": 3.012,
-          "end": 3.263
+          "text": "bancária",
+          "start": 2.121,
+          "end": 2.727
         },
         {
-          "text": "onde",
-          "start": 3.263,
-          "end": 3.598
+          "text": "da",
+          "start": 2.727,
+          "end": 2.878
         },
         {
-          "text": "começar?",
-          "start": 3.598,
-          "end": 4.267
+          "text": "maioria",
+          "start": 2.878,
+          "end": 3.409
+        },
+        {
+          "text": "dos",
+          "start": 3.409,
+          "end": 3.636
+        },
+        {
+          "text": "brasileiros?",
+          "start": 3.636,
+          "end": 4.545
         }
-      ]
+      ],
+      "backgroundImage": "images/00.jpg"
     },
     {
       "type": "highlight",
       "duration": 4,
-      "text": "use o que você **já sabe** fazer de *melhor*",
-      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261021_170258/audios/cena_01.wav",
-      "_audio_duration": 6.166,
-      "_caption": "o segredo não é inventar a roda, é transformar sua habilidade em dinheiro.",
+      "text": "31% dos brasileiros **não têm** *reserva de emergência*",
+      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261030_145629/audios/cena_01.wav",
+      "_audio_duration": 5.611333,
+      "_caption": "quase um terço da população não tem absolutamente nada guardado para um imprevisto.",
       "_words": [
         {
-          "text": "o",
+          "text": "quase",
           "start": 0.0,
-          "end": 0.099
+          "end": 0.395
         },
         {
-          "text": "segredo",
-          "start": 0.099,
-          "end": 0.796
+          "text": "um",
+          "start": 0.395,
+          "end": 0.553
+        },
+        {
+          "text": "terço",
+          "start": 0.553,
+          "end": 0.948
+        },
+        {
+          "text": "da",
+          "start": 0.948,
+          "end": 1.106
+        },
+        {
+          "text": "população",
+          "start": 1.106,
+          "end": 1.818
         },
         {
           "text": "não",
-          "start": 0.796,
-          "end": 1.094
+          "start": 1.818,
+          "end": 2.055
         },
         {
-          "text": "é",
-          "start": 1.094,
-          "end": 1.193
+          "text": "tem",
+          "start": 2.055,
+          "end": 2.292
         },
         {
-          "text": "inventar",
-          "start": 1.193,
-          "end": 1.989
+          "text": "absolutamente",
+          "start": 2.292,
+          "end": 3.319
         },
         {
-          "text": "a",
-          "start": 1.989,
-          "end": 2.088
+          "text": "nada",
+          "start": 3.319,
+          "end": 3.636
         },
         {
-          "text": "roda,",
-          "start": 2.088,
-          "end": 2.586
+          "text": "guardado",
+          "start": 3.636,
+          "end": 4.268
         },
         {
-          "text": "é",
-          "start": 2.586,
-          "end": 2.685
+          "text": "para",
+          "start": 4.268,
+          "end": 4.584
         },
         {
-          "text": "transformar",
-          "start": 2.685,
-          "end": 3.779
+          "text": "um",
+          "start": 4.584,
+          "end": 4.742
         },
         {
-          "text": "sua",
-          "start": 3.779,
-          "end": 4.078
-        },
-        {
-          "text": "habilidade",
-          "start": 4.078,
-          "end": 5.072
-        },
-        {
-          "text": "em",
-          "start": 5.072,
-          "end": 5.271
-        },
-        {
-          "text": "dinheiro.",
-          "start": 5.271,
-          "end": 6.166
+          "text": "imprevisto.",
+          "start": 4.742,
+          "end": 5.611
         }
-      ]
+      ],
+      "backgroundImage": "images/01.jpg"
     },
     {
       "type": "card",
       "duration": 5,
-      "cardTitle": "O SEU TEMPO LIVRE",
-      "cardValue": "R$ 1.500/MÊS",
-      "cardNote": "dedicando apenas *duas horas* por dia",
-      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261021_170258/audios/cena_02.wav",
-      "_audio_duration": 6.678,
-      "_caption": "dedicando só duas horas por dia, dá pra tirar facilmente mil e quinhentos reais por mês.",
+      "cardTitle": "QUEM TEM...",
+      "cardValue": "METADE",
+      "cardNote": "dura menos de *3 meses*",
+      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261030_145629/audios/cena_02.wav",
+      "_audio_duration": 7.520667,
+      "_caption": "e pior, da metade que tem alguma coisa, a grana não aguenta nem noventa dias se a pessoa perder a renda.",
       "_words": [
         {
-          "text": "dedicando",
-          "start": 0.0,
-          "end": 0.823
-        },
-        {
-          "text": "só",
-          "start": 0.823,
-          "end": 1.006
-        },
-        {
-          "text": "duas",
-          "start": 1.006,
-          "end": 1.372
-        },
-        {
-          "text": "horas",
-          "start": 1.372,
-          "end": 1.83
-        },
-        {
-          "text": "por",
-          "start": 1.83,
-          "end": 2.104
-        },
-        {
-          "text": "dia,",
-          "start": 2.104,
-          "end": 2.47
-        },
-        {
-          "text": "dá",
-          "start": 2.47,
-          "end": 2.653
-        },
-        {
-          "text": "pra",
-          "start": 2.653,
-          "end": 2.927
-        },
-        {
-          "text": "tirar",
-          "start": 2.927,
-          "end": 3.385
-        },
-        {
-          "text": "facilmente",
-          "start": 3.385,
-          "end": 4.3
-        },
-        {
-          "text": "mil",
-          "start": 4.3,
-          "end": 4.574
-        },
-        {
           "text": "e",
-          "start": 4.574,
-          "end": 4.665
+          "start": 0.0,
+          "end": 0.09
         },
         {
-          "text": "quinhentos",
-          "start": 4.665,
-          "end": 5.58
+          "text": "pior,",
+          "start": 0.09,
+          "end": 0.537
         },
         {
-          "text": "reais",
-          "start": 5.58,
-          "end": 6.038
+          "text": "da",
+          "start": 0.537,
+          "end": 0.716
         },
         {
-          "text": "por",
-          "start": 6.038,
-          "end": 6.312
+          "text": "metade",
+          "start": 0.716,
+          "end": 1.253
         },
         {
-          "text": "mês.",
-          "start": 6.312,
-          "end": 6.678
+          "text": "que",
+          "start": 1.253,
+          "end": 1.522
+        },
+        {
+          "text": "tem",
+          "start": 1.522,
+          "end": 1.791
+        },
+        {
+          "text": "alguma",
+          "start": 1.791,
+          "end": 2.328
+        },
+        {
+          "text": "coisa,",
+          "start": 2.328,
+          "end": 2.865
+        },
+        {
+          "text": "a",
+          "start": 2.865,
+          "end": 2.955
+        },
+        {
+          "text": "grana",
+          "start": 2.955,
+          "end": 3.402
+        },
+        {
+          "text": "não",
+          "start": 3.402,
+          "end": 3.671
+        },
+        {
+          "text": "aguenta",
+          "start": 3.671,
+          "end": 4.298
+        },
+        {
+          "text": "nem",
+          "start": 4.298,
+          "end": 4.566
+        },
+        {
+          "text": "noventa",
+          "start": 4.566,
+          "end": 5.193
+        },
+        {
+          "text": "dias",
+          "start": 5.193,
+          "end": 5.551
+        },
+        {
+          "text": "se",
+          "start": 5.551,
+          "end": 5.73
+        },
+        {
+          "text": "a",
+          "start": 5.73,
+          "end": 5.82
+        },
+        {
+          "text": "pessoa",
+          "start": 5.82,
+          "end": 6.357
+        },
+        {
+          "text": "perder",
+          "start": 6.357,
+          "end": 6.894
+        },
+        {
+          "text": "a",
+          "start": 6.894,
+          "end": 6.983
+        },
+        {
+          "text": "renda.",
+          "start": 6.983,
+          "end": 7.521
         }
-      ]
+      ],
+      "backgroundImage": "images/02.jpg"
+    },
+    {
+      "type": "text",
+      "duration": 3,
+      "text": "uma emergência **não avisa** *quando vai chegar*",
+      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261030_145629/audios/cena_03.wav",
+      "_audio_duration": 4.31,
+      "_caption": "uma emergência nunca avisa quando vai chegar, ela simplesmente acontece.",
+      "_words": [
+        {
+          "text": "uma",
+          "start": 0.0,
+          "end": 0.205
+        },
+        {
+          "text": "emergência",
+          "start": 0.205,
+          "end": 0.889
+        },
+        {
+          "text": "nunca",
+          "start": 0.889,
+          "end": 1.231
+        },
+        {
+          "text": "avisa",
+          "start": 1.231,
+          "end": 1.573
+        },
+        {
+          "text": "quando",
+          "start": 1.573,
+          "end": 1.984
+        },
+        {
+          "text": "vai",
+          "start": 1.984,
+          "end": 2.189
+        },
+        {
+          "text": "chegar,",
+          "start": 2.189,
+          "end": 2.668
+        },
+        {
+          "text": "ela",
+          "start": 2.668,
+          "end": 2.873
+        },
+        {
+          "text": "simplesmente",
+          "start": 2.873,
+          "end": 3.694
+        },
+        {
+          "text": "acontece.",
+          "start": 3.694,
+          "end": 4.31
+        }
+      ],
+      "backgroundImage": "images/03.jpg"
     },
     {
       "type": "list",
       "duration": 6,
       "items": [
-        "💡 venda seu *conhecimento*",
-        "📦 preste *serviços* online",
-        "📱 crie conteúdo *digital*"
+        "🚨 reduza custos",
+        "💡 guarde um pouco todo mês",
+        "🎯 foque em **3 a 6 meses** de gastos"
       ],
-      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261021_170258/audios/cena_03.wav",
-      "_audio_duration": 7.840667,
-      "_caption": "as melhores opções são vender seu conhecimento, prestar serviços ou criar conteúdo na internet.",
+      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261030_145629/audios/cena_04.wav",
+      "_audio_duration": 8.768667,
+      "_caption": "por isso, o seu foco agora precisa ser criar essa segurança, juntando o equivalente a pelo menos três meses do seu custo de vida.",
       "_words": [
         {
-          "text": "as",
+          "text": "por",
           "start": 0.0,
-          "end": 0.191
+          "end": 0.248
         },
         {
-          "text": "melhores",
-          "start": 0.191,
-          "end": 0.956
+          "text": "isso,",
+          "start": 0.248,
+          "end": 0.662
         },
         {
-          "text": "opções",
-          "start": 0.956,
-          "end": 1.53
-        },
-        {
-          "text": "são",
-          "start": 1.53,
-          "end": 1.817
-        },
-        {
-          "text": "vender",
-          "start": 1.817,
-          "end": 2.39
+          "text": "o",
+          "start": 0.662,
+          "end": 0.745
         },
         {
           "text": "seu",
-          "start": 2.39,
-          "end": 2.677
+          "start": 0.745,
+          "end": 0.993
         },
         {
-          "text": "conhecimento,",
-          "start": 2.677,
-          "end": 3.92
+          "text": "foco",
+          "start": 0.993,
+          "end": 1.324
         },
         {
-          "text": "prestar",
-          "start": 3.92,
-          "end": 4.59
+          "text": "agora",
+          "start": 1.324,
+          "end": 1.737
         },
         {
-          "text": "serviços",
-          "start": 4.59,
-          "end": 5.355
+          "text": "precisa",
+          "start": 1.737,
+          "end": 2.316
         },
         {
-          "text": "ou",
-          "start": 5.355,
-          "end": 5.546
+          "text": "ser",
+          "start": 2.316,
+          "end": 2.564
         },
         {
           "text": "criar",
-          "start": 5.546,
-          "end": 6.024
+          "start": 2.564,
+          "end": 2.978
         },
         {
-          "text": "conteúdo",
-          "start": 6.024,
-          "end": 6.789
+          "text": "essa",
+          "start": 2.978,
+          "end": 3.309
         },
         {
-          "text": "na",
-          "start": 6.789,
-          "end": 6.98
+          "text": "segurança,",
+          "start": 3.309,
+          "end": 4.136
         },
         {
-          "text": "internet.",
-          "start": 6.98,
-          "end": 7.841
+          "text": "juntando",
+          "start": 4.136,
+          "end": 4.798
+        },
+        {
+          "text": "o",
+          "start": 4.798,
+          "end": 4.881
+        },
+        {
+          "text": "equivalente",
+          "start": 4.881,
+          "end": 5.791
+        },
+        {
+          "text": "a",
+          "start": 5.791,
+          "end": 5.873
+        },
+        {
+          "text": "pelo",
+          "start": 5.873,
+          "end": 6.204
+        },
+        {
+          "text": "menos",
+          "start": 6.204,
+          "end": 6.618
+        },
+        {
+          "text": "três",
+          "start": 6.618,
+          "end": 6.949
+        },
+        {
+          "text": "meses",
+          "start": 6.949,
+          "end": 7.362
+        },
+        {
+          "text": "do",
+          "start": 7.362,
+          "end": 7.528
+        },
+        {
+          "text": "seu",
+          "start": 7.528,
+          "end": 7.776
+        },
+        {
+          "text": "custo",
+          "start": 7.776,
+          "end": 8.19
+        },
+        {
+          "text": "de",
+          "start": 8.19,
+          "end": 8.355
+        },
+        {
+          "text": "vida.",
+          "start": 8.355,
+          "end": 8.769
         }
-      ]
+      ],
+      "backgroundImage": "images/04.jpg"
     },
     {
       "type": "outro",
       "duration": 3,
       "channel": "VinyBruno.ia",
-      "title": "SALVA PRA NÃO ESQUECER",
+      "title": "NÃO FIQUE PARA TRÁS",
       "cta": "▶ Seguir",
-      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261021_170258/audios/cena_04.wav",
-      "_audio_duration": 4.960667,
-      "_caption": "salva esse vídeo para não esquecer e me segue para mais dicas.",
+      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261030_145629/audios/cena_05.wav",
+      "_audio_duration": 4.966,
+      "_caption": "não espere o pior acontecer. me segue para aprender a cuidar do seu dinheiro.",
       "_words": [
         {
-          "text": "salva",
-          "start": 0.0,
-          "end": 0.486
-        },
-        {
-          "text": "esse",
-          "start": 0.486,
-          "end": 0.875
-        },
-        {
-          "text": "vídeo",
-          "start": 0.875,
-          "end": 1.362
-        },
-        {
-          "text": "para",
-          "start": 1.362,
-          "end": 1.751
-        },
-        {
           "text": "não",
-          "start": 1.751,
-          "end": 2.043
+          "start": 0.0,
+          "end": 0.233
         },
         {
-          "text": "esquecer",
-          "start": 2.043,
-          "end": 2.821
+          "text": "espere",
+          "start": 0.233,
+          "end": 0.698
         },
         {
-          "text": "e",
-          "start": 2.821,
-          "end": 2.918
+          "text": "o",
+          "start": 0.698,
+          "end": 0.776
+        },
+        {
+          "text": "pior",
+          "start": 0.776,
+          "end": 1.086
+        },
+        {
+          "text": "acontecer.",
+          "start": 1.086,
+          "end": 1.862
         },
         {
           "text": "me",
-          "start": 2.918,
-          "end": 3.113
+          "start": 1.862,
+          "end": 2.017
         },
         {
           "text": "segue",
-          "start": 3.113,
-          "end": 3.599
+          "start": 2.017,
+          "end": 2.405
         },
         {
           "text": "para",
-          "start": 3.599,
-          "end": 3.988
+          "start": 2.405,
+          "end": 2.716
         },
         {
-          "text": "mais",
-          "start": 3.988,
-          "end": 4.377
+          "text": "aprender",
+          "start": 2.716,
+          "end": 3.337
         },
         {
-          "text": "dicas.",
-          "start": 4.377,
-          "end": 4.961
+          "text": "a",
+          "start": 3.337,
+          "end": 3.414
+        },
+        {
+          "text": "cuidar",
+          "start": 3.414,
+          "end": 3.88
+        },
+        {
+          "text": "do",
+          "start": 3.88,
+          "end": 4.035
+        },
+        {
+          "text": "seu",
+          "start": 4.035,
+          "end": 4.268
+        },
+        {
+          "text": "dinheiro.",
+          "start": 4.268,
+          "end": 4.966
         }
-      ]
+      ],
+      "backgroundImage": "images/05.jpg"
     }
   ]
 }

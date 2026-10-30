@@ -5,7 +5,7 @@ import pytest
 
 from purffle_shorts.config import Settings
 from purffle_shorts.llm import extract_json
-from purffle_shorts.script import SCRIPT_SCHEMA, build_prompt, load_script, normalize, offline_script
+from purffle_shorts.script import SCRIPT_SCHEMA, build_prompt, load_script, normalize, offline_script, topic_divergence
 
 
 @pytest.mark.parametrize("text", [
@@ -89,3 +89,91 @@ def test_narration_cleanup_turns_dashes_into_clean_pauses():
     assert clean_narration("blue–green , really ?") == "blue, green, really?"
     assert clean_narration("It ends here —.") == "It ends here."
     assert clean_narration("[Hook] Wow! #facts 🐙") == "Wow!"
+
+
+# ------------------------------------------------------------------ topic fidelity
+def test_topic_divergence_flags_unrelated_angle():
+    d = topic_divergence("How AI helps us in our daily lives", "AI predicts severe weather before meteorologists")
+    assert d["diverges"] is True
+
+
+def test_topic_divergence_flags_specific_example_within_broad_subject():
+    # A broad subject narrowed down to one concrete example (giant squid, within "mysteries of the
+    # deep ocean") now requires approval too: the topic adds a lot of content the subject never
+    # mentioned, which a bag-of-words heuristic can't safely tell apart from a material focus
+    # change (e.g. "benefits of green tea" -> "how green tea lowers blood pressure", which must
+    # also be flagged). Preferring a review prompt over a silent guess is the safer default.
+    d = topic_divergence("mysteries of the deep ocean", "the giant squid lurking in the deep ocean")
+    assert d["relation"] == "narrower" and d["diverges"] is True
+
+
+def test_topic_divergence_allows_already_specific_topic():
+    d = topic_divergence("why octopuses have three hearts", "why octopuses have three hearts")
+    assert d["diverges"] is False
+
+
+def test_topic_divergence_not_literal_string_match():
+    # Different wording, same meaning: should NOT be flagged just because the strings differ.
+    d = topic_divergence("why octopuses have three hearts", "the three hearts of an octopus explained")
+    assert d["diverges"] is False
+
+
+def test_topic_divergence_relation_equivalent_for_rephrasing():
+    d = topic_divergence("AI in our daily lives", "AI in everyday life")
+    assert d["relation"] == "equivalent" and d["diverges"] is False
+
+
+def test_topic_divergence_relation_narrower_but_still_flagged():
+    # The topic keeps the subject's one real word ("tea") and builds a lot of new specific
+    # content on top of it: a real (if partial) connection, so "narrower" rather than "divergent",
+    # but still flagged since the focus has materially changed.
+    d = topic_divergence("tea", "green tea ceremonies in Japan")
+    assert d["relation"] == "narrower" and d["diverges"] is True
+
+
+def test_topic_divergence_relation_divergent_for_unrelated_angle():
+    d = topic_divergence("How AI helps us in our daily lives", "AI predicts severe weather before meteorologists")
+    assert d["relation"] == "divergent" and d["diverges"] is True
+
+
+def test_topic_divergence_relation_divergent_for_short_unrelated_subject():
+    # Audit example: a short/broad subject with zero word overlap used to be assumed "narrower"
+    # just because it was short — wrongly, since "cooking recipes" has nothing to do with "space".
+    # Zero overlap must mean "divergent" regardless of how short the subject is.
+    d = topic_divergence("space", "cooking recipes")
+    assert d["relation"] == "divergent" and d["diverges"] is True
+
+
+def test_topic_divergence_flags_narrowing_disguised_as_rephrasing():
+    # Audit example: enough shared words ("green", "tea") to look like equivalence under a
+    # single-overlap-ratio check, but the topic narrows "benefits" (general) down to one specific
+    # physiological effect — new, specific content the subject never asked about.
+    d = topic_divergence("benefits of green tea", "how green tea lowers blood pressure")
+    assert d["diverges"] is True
+
+
+def test_topic_divergence_flags_specific_instance_of_a_general_activity():
+    # Audit example: "puppy house training" is a plausible material narrowing of "dog training"
+    # (a specific dog, a specific skill), not a harmless rephrasing, so it must require approval.
+    d = topic_divergence("dog training", "puppy house training")
+    assert d["diverges"] is True
+
+
+def test_topic_divergence_requires_approval_for_space_to_black_holes():
+    d = topic_divergence("space", "black holes")
+    assert d["diverges"] is True
+
+
+def test_topic_divergence_equivalent_for_ai_daily_life_rephrasing():
+    # Audit false positive: a longer subject with extra filler words ("helps us in our") lowered
+    # recall just enough to wrongly require approval for a harmless rephrasing.
+    d = topic_divergence("How AI helps us in our daily lives", "AI in everyday life")
+    assert d["relation"] == "equivalent" and d["diverges"] is False
+
+
+def test_build_prompt_pin_subject_forbids_narrowing():
+    _, user = build_prompt("space", "facts", Settings(), [])
+    assert "choose ONE specific" in user
+    _, pinned = build_prompt("space", "facts", Settings(), [], pin_subject=True)
+    assert "Stay exactly on this subject" in pinned
+    assert "choose ONE specific" not in pinned

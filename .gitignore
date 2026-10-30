@@ -4,7 +4,14 @@ __pycache__/
 *.mp4
 .historico.json
 .historico.json
+.historico_geracoes.json
+.env
+.youtube_token.json
 remotion-template/node_modules/
 remotion-template/.cache/
 ComfyUI/
 remotion-template.tar.gz
+
+# Opensquad (private/local)
+_opensquad/_browser_profile/
+_opensquad/logs/*.log

@@ -1,0 +1,25 @@
+squad:
+  code: "reels-financas"
+  name: "Reels de Finanças com Aprovação"
+  description: "Pesquisa padrões de Reels virais de finanças pessoais, define o ângulo e tema do dia, gera o vídeo em modo dry-run via post_reel.py, revisa a qualidade e só posta (post_reel.py --video) depois da sua aprovação explícita."
+  domain: "content"
+  language: "pt-BR"
+
+pipeline: "pipeline/pipeline.yaml"
+
+agents_party: "squad-party.csv"
+
+skills:
+  - web_search
+  - post-reel-cli
+
+data:
+  - pipeline/data/research-brief.md
+  - pipeline/data/domain-framework.md
+  - pipeline/data/quality-criteria.md
+  - pipeline/data/output-examples.md
+  - pipeline/data/anti-patterns.md
+  - pipeline/data/tone-of-voice.md
+
+formats_selected:
+  - "instagram-reels"

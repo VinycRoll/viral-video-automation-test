@@ -7,8 +7,9 @@ import { CardScene }      from "./scenes/CardScene";
 import { HighlightScene } from "./scenes/HighlightScene";
 import { ListScene }      from "./scenes/ListScene";
 import { OutroScene }     from "./scenes/OutroScene";
+import { CodeScene }      from "./scenes/CodeScene";
 
-const TRANSITION_FRAMES = 6; // 0.2s @ 30fps — fade rápido entre cenas
+const TRANSITION_FRAMES = 10; // ~0.33s @ 30fps — duração do crossfade entre cenas
 const KEN_BURNS_HALF_CYCLE = 90; // 3s @ 30fps — tempo até atingir o zoom/pan máximo
 
 // Legenda estática — fallback para cenas sem timing por palavra (scene.words)
@@ -27,7 +28,7 @@ const Caption: React.FC<{ text: string; accent: string; captionFrames: number }>
         display: "inline-block", fontSize: 40, fontWeight: 900, color: "#ffffff",
         lineHeight: 1.3, letterSpacing: 0.2, textTransform: "uppercase",
         textShadow: "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 6px 16px rgba(0,0,0,0.65)",
-      }}>{text}</span>
+      }}>{text.replace(/\*/g, "")}</span>
     </div>
   );
 };
@@ -54,6 +55,10 @@ const KaraokeCaption: React.FC<{ words: Scene["words"]; accent: string; captionF
     }}>
       {(words || []).map((w, i) => {
         const active = t >= w.start && t < w.end;
+        // Markdown vazado da narração (*destaque*) — some os asteriscos e mantém
+        // a palavra realçada mesmo fora do momento "ativo" do karaokê.
+        const marked = /\*/.test(w.text);
+        const clean = w.text.replace(/\*/g, "");
         const attack = spring({
           fps, frame: frame - Math.round(w.start * fps),
           config: { damping: 10, stiffness: 260 }, durationInFrames: 10,
@@ -62,11 +67,11 @@ const KaraokeCaption: React.FC<{ words: Scene["words"]; accent: string; captionF
         return (
           <span key={i} style={{
             display: "inline-block", fontSize: 44, fontWeight: 900, textTransform: "uppercase",
-            color: active ? accent : "rgba(255,255,255,0.92)",
+            color: active || marked ? accent : "rgba(255,255,255,0.92)",
             transform: `scale(${scale})`,
             textShadow: "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 6px 16px rgba(0,0,0,0.65)",
           }}>
-            {w.text}
+            {clean}
           </span>
         );
       })}
@@ -188,14 +193,14 @@ const SceneBackdrop: React.FC<{ scene: Scene; accent: string; index: number }> =
   );
 };
 
-// Fade rápido (0.2s) de entrada/saída de cada cena — dá o "corte" entre cenas
-const SceneTransitionOverlay: React.FC<{ durationInFrames: number; isFirst: boolean; isLast: boolean }> = ({ durationInFrames, isFirst, isLast }) => {
+// Crossfade entre cenas — a cena atual estende TRANSITION_FRAMES além do seu fim
+// nominal (nominalDur) pra sobrepor com a próxima: ela esmaece (1→0) enquanto a
+// cena seguinte, desenhada por cima (ordem do array = ordem no DOM), surge (0→1).
+const SceneCrossfade: React.FC<{ children: React.ReactNode; nominalDur: number; isFirst: boolean; isLast: boolean }> = ({ children, nominalDur, isFirst, isLast }) => {
   const frame = useCurrentFrame();
-  const inOp  = isFirst ? 0 : interpolate(frame, [0, TRANSITION_FRAMES], [1, 0], { extrapolateRight: "clamp" });
-  const outOp = isLast  ? 0 : interpolate(frame, [durationInFrames - TRANSITION_FRAMES, durationInFrames], [0, 1], { extrapolateLeft: "clamp" });
-  const opacity = Math.max(inOp, outOp);
-  if (opacity <= 0) return null;
-  return <AbsoluteFill style={{ background: "#000", opacity, pointerEvents: "none" }} />;
+  const fadeIn  = isFirst ? 1 : interpolate(frame, [0, TRANSITION_FRAMES], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const fadeOut = isLast  ? 1 : interpolate(frame, [nominalDur, nominalDur + TRANSITION_FRAMES], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  return <AbsoluteFill style={{ opacity: Math.min(fadeIn, fadeOut) }}>{children}</AbsoluteFill>;
 };
 
 // Barra de progresso animada no topo — reflete o avanço no vídeo inteiro
@@ -216,6 +221,7 @@ const SceneRouter: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent
     case "card":      return <CardScene      scene={scene} accent={accent} />;
     case "highlight": return <HighlightScene scene={scene} accent={accent} />;
     case "list":      return <ListScene      scene={scene} accent={accent} />;
+    case "code":      return <CodeScene      scene={scene} accentColor={accent} />;
     case "outro":     return <OutroScene     scene={scene} accent={accent} />;
     default:          return <TextScene      scene={scene} accent={accent} />;
   }
@@ -234,17 +240,20 @@ export const MotionReel: React.FC<{ script: VideoScript }> = ({ script }) => {
   script.scenes.forEach((scene, i) => {
     const dur = Math.round(scene.duration * fps);
     const captionFrames = scene.captionFrames ?? dur;
+    const isLast = i === script.scenes.length - 1;
     const from = offset;
     offset += dur;
 
-    // Cena visual: dura só dur (duração da cena)
+    // Cena visual: estende além de "dur" (exceto a última) pra sobrepor com a
+    // próxima durante o crossfade — ver SceneCrossfade.
     visualElements.push(
-      <Sequence key={`v${i}`} from={from} durationInFrames={dur}>
-        <AbsoluteFill>
-          <SceneBackdrop scene={scene} accent={accent} index={i} />
-          <SceneRouter scene={scene} accent={accent} />
-          <SceneTransitionOverlay durationInFrames={dur} isFirst={i === 0} isLast={i === script.scenes.length - 1} />
-        </AbsoluteFill>
+      <Sequence key={`v${i}`} from={from} durationInFrames={isLast ? dur : dur + TRANSITION_FRAMES}>
+        <SceneCrossfade nominalDur={dur} isFirst={i === 0} isLast={isLast}>
+          <AbsoluteFill>
+            <SceneBackdrop scene={scene} accent={accent} index={i} />
+            <SceneRouter scene={scene} accent={accent} />
+          </AbsoluteFill>
+        </SceneCrossfade>
       </Sequence>
     );
 

@@ -1,7 +1,7 @@
 import React from "react";
 import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
 import { Scene } from "../types";
-import { TEXT_OUTLINE } from "../utils/text";
+import { TEXT_OUTLINE, parseText } from "../utils/text";
 
 export const CardScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
   const frame = useCurrentFrame();
@@ -45,7 +45,7 @@ export const CardScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, a
         <div style={{ opacity: noteOp, transform: `translateY(${noteY}px)`,
                       fontSize: 36, fontWeight: 700, color: accent,
                       textAlign: "center", textTransform: "uppercase", letterSpacing: 1 }}>
-          {scene.cardNote}
+          {parseText(scene.cardNote, accent)}
         </div>
       )}
     </div>

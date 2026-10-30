@@ -45,6 +45,9 @@ VIDEO_COLUMNS = {
     "score": "INTEGER",            # Script Doctor retention score, 0-100
     "parent_id": "INTEGER",        # the original video when this one is a translated copy
     "views": "INTEGER", "likes": "INTEGER", "comments": "INTEGER", "stats_at": "TEXT",
+    "topic_divergence": "TEXT",    # JSON topic_divergence() classification for this row's subject/topic, if any
+    "approval_required": "INTEGER",  # 1 if topic_divergence flagged this subject/topic pair for review
+    "approved": "INTEGER",         # 1 if that review was actually granted, 0 if it rendered unreviewed
 }
 
 

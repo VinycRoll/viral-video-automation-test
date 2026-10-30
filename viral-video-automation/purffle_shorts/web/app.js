@@ -250,22 +250,32 @@ function applyJobs(jobs) {
   for (const j of jobs) {
     const before = S.seen.get(j.id);
     S.seen.set(j.id, j.status);
-    if (before && before !== j.status && ["done", "failed"].includes(j.status)) finished(j);
+    if (before && before !== j.status && ["done", "failed", "needs_review"].includes(j.status)) finished(j);
   }
   // A draft that finished while this page was closed or reloading still belongs in the editor.
   const cj = currentCreateJob();
-  if (cj && cj.kind === "draft" && cj.status === "done" && !S.createJob.loaded) finished(cj);
+  if (cj && !S.createJob.loaded && (cj.status === "needs_review" || (cj.kind === "draft" && cj.status === "done"))) finished(cj);
   if (S.view === "queue") drawJobs();
   if (S.view === "create") drawLive();
 }
 
 function finished(j) {
   const r = j.result || {};
+  if (j.status === "needs_review" && currentCreateJob() === j) {
+    if (S.createJob.loaded) return;
+    S.createJob.loaded = true;
+    store.set("createJob", S.createJob);
+    S.draft = Object.assign({}, r.script, { _subject: r.subject, _divergence: r.divergence });
+    saveDraft();
+    toast("The AI suggested a different angle than your topic — review it before rendering.", "info", 7000);
+    if (S.view === "create") drawSide();
+    return;
+  }
   if (j.kind === "draft" && j.status === "done" && currentCreateJob() === j) {
     if (S.createJob.loaded) return;
     S.createJob.loaded = true;
     store.set("createJob", S.createJob);
-    S.draft = r.script;
+    S.draft = Object.assign({}, r.script, { _subject: r.subject, _divergence: r.divergence });
     saveDraft();
     toast("Script ready — read it, edit anything, then render.", "ok");
     if (S.view === "create") drawSide();
@@ -334,6 +344,22 @@ async function startDraft() {
     S.createJob = { id: job, kind: "draft", session: TOKEN };
     store.set("createJob", S.createJob);
     S.seen.set(job, "queued");
+    drawSide();
+    tick();
+  } catch (e) { toast(esc(e.message), "bad"); }
+}
+async function rejectAngle() {
+  const d = S.draft;
+  if (!d) return;
+  const subject = d._subject || d.topic;
+  try {
+    const { job } = await post("/api/draft", Object.assign(payload(), { topic: subject, url: "", source: "", pin_subject: true }));
+    S.draft = null;
+    saveDraft();
+    S.createJob = { id: job, kind: "draft", session: TOKEN };
+    store.set("createJob", S.createJob);
+    S.seen.set(job, "queued");
+    toast("Rewriting, staying on your exact subject…", "info", 3000);
     drawSide();
     tick();
   } catch (e) { toast(esc(e.message), "bad"); }
@@ -496,7 +522,7 @@ function drawLive() {
   const box = $("#live");
   if (!box) return;
   const j = currentCreateJob();
-  if (!j || (j.status === "done" && j.kind === "draft") || j.status === "cancelled") { box.innerHTML = ""; return; }
+  if (!j || (j.status === "done" && j.kind === "draft") || j.status === "cancelled" || j.status === "needs_review") { box.innerHTML = ""; return; }
   const r = j.result || {};
   const idx = STAGES.findIndex(([k]) => k === j.stage);
   const running = j.status === "running" || j.status === "queued";
@@ -545,6 +571,20 @@ function rubricHtml(r) {
     `<div><span>${label}</span><span class="bar"><i data-w="${r[k] * 10}"></i></span><b>${r[k]}</b></div>`).join("")}</div>`;
 }
 
+// One read-only card per scene: order, narration, the visual search terms we have (if any), and
+// whether that visual has actually been checked. No media search runs here — this only reflects
+// the script data already sitting in the draft, so "found" is never claimed without a real check.
+function storyboardCard(s, n) {
+  const query = (s.search_query || s.image_prompt || "").trim();
+  const status = query ? { cls: "", label: "Not verified yet" } : { cls: "bad", label: "No visual source" };
+  return `
+  <div class="sb-card">
+    <div class="sb-head"><span class="chip accent">${n + 1}</span><span class="chip ${status.cls}">${status.label}</span></div>
+    <p class="sb-text">${esc(s.narration) || `<span class="hint">No narration yet.</span>`}</p>
+    <div class="sb-media">${I.film}<span>${esc(query) || "No visual search terms set"}</span></div>
+  </div>`;
+}
+
 function drawEditor() {
   const box = $("#editor");
   if (!box) return;
@@ -569,9 +609,20 @@ function drawEditor() {
   const multi = MULTI.has(d.style) || d.scenes.some(s => s.speaker === "B");
   const total = d.scenes.reduce((n, s) => n + words(s.narration), 0);
   const target = Math.round((f.duration || 40) * 2.6);
-  box.innerHTML = `<section class="card">
+  const diverges = d._divergence && d._divergence.diverges;
+  box.innerHTML = `
+  ${diverges ? `<section class="card banner-review">${I.info}<div>
+      <b>The AI suggested a different angle</b>
+      <p class="hint">You asked for: <b>${esc(d._subject)}</b><br>It wrote about: <b>${esc(d.topic)}</b></p>
+      <div class="actions">
+        <button class="btn primary sm" type="button" id="angle-accept">Accept this angle</button>
+        <button class="btn sm" type="button" id="angle-edit">Edit below</button>
+        <button class="btn ghost sm" type="button" id="angle-reject">Reject — stay on my subject</button>
+      </div></div></section>` : ""}
+  <section class="card">
     ${sh("SC", "Script", `<span class="chip">${esc(d.style)}</span><span class="chip">${esc(d.language)}</span><span class="wc" id="wc">${total} words · ~${Math.round(total / 2.6)}s</span><button class="btn ghost sm" id="discard" type="button">${I.trash}Discard</button>`)}
     ${d.score != null ? `<div class="score"><div class="ring" data-p="${d.score}"><b>${d.score}</b></div><div class="grow"><b>Retention score</b>${rubricHtml(d.rubric)}${d.review && d.review.length ? `<ul>${d.review.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : `<p class="hint">No issues found.</p>`}</div></div>` : ""}
+    <div class="field"><label>Topic</label><input type="text" data-k="topic" value="${esc(d.topic)}"></div>
     <div class="field"><label>Title</label><input type="text" data-k="title" value="${esc(d.title)}" maxlength="90"></div>
     <div class="field"><label>On-screen hook</label><input type="text" data-k="hook_text" value="${esc(d.hook_text)}" maxlength="48"></div>
     ${multi ? `<div class="grid2"><div class="field"><label>Speaker A</label><input type="text" data-cast="0" value="${esc((d.cast || [])[0] || "")}"></div>
@@ -597,6 +648,11 @@ function drawEditor() {
     <div class="field"><label>Description</label><textarea data-k="description">${esc(d.description)}</textarea></div>
     <div class="field"><label>Hashtags</label><input type="text" data-tags value="${esc((d.hashtags || []).join(" "))}"></div>
     <div class="go-row"><span></span><button class="btn rec" id="render-btn" type="button"><span class="dot"></span>Render this script</button></div>
+  </section>
+  <section class="card">
+    ${sh("SB", "Storyboard")}
+    ${d.scenes.length ? `<div class="storyboard">${d.scenes.map((s, n) => storyboardCard(s, n)).join("")}</div>`
+                      : `<p class="hint">No scenes yet — write or generate a script to see its storyboard here.</p>`}
   </section>`;
   paint(box);
   box.oninput = e => {
@@ -622,10 +678,26 @@ function drawEditor() {
     drawEditor();
   };
   $("#discard").onclick = () => { if (confirm("Discard this script?")) { S.draft = null; saveDraft(); drawEditor(); } };
+  const dismissBanner = () => {
+    // Remember exactly which subject+angle pair was approved, so the backend can verify it
+    // independently instead of trusting that this banner was ever shown.
+    d._approved_subject = d._subject;
+    d._approved_topic = d.topic;
+    d._divergence = null;
+    saveDraft();
+    drawEditor();
+  };
+  const accBtn = $("#angle-accept"), editBtn = $("#angle-edit"), rejBtn = $("#angle-reject");
+  if (accBtn) accBtn.onclick = dismissBanner;
+  if (editBtn) editBtn.onclick = dismissBanner;
+  if (rejBtn) rejBtn.onclick = () => rejectAngle();
   $("#render-btn").onclick = () => {
     const clean = Object.assign({}, d, { scenes: d.scenes.filter(s => s.narration.trim()) });
     if (!clean.scenes.length) return toast("The script has no narration.", "bad");
-    startMake({ script: clean, topic: "", url: "", source: "" });
+    startMake({
+      script: clean, topic: d._subject || "", url: "", source: "",
+      approved_subject: d._approved_subject || "", approved_topic: d._approved_topic || "",
+    });
   };
 }
 
@@ -739,7 +811,15 @@ async function openVideo(id) {
   if (up) up.onclick = async () => { up.disabled = true; try { await post("/api/upload/" + id); toast("Upload queued — follow it in Queue.", "info"); tick(); } catch (e) { toast(esc(e.message), "bad"); } };
   const ed = $("#d-edit");
   if (ed) ed.onclick = () => {
-    S.draft = Object.assign({}, sc, { title: (sc.title || "").replace(/\s*#shorts$/i, "") });
+    // Recover the original subject this video was made for (falling back to the script's own
+    // topic for older records that predate subject tracking), and drop any stale divergence/
+    // approval state: editing the script may change its angle, so it must be re-checked against
+    // that subject when the user re-renders, not silently trusted because it was fine before.
+    S.draft = Object.assign({}, sc, {
+      title: (sc.title || "").replace(/\s*#shorts$/i, ""),
+      _subject: v.subject || m.subject || sc.topic || "",
+      _divergence: null, _approved_subject: null, _approved_topic: null,
+    });
     saveDraft();
     if (sc.language) S.form.language = sc.language;
     if (sc.style) S.form.style = sc.style;
@@ -784,7 +864,7 @@ function drawJobs() {
         <div class="t"><b>${esc(r.title || j.label)}</b><small><span class="status-pill ${j.status}">${j.status}</span>${running && stage ? ` · ${esc(stage)}` : ""}${running ? ` · ${esc(progressText(j))}` : ""}${running && j.message ? ` · ${esc(j.message)}` : ""}${took != null ? ` · ${fmtSec(took)}` : ""}</small></div>
         <span class="acts">${j.status === "queued" || running ? `<button class="btn ghost sm" type="button" data-cancel="${j.id}">Cancel</button>` : ""}
         ${j.status === "done" && r.id ? `<button class="btn sm" type="button" data-open="${r.id}">${I.play}Watch</button>` : ""}
-        ${j.status === "done" && j.kind === "draft" ? `<a class="btn sm" href="#create">${I.pen}Edit</a>` : ""}
+        ${(j.status === "done" && j.kind === "draft") || j.status === "needs_review" ? `<a class="btn sm" href="#create">${I.pen}Edit</a>` : ""}
         <button class="btn ghost sm" type="button" data-log="${j.id}">${open ? "Hide log" : "Log"}</button></span>
       </div>
       ${running ? (() => { const idx = STAGES.findIndex(([k]) => k === j.stage);
