@@ -187,12 +187,13 @@ set "REEL_BAT=%SCRIPT_DIR%reel.bat"
 ) > "%REEL_BAT%"
 echo    Criado: %REEL_BAT%
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$dir = '%SCRIPT_DIR%'.TrimEnd('\'); $userPath = [Environment]::GetEnvironmentVariable('PATH','User'); if ($userPath -notlike ('*' + $dir + '*')) { $newPath = if ($userPath) { $userPath.TrimEnd(';') + ';' + $dir } else { $dir }; [Environment]::SetEnvironmentVariable('PATH', $newPath, 'User'); Write-Host '   Pasta adicionada ao PATH do usuario ✅' } else { Write-Host '   Pasta ja esta no PATH do usuario — pulando.' }"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%atualizar_path.ps1" -Dir "%SCRIPT_DIR%"
 
 echo.
-echo    ⚠️  Feche e reabra o terminal (CMD/PowerShell/Windows Terminal) para o
-echo       comando 'reel' funcionar em qualquer pasta.
+echo    ⚠️  Abra uma janela de terminal NOVA (nao so uma aba nova de um terminal
+echo       que ja estava aberto) para o comando 'reel' funcionar em qualquer pasta.
+echo       Se ainda nao funcionar, feche TODAS as janelas de terminal e abra de novo
+echo       (em casos raros pode ser necessario fazer logoff/login do Windows).
 echo.
 
 REM ── Concluido ──────────────────────────────────────────────────────────────────
