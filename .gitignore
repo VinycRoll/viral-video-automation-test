@@ -7,6 +7,7 @@ __pycache__/
 .historico_geracoes.json
 .env
 .youtube_token.json
+client_secret.json
 remotion-template/node_modules/
 remotion-template/.cache/
 ComfyUI/
