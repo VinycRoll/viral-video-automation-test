@@ -10,6 +10,13 @@ export const HighlightScene: React.FC<{ scene: Scene; accent: string }> = ({ sce
 
   const lineW = interpolate(frame, [12, 32], [0, 100], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
+  // Tamanho fixo (80) só cabe em frases curtas tipo "juros compostos"; o Gemini às vezes
+  // manda uma frase inteira aqui, que viraria um bloco de 5-6 linhas cobrindo a tela toda.
+  // shortcut: heurística linear calibrada a olho pra largura de ~95% em 1080px; se o padding
+  // ou a largura do container mudar, recalibrar os números abaixo.
+  const rawLen = words.reduce((acc, w) => acc + w.text.length + 1, 0);
+  const fontSize = Math.max(36, Math.min(80, 80 - Math.max(0, rawLen - 20) * 0.6));
+
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", padding: "60px 80px",
@@ -18,7 +25,7 @@ export const HighlightScene: React.FC<{ scene: Scene; accent: string }> = ({ sce
       <div style={{ width: `${lineW}%`, height: 4,
                     background: `linear-gradient(90deg, transparent, ${accent}, transparent)`, borderRadius: 2 }} />
 
-      <div style={{ fontSize: 80, fontWeight: 900, color: "#fff", lineHeight: 1.15,
+      <div style={{ fontSize, fontWeight: 900, color: "#fff", lineHeight: 1.15,
                     textTransform: "uppercase", letterSpacing: -1, maxWidth: "95%", textShadow: TEXT_OUTLINE }}>
         {words.map((word, i) => {
           const delay = 4 + i * 4;

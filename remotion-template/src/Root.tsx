@@ -38,6 +38,29 @@ const demoScript: VideoScript = {
       cardNote: "em 10 anos com *1% a.m.*",
     },
     {
+      type: "proof",
+      duration: 4,
+      proofTitle: "REGRA 50/30/20",
+      proofBars: [
+        { label: "NECESSIDADES", value: "50%", pct: 50 },
+        { label: "DESEJOS", value: "30%", pct: 30 },
+        { label: "INVESTIMENTOS", value: "20%", pct: 20 },
+      ],
+    },
+    {
+      type: "growth",
+      duration: 5,
+      growthTitle: "SUA CURVA MUDA AQUI",
+      growthPoints: [
+        { x: 0, y: 20 }, { x: 10, y: 35 }, { x: 20, y: 18 }, { x: 30, y: 32 },
+        { x: 40, y: 20 }, { x: 55, y: 45 }, { x: 70, y: 65 }, { x: 100, y: 90 },
+      ],
+      growthTurnIndex: 4,
+      growthCounters: [
+        { to: 1000, prefix: "+R$", suffix: "/mês", label: "investindo em você", accent: true },
+      ],
+    },
+    {
       type: "text",
       duration: 3,
       text: "O dinheiro trabalha *por você*",

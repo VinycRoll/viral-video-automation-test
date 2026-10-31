@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Img, Sequence, staticFile, useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { AbsoluteFill, Img, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
 import { VideoScript, Scene } from "./types";
 import { IntroScene }     from "./scenes/IntroScene";
 import { TextScene }      from "./scenes/TextScene";
@@ -8,9 +8,21 @@ import { HighlightScene } from "./scenes/HighlightScene";
 import { ListScene }      from "./scenes/ListScene";
 import { OutroScene }     from "./scenes/OutroScene";
 import { CodeScene }      from "./scenes/CodeScene";
+import { ChapterScene, CHAPTER_REVEAL_FRAMES } from "./scenes/ChapterScene";
+import { ProofScene }     from "./scenes/ProofScene";
+import { GrowthScene }    from "./scenes/GrowthScene";
 
 const TRANSITION_FRAMES = 10; // ~0.33s @ 30fps — duração do crossfade entre cenas
 const KEN_BURNS_HALF_CYCLE = 90; // 3s @ 30fps — tempo até atingir o zoom/pan máximo
+const COLLAGE_FRAGMENTS = 4; // nº de cópias na transição de fragmentação em cascata
+
+// Hash determinístico simples (mesmo motivo do pseudoRandomChar em text.tsx: precisa
+// ser estável entre re-renders do Remotion, não pode usar Math.random()).
+function hashString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
 
 // Legenda estática — fallback para cenas sem timing por palavra (scene.words)
 const Caption: React.FC<{ text: string; accent: string; captionFrames: number }> = ({ text, accent, captionFrames }) => {
@@ -25,7 +37,7 @@ const Caption: React.FC<{ text: string; accent: string; captionFrames: number }>
   return (
     <div style={{ position: "absolute", bottom: 160, left: 24, right: 24, opacity, textAlign: "center" }}>
       <span style={{
-        display: "inline-block", fontSize: 40, fontWeight: 900, color: "#ffffff",
+        display: "inline-block", fontSize: 32, fontWeight: 900, color: "#ffffff",
         lineHeight: 1.3, letterSpacing: 0.2, textTransform: "uppercase",
         textShadow: "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 6px 16px rgba(0,0,0,0.65)",
       }}>{text.replace(/\*/g, "")}</span>
@@ -33,8 +45,11 @@ const Caption: React.FC<{ text: string; accent: string; captionFrames: number }>
   );
 };
 
-// Legenda karaokê — todas as palavras da cena visíveis, a palavra atual
-// acende na cor de destaque e dá um "pop" de escala conforme o áudio avança
+const CAPTION_CHUNK_SIZE = 3; // 2 a 4 palavras na tela por vez, como no vídeo de referência
+
+// Legenda karaokê esparsa — só as palavras do "bloco" atual (até CAPTION_CHUNK_SIZE)
+// ficam visíveis, construindo a frase progressivamente; a palavra atual acende na
+// cor de destaque e dá um "pop" de escala conforme o áudio avança.
 const KaraokeCaption: React.FC<{ words: Scene["words"]; accent: string; captionFrames: number }> = ({ words, accent, captionFrames }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -47,13 +62,24 @@ const KaraokeCaption: React.FC<{ words: Scene["words"]; accent: string; captionF
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
+  const list = words || [];
+  let spokenIdx = -1;
+  for (let i = 0; i < list.length; i++) {
+    if (list[i].start <= t) spokenIdx = i;
+  }
+  if (spokenIdx === -1) return null;
+
+  const chunkStart = Math.floor(spokenIdx / CAPTION_CHUNK_SIZE) * CAPTION_CHUNK_SIZE;
+  const visibleWords = list.slice(chunkStart, spokenIdx + 1);
+
   return (
     <div style={{
       position: "absolute", bottom: 160, left: 40, right: 40, opacity,
       display: "flex", flexWrap: "wrap", justifyContent: "center",
       rowGap: 8, columnGap: 14, textAlign: "center",
     }}>
-      {(words || []).map((w, i) => {
+      {visibleWords.map((w, i) => {
+        const idx = chunkStart + i;
         const active = t >= w.start && t < w.end;
         // Markdown vazado da narração (*destaque*) — some os asteriscos e mantém
         // a palavra realçada mesmo fora do momento "ativo" do karaokê.
@@ -63,12 +89,14 @@ const KaraokeCaption: React.FC<{ words: Scene["words"]; accent: string; captionF
           fps, frame: frame - Math.round(w.start * fps),
           config: { damping: 10, stiffness: 260 }, durationInFrames: 10,
         });
-        const scale = active ? interpolate(attack, [0, 1], [1, 1.22]) : 1;
+        // fontSize (não transform:scale) pro "pop" da palavra ativa — scale é só visual
+        // e não reflui os vizinhos, então a palavra maior sobrepunha as ao lado.
+        const baseFontSize = 36;
+        const fontSize = active ? interpolate(attack, [0, 1], [baseFontSize, baseFontSize * 1.18]) : baseFontSize;
         return (
-          <span key={i} style={{
-            display: "inline-block", fontSize: 44, fontWeight: 900, textTransform: "uppercase",
+          <span key={idx} style={{
+            display: "inline-block", fontSize, fontWeight: 900, textTransform: "uppercase",
             color: active || marked ? accent : "rgba(255,255,255,0.92)",
-            transform: `scale(${scale})`,
             textShadow: "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 6px 16px rgba(0,0,0,0.65)",
           }}>
             {clean}
@@ -160,17 +188,19 @@ const KenBurnsImage: React.FC<{ src: string; index: number }> = ({ src, index })
   const panX  = interpolate(t, [0, 1], [dir.xFrom, dir.xTo]);
   const panY  = interpolate(t, [0, 1], [dir.yFrom, dir.yTo]);
 
+  const mediaStyle: React.CSSProperties = {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    transform: `scale(${scale}) translate(${panX}%, ${panY}%)`,
+  };
+  const isVideo = /\.(mp4|webm|mov)$/i.test(src);
+
   return (
     <AbsoluteFill style={{ overflow: "hidden" }}>
-      <Img
-        src={staticFile(src)}
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          transform: `scale(${scale}) translate(${panX}%, ${panY}%)`,
-        }}
-      />
+      {isVideo
+        ? <OffthreadVideo src={staticFile(src)} style={mediaStyle} muted />
+        : <Img src={staticFile(src)} style={mediaStyle} />}
     </AbsoluteFill>
   );
 };
@@ -178,10 +208,21 @@ const KenBurnsImage: React.FC<{ src: string; index: number }> = ({ src, index })
 // Fundo de cada cena: imagem com Ken Burns (quando houver) ou gradiente animado,
 // sempre com partículas sutis e gradiente escuro na base para a legenda respirar
 const SceneBackdrop: React.FC<{ scene: Scene; accent: string; index: number }> = ({ scene, accent, index }) => {
+  const frame = useCurrentFrame();
+  // Rack focus — só nos cards de "abertura de capítulo": o fundo sai de
+  // desfocado pra nítido junto com o reveal letra-por-letra do título.
+  const rackFocus = scene.type === "chapter";
+  const blur = rackFocus
+    ? interpolate(frame, [0, CHAPTER_REVEAL_FRAMES], [18, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+    : 0;
   return (
     <>
       {scene.backgroundImage
-        ? <KenBurnsImage src={scene.backgroundImage} index={index} />
+        ? (
+          <AbsoluteFill style={{ filter: rackFocus ? `blur(${blur}px)` : undefined }}>
+            <KenBurnsImage src={scene.backgroundImage} index={index} />
+          </AbsoluteFill>
+        )
         : <Background accent={accent} />}
       <Particles accent={accent} />
       <AbsoluteFill style={{
@@ -193,25 +234,54 @@ const SceneBackdrop: React.FC<{ scene: Scene; accent: string; index: number }> =
   );
 };
 
-// Crossfade entre cenas — a cena atual estende TRANSITION_FRAMES além do seu fim
-// nominal (nominalDur) pra sobrepor com a próxima: ela esmaece (1→0) enquanto a
-// cena seguinte, desenhada por cima (ordem do array = ordem no DOM), surge (0→1).
-const SceneCrossfade: React.FC<{ children: React.ReactNode; nominalDur: number; isFirst: boolean; isLast: boolean }> = ({ children, nominalDur, isFirst, isLast }) => {
+// Corte entre cenas: seco por padrão (sem overlap, como a maioria dos cortes do
+// vídeo de referência — disfarçado pelo scramble de entrada que cada título já tem).
+// Variante "collage" (raridade ~1 por vídeo, como no vídeo de referência): em vez de
+// um corte seco, a cena de saída se fragmenta em cópias sobrepostas que
+// encolhem/deslizam/desaparecem em cascata antes do corte — só essa variante estende
+// a Sequence além de nominalDur (ver cálculo de durationInFrames no loop principal).
+const SceneCrossfade: React.FC<{
+  children: React.ReactNode; nominalDur: number; isLast: boolean; variant?: "fade" | "collage";
+}> = ({ children, nominalDur, isLast, variant = "fade" }) => {
   const frame = useCurrentFrame();
-  const fadeIn  = isFirst ? 1 : interpolate(frame, [0, TRANSITION_FRAMES], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  const fadeOut = isLast  ? 1 : interpolate(frame, [nominalDur, nominalDur + TRANSITION_FRAMES], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  return <AbsoluteFill style={{ opacity: Math.min(fadeIn, fadeOut) }}>{children}</AbsoluteFill>;
+
+  if (variant === "collage" && !isLast) {
+    const fadeOutProgress = interpolate(frame, [nominalDur, nominalDur + TRANSITION_FRAMES], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+    if (fadeOutProgress > 0) {
+      return (
+        <AbsoluteFill>
+          {Array.from({ length: COLLAGE_FRAGMENTS }, (_, i) => {
+            const delay = i * 0.12;
+            const localP = Math.max(0, Math.min(1, (fadeOutProgress - delay) / (1 - delay)));
+            const scale = interpolate(localP, [0, 1], [1, 0.72 - i * 0.08]);
+            const tx = interpolate(localP, [0, 1], [0, (i % 2 === 0 ? 1 : -1) * (10 + i * 6)]);
+            const ty = interpolate(localP, [0, 1], [0, (i < 2 ? -1 : 1) * (8 + i * 5)]);
+            const op = interpolate(localP, [0, 1], [1, 0]);
+            return (
+              <AbsoluteFill key={i} style={{ opacity: op, transform: `translate(${tx}%, ${ty}%) scale(${scale})` }}>
+                {children}
+              </AbsoluteFill>
+            );
+          })}
+        </AbsoluteFill>
+      );
+    }
+  }
+
+  return <>{children}</>;
 };
 
-// Barra de progresso animada no topo — reflete o avanço no vídeo inteiro
-const ProgressBar: React.FC<{ accent: string; totalFrames: number }> = ({ accent, totalFrames }) => {
+// Drift contínuo e sutil no conteúdo da cena (não só no fundo) — garante que
+// nenhum frame fique 100% estático mesmo durante uma pausa de leitura longa,
+// como no vídeo de referência (/home/vinycius/film). Período e fase variam por
+// índice de cena pra não sincronizar visivelmente com o corte.
+const AMBIENT_DRIFT_CYCLE = 150; // 5s @30fps
+const AmbientDrift: React.FC<{ index: number; children: React.ReactNode }> = ({ index, children }) => {
   const frame = useCurrentFrame();
-  const pct = Math.min(100, (frame / Math.max(1, totalFrames)) * 100);
-  return (
-    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 6, background: "rgba(255,255,255,0.15)", zIndex: 10 }}>
-      <div style={{ width: `${pct}%`, height: "100%", background: accent, boxShadow: `0 0 8px ${accent}` }} />
-    </div>
-  );
+  const phase = (index * 37) % AMBIENT_DRIFT_CYCLE;
+  const t = (Math.sin(((frame + phase) / AMBIENT_DRIFT_CYCLE) * Math.PI * 2) + 1) / 2;
+  const scale = interpolate(t, [0, 1], [1, 1.015]);
+  return <div style={{ width: "100%", height: "100%", transform: `scale(${scale})` }}>{children}</div>;
 };
 
 const SceneRouter: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
@@ -222,6 +292,9 @@ const SceneRouter: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent
     case "highlight": return <HighlightScene scene={scene} accent={accent} />;
     case "list":      return <ListScene      scene={scene} accent={accent} />;
     case "code":      return <CodeScene      scene={scene} accentColor={accent} />;
+    case "chapter":   return <ChapterScene   scene={scene} accent={accent} />;
+    case "proof":     return <ProofScene     scene={scene} accent={accent} />;
+    case "growth":    return <GrowthScene    scene={scene} accent={accent} />;
     case "outro":     return <OutroScene     scene={scene} accent={accent} />;
     default:          return <TextScene      scene={scene} accent={accent} />;
   }
@@ -231,7 +304,12 @@ export const MotionReel: React.FC<{ script: VideoScript }> = ({ script }) => {
   const { fps } = useVideoConfig();
   const accent = script.accentColor || "#FFD700";
 
-  const totalFrames = script.scenes.reduce((acc, s) => acc + Math.round(s.duration * fps), 0);
+  // Exatamente 1 corte em cascata por vídeo (raridade observada no vídeo de
+  // referência: apareceu 1x em 8 cortes) — escolhido por hash determinístico do
+  // título em vez de um índice fixo, senão vídeos com poucas cenas (comum no
+  // pipeline, a maioria tem 5-8) nunca batiam o índice e o efeito nunca aparecia.
+  const numCuts = script.scenes.length - 1;
+  const collageIndex = numCuts > 0 ? hashString(script.title || "") % numCuts : -1;
 
   let offset = 0;
   const visualElements: React.ReactNode[] = [];
@@ -244,27 +322,35 @@ export const MotionReel: React.FC<{ script: VideoScript }> = ({ script }) => {
     const from = offset;
     offset += dur;
 
-    // Cena visual: estende além de "dur" (exceto a última) pra sobrepor com a
-    // próxima durante o crossfade — ver SceneCrossfade.
+    const variant: "fade" | "collage" = !isLast && i === collageIndex ? "collage" : "fade";
+
+    // Cena visual: só estende além de "dur" na variante collage (pra sobrepor com a
+    // próxima durante a cascata) — as demais são corte seco, sem overlap.
+    const extend = !isLast && variant === "collage";
     visualElements.push(
-      <Sequence key={`v${i}`} from={from} durationInFrames={isLast ? dur : dur + TRANSITION_FRAMES}>
-        <SceneCrossfade nominalDur={dur} isFirst={i === 0} isLast={isLast}>
+      <Sequence key={`v${i}`} from={from} durationInFrames={extend ? dur + TRANSITION_FRAMES : dur}>
+        <SceneCrossfade nominalDur={dur} isLast={isLast} variant={variant}>
           <AbsoluteFill>
             <SceneBackdrop scene={scene} accent={accent} index={i} />
-            <SceneRouter scene={scene} accent={accent} />
+            <AmbientDrift index={i}>
+              <SceneRouter scene={scene} accent={accent} />
+            </AmbientDrift>
           </AbsoluteFill>
         </SceneCrossfade>
       </Sequence>
     );
 
-    // Legenda: Sequence próprio com duração do áudio real (pode ultrapassar a cena)
-    if (scene.words && scene.words.length > 0) {
+    // Legenda: Sequence próprio com duração do áudio real (pode ultrapassar a cena).
+    // HighlightScene já mostra a frase inteira na tela (seu "text"), então qualquer
+    // legenda por cima (karaokê OU o bloco estático de fallback) duplicaria o mesmo
+    // espaço visual — pulamos as duas variantes só nesse tipo de cena.
+    if (scene.type !== "highlight" && scene.words && scene.words.length > 0) {
       captionElements.push(
         <Sequence key={`c${i}`} from={from} durationInFrames={captionFrames}>
           <KaraokeCaption words={scene.words} accent={accent} captionFrames={captionFrames} />
         </Sequence>
       );
-    } else if (scene.caption) {
+    } else if (scene.type !== "highlight" && scene.caption) {
       captionElements.push(
         <Sequence key={`c${i}`} from={from} durationInFrames={captionFrames}>
           <Caption text={scene.caption} accent={accent} captionFrames={captionFrames} />
@@ -277,7 +363,6 @@ export const MotionReel: React.FC<{ script: VideoScript }> = ({ script }) => {
     <AbsoluteFill style={{ fontFamily: "'Inter', 'Arial Black', sans-serif" }}>
       {visualElements}
       {captionElements}
-      <ProgressBar accent={accent} totalFrames={totalFrames} />
     </AbsoluteFill>
   );
 };

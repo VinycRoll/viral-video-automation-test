@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-post_reel.py — Pipeline automático de Instagram Reels sobre finanças pessoais.
+post_reel.py — Pipeline automático de Instagram Reels multi-nicho (finanças,
+culinária, produtividade, saúde, história, motivação etc.).
 
 Fluxo:
-  1. Escolhe um tema viral de finanças
+  1. Escolhe um tema viral (qualquer nicho)
   2. Gera o vídeo (Remotion + XTTS v2 + imagens de fundo via Pixabay, por padrão)
   3. Tenta postar via Publora (limite: 15 posts/mês)
   4. Fallback automático: upload Catbox.moe → Make.com → Instagram
@@ -67,8 +68,9 @@ YOUTUBE_TOKEN_FILE    = SCRIPT_DIR / ".youtube_token.json"
 
 PUBLORA_BASE = "https://api.publora.com/api/v1"
 
-# ── Temas virais de finanças ───────────────────────────────────────────────────
+# ── Temas virais (multi-nicho) ────────────────────────────────────────────────
 TEMAS = [
+    # finanças
     "como sair das dívidas em 6 meses",
     "regra 50-30-20 para organizar dinheiro",
     "como investir com apenas R$50 por mês",
@@ -89,13 +91,34 @@ TEMAS = [
     "CDB vs Tesouro Selic: qual é melhor?",
     "como montar um orçamento mensal que funciona",
     "independência financeira: quanto preciso guardar?",
+    # culinária
+    "o segredo pra um arroz soltinho que ninguém te conta",
+    "por que seu bolo sempre afunda no meio",
+    "como fazer um ovo poché perfeito em casa",
+    "a técnica que deixa qualquer carne mais suculenta",
+    # produtividade
+    "a técnica pomodoro na prática pra quem procrastina",
+    "como organizar o dia em 3 blocos e render mais",
+    "por que fazer listas de tarefas gigantes não funciona",
+    "o método que elimina a procrastinação em 2 minutos",
+    # saúde
+    "por que dormir mal destrói seu metabolismo",
+    "o que a cafeína faz de verdade no seu corpo",
+    "por que beber água muda sua pele em semanas",
+    "o mito da dieta sem carboidrato",
+    # história
+    "a curiosidade sobre a construção das pirâmides",
+    "o erro que custou um império na 2ª guerra",
+    "a invenção que mudou o mundo por acidente",
+    "o mistério nunca resolvido da biblioteca de alexandria",
+    # motivação
+    "por que disciplina vence motivação sempre",
+    "a regra dos 2 minutos pra vencer a procrastinação",
+    "como pessoas de sucesso lidam com o fracasso",
+    "o hábito de 5 minutos que muda sua rotina",
 ]
 
-HASHTAGS_BASE = (
-    "#financaspessoais #dinheiro #investimentos #educacaofinanceira "
-    "#independenciafinanceira #riqueza #economizar #tesouro #bolsadevalores "
-    "#reels #viral"
-)
+HASHTAGS_BASE = "#reels #viral #paravoce #dicas"
 
 
 def carregar_historico() -> list:
@@ -558,7 +581,7 @@ def postar_todas_redes(video_path: Path, caption: str, tema: str, forcar_make: b
     resultados["instagram"] = postar_video(video_path, caption, forcar_make=forcar_make)
 
     # ── YouTube ────────────────────────────────────────────────────────────────
-    titulo_yt   = f"{tema.capitalize()} 💰 #shorts"
+    titulo_yt   = f"{tema.capitalize()} #shorts"
     descricao_yt = f"{caption}\n\n#Shorts"
     yt_ok = False
 
@@ -588,11 +611,11 @@ def postar_todas_redes(video_path: Path, caption: str, tema: str, forcar_make: b
 
 
 def montar_caption(tema: str) -> str:
-    return f"{tema.capitalize()} — o que você precisava saber 💰\n\n{HASHTAGS_BASE}"
+    return f"{tema.capitalize()} — o que você precisava saber\n\n{HASHTAGS_BASE}"
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Gera e posta Reels de finanças no Instagram")
+    parser = argparse.ArgumentParser(description="Gera e posta Reels multi-nicho no Instagram")
     parser.add_argument("tema", nargs="?", help="Tema do vídeo (opcional)")
     parser.add_argument("--dry-run", action="store_true", help="Só gera o vídeo, não posta")
     parser.add_argument("--video", metavar="CAMINHO", help="Posta um vídeo já gerado sem regerar")
@@ -630,7 +653,7 @@ def main():
         caption = montar_caption(tema)
 
         print("=" * 60)
-        print("📱 PIPELINE INSTAGRAM REELS — FINANÇAS PESSOAIS")
+        print("📱 PIPELINE INSTAGRAM REELS")
         print("=" * 60)
         print(f"📌 Tema: {tema}")
         print(f"🎞️  Vídeo: {video_path.name}")
@@ -652,7 +675,7 @@ def main():
     caption = montar_caption(tema)
 
     print("=" * 60)
-    print("📱 PIPELINE INSTAGRAM REELS — FINANÇAS PESSOAIS")
+    print("📱 PIPELINE INSTAGRAM REELS")
     print("=" * 60)
     print(f"📌 Tema: {tema}")
     if args.purffle:

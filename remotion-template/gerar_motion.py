@@ -113,37 +113,81 @@ TEMAS_FINANCAS = [
 ]
 
 # ── Prompt ───────────────────────────────────────────────────────────────────
-SYSTEM_PROMPT = """Você é um criador de conteúdo viral de finanças pessoais para Instagram Reels.
-Crie um roteiro de vídeo curto (20-35 segundos) em formato JSON.
+SYSTEM_PROMPT = """Você é um criador de conteúdo viral para Instagram Reels.
+Dado um tema, crie um roteiro de vídeo de aproximadamente 60 segundos em formato JSON.
+Adapte o tom, os exemplos e o vocabulário ao nicho do tema recebido — não use linguagem
+de finanças em vídeos de culinária, nem linguagem técnica em vídeos de motivação, etc.
+Se a mensagem não trouxer nenhum tema ou nicho definido, escolha você mesmo um tema
+aleatório e interessante de qualquer nicho (finanças, culinária, saúde, produtividade,
+história, motivação, curiosidades, relacionamentos, tecnologia etc.) e siga as mesmas
+regras abaixo normalmente.
 
 REGRAS VISUAIS:
 - Use *texto* para destacar em amarelo e **texto** para branco bold
-- Tipos de cena: intro, text, highlight, card, list, outro
-- Máximo 7 cenas, sempre inclua intro e outro
+- Tipos de cena: intro, text, highlight, card, list, chapter, proof, growth, outro
+- "chapter" é um card de abertura de capítulo (título curto, sem caixa de fundo) — use no
+  máximo 1x por roteiro, só quando o vídeo realmente muda de assunto no meio (ex: depois de
+  explicar o problema, antes de entrar na solução). Não use em roteiros muito curtos (<6 cenas)
+- "proof" é um card com barras reais (ex: divisão de tempo, comparação de valores, ranking) em
+  vez de foto — use quando o roteiro tiver uma divisão numérica concreta que dê pra mostrar em
+  barra, no máximo 1x por roteiro, não é obrigatório. Campos: "proofTitle" (título curto) e
+  "proofBars": lista de {"label": string, "value": "ex: 50%", "pct": número 0-100} — os números
+  têm que ser os mesmos citados na narração, nunca invente valores diferentes
+- "growth" é uma linha de crescimento desenhada ao vivo em vez de foto — use no clímax do
+  roteiro, quando a narração descreve algo que CRESCE ao longo do tempo ou que MUDA de direção
+  por causa de uma ação, no máximo 1x por roteiro, não é obrigatório. Campos: "growthTitle"
+  (opcional, título curto), "growthPoints" (lista de {"x","y"} 0-100, x = progresso no tempo
+  da linha, y = valor, 0 é a base e 100 o topo — use uma linha "serrilhada" parada para ilustrar
+  estagnação e uma reta ascendente para ilustrar crescimento), "growthTurnIndex" (opcional,
+  índice em growthPoints onde a linha muda de cor cinza→accent), "growthForkPoints" (opcional,
+  2º ramo que sai do último ponto de growthPoints — só quando o roteiro compara 2 caminhos),
+  "growthCounters" (opcional, lista de {"to": número, "prefix", "suffix", "label",
+  "accent": true/false} — contador subindo de 0 até "to", números têm que vir da narração)
+- De 10 a 12 cenas (nunca menos de 10), sempre inclua intro e outro
 - Textos visuais em MAIÚSCULAS
 
 REGRAS DE NARRAÇÃO:
 - Cada cena tem um campo "narration" com o texto falado em português natural
 - A narração deve ser fluida, como se estivesse conversando
 - NÃO use maiúsculas na narração, ela é falada não lida
-- A duração da cena deve ser compatível com o tempo de fala (~3 palavras/segundo)
+- A duração da cena deve ser compatível com o tempo de fala (~3 palavras/segundo);
+  calcule: número de palavras ÷ 3, arredonde para cima
 - Cenas "intro" e "outro" podem ter narração curta ou vazia ("")
+- O vídeo completo deve somar entre 55 e 70 segundos de narração — antes de responder, SOME
+  a duração de todas as cenas; se o total ficar abaixo de 55s, aprofunde alguma narração ou
+  adicione mais uma cena até chegar nesse total
+- PROFUNDIDADE OBRIGATÓRIA: o roteiro deve realmente ensinar, mostrar ou revelar algo
+  concreto sobre o tema. Evite generalidades — use fatos, números, exemplos específicos e
+  explique o MECANISMO por trás do que está sendo dito. Adapte o nível de detalhe ao nicho:
+  receita culinária → ingredientes e técnica real; produtividade → método com passos concretos;
+  saúde → dado científico ou fisiológico; história → fato verificável com data e nome
+- Cada cena deve avançar o raciocínio — nunca repita a mesma ideia em palavras diferentes.
+  Use a estrutura: gancho → problema ou curiosidade concreta → causa ou mecanismo real →
+  solução ou revelação específica → exemplo ou dado que prova o ponto → chamada para ação
+- Evite frases genéricas como "isso vai mudar sua vida", "você precisa saber disso" ou
+  "a maioria das pessoas não sabe". Substitua por fatos ou exemplos que provem o ponto
 
-REGRAS DE IMAGENS (para geração via IA — Stable Diffusion):
-- Gere também um campo "imagePrompts": lista com 5 a 8 descrições visuais em INGLÊS
-- Cada prompt deve ilustrar o tema do roteiro (ex: pessoas economizando, gráficos subindo, cofrinho, carteira, calculadora, planejamento financeiro)
+REGRAS DE IMAGENS (para geração via IA / busca no Pixabay):
+- Gere também um campo "imagePrompts": uma lista com EXATAMENTE um item para cada cena de
+  "scenes", NA MESMA ORDEM — imagePrompts[0] ilustra a cena 0, imagePrompts[1] a cena 1, etc.
+  Antes de responder, CONTE o número de cenas em "scenes" e confirme que "imagePrompts" tem
+  o mesmo número de itens — nem um a mais, nem um a menos
+- Cada prompt deve ilustrar especificamente o CONTEÚDO DAQUELA CENA (o que a narration/title/
+  text dela diz), não o tema genérico do vídeo inteiro
 - NÃO inclua texto, palavras, números ou letras nos prompts (Stable Diffusion não renderiza texto bem)
+- Escreva os prompts em INGLÊS (bancos de imagem como Pixabay indexam tags em inglês)
+- Descreva uma cena LITERAL e concreta (objeto/pessoa/ação visível), nunca uma metáfora ou
+  símbolo ("fading banknotes to symbolize loss", "door symbolizing a solution") — busca de banco
+  de imagens casa por palavra-chave, não entende metáfora
 - Estilo sugerido ao final de cada prompt: "cinematic photography, warm natural lighting, shallow depth of field, realistic, instagram aesthetic, vertical composition"
 
-FORMATO JSON (retorne APENAS o JSON, sem markdown):
+FORMATO JSON (retorne APENAS o JSON, sem markdown — o exemplo abaixo tem só 4 cenas pra caber
+aqui; a saída real tem que ter de 9 a 12 cenas, intercalando os tipos acima conforme as regras):
 {
   "title": "título do vídeo",
   "accentColor": "#FFD700",
   "caption": "legenda completa para o Instagram com emojis e hashtags",
-  "imagePrompts": [
-    "a person organizing coins and banknotes on a wooden table, cinematic photography, warm natural lighting, shallow depth of field, realistic, instagram aesthetic, vertical composition",
-    "a small piggy bank next to a growing plant, cinematic photography, warm natural lighting, shallow depth of field, realistic, instagram aesthetic, vertical composition"
-  ],
+  "imagePrompts": ["prompt cena 0", "prompt cena 1", "...um por cena, na ordem"],
   "scenes": [
     {
       "type": "intro",
@@ -151,33 +195,21 @@ FORMATO JSON (retorne APENAS o JSON, sem markdown):
       "channel": "VinyBruno.ia",
       "title": "TÍTULO IMPACTANTE",
       "subtitle": "subtítulo explicativo",
-      "narration": "você sabia que existe um jeito simples de multiplicar seu dinheiro?"
+      "narration": ""
     },
     {
       "type": "highlight",
-      "duration": 4,
-      "text": "pergunta ou afirmação *destacada*",
-      "narration": "a maioria das pessoas não sabe disso, mas faz toda a diferença."
+      "duration": 5,
+      "text": "afirmação ou pergunta *destacada*",
+      "narration": "narração da cena aqui."
     },
     {
       "type": "card",
-      "duration": 5,
-      "cardTitle": "SITUAÇÃO",
-      "cardValue": "RESULTADO",
-      "cardNote": "contexto em *amarelo*",
-      "narration": "olha esse exemplo: cem reais por mês, durante dez anos, viram quase trinta e cinco mil reais."
-    },
-    {
-      "type": "text",
-      "duration": 3,
-      "text": "texto animado com *destaque*",
-      "narration": "o segredo é o tempo trabalhando a seu favor."
-    },
-    {
-      "type": "list",
       "duration": 6,
-      "items": ["💰 item 1", "📈 item *2*", "⏳ item 3"],
-      "narration": "pra começar hoje, você precisa de três coisas: consistência, paciência e começar cedo."
+      "cardTitle": "RÓTULO",
+      "cardValue": "VALOR OU RESULTADO",
+      "cardNote": "contexto em *amarelo*",
+      "narration": "narração da cena aqui."
     },
     {
       "type": "outro",
@@ -185,7 +217,7 @@ FORMATO JSON (retorne APENAS o JSON, sem markdown):
       "channel": "VinyBruno.ia",
       "title": "CURTIU? SEGUE AÍ!",
       "cta": "▶ Seguir",
-      "narration": "gostou? me segue para mais dicas de finanças todo dia."
+      "narration": ""
     }
   ]
 }"""
@@ -203,7 +235,9 @@ def gerar_roteiro(tema: str) -> dict:
             {"role": "user", "parts": [{"text": f"Crie um roteiro sobre: {tema}"}]},
         ],
         "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-        "generationConfig": {"temperature": 0.85, "maxOutputTokens": 2000},
+        # 9-12 cenas + narração mais profunda + 1 imagePrompt/cena passam fácil de 2000
+        # tokens — já vimos JSON truncado/invalido nesse limite com roteiro bem mais curto
+        "generationConfig": {"temperature": 0.85, "maxOutputTokens": 4096},
     }
 
     headers = {
@@ -251,16 +285,16 @@ def gerar_roteiro(tema: str) -> dict:
     return script
 
 
-def _prompts_fallback(script: dict, tema: str, n: int = 6) -> list:
-    """Monta prompts de imagem simples a partir do tema/roteiro quando o Gemini não retorna imagePrompts."""
-    base = [tema]
+def _prompts_fallback(script: dict, tema: str, n: int) -> list:
+    """Monta 1 prompt de imagem por cena (a partir do próprio título/texto dela) quando
+    o Gemini não retorna imagePrompts — mantém o alinhamento 1 prompt = 1 cena."""
+    prompts = []
     for scene in script.get("scenes", []):
-        label = scene.get("title") or scene.get("text") or scene.get("cardTitle") or ""
-        if label:
-            base.append(label.lower())
-    if len(base) < n:
-        base = (base * ((n // len(base)) + 1))
-    return base[:n]
+        label = scene.get("title") or scene.get("text") or scene.get("cardTitle") or tema
+        prompts.append(label.lower())
+    if len(prompts) < n:
+        prompts = prompts + [tema] * (n - len(prompts))
+    return prompts[:n]
 
 
 # ── XTTS v2 (Coqui TTS) ───────────────────────────────────────────────────────
@@ -336,6 +370,8 @@ def _gerar_audio_xtts(texto: str, caminho: Path) -> list:
 
     sample_rate = 24000
     pedacos = []
+    palavras = []
+    t = 0.0
     for i, frase in enumerate(frases):
         tmp_path = caminho.with_name(f"{caminho.stem}_tmp{i}.wav")
         kwargs = {
@@ -357,6 +393,17 @@ def _gerar_audio_xtts(texto: str, caminho: Path) -> list:
         pedacos.append(audio)
         tmp_path.unlink(missing_ok=True)
 
+        # Timing por palavra no offset real desta frase — calcular sobre o
+        # texto inteiro de uma vez (como antes) borraria as pausas entre
+        # frases ao longo de todas as palavras, atrasando a legenda cada vez
+        # mais conforme a narração avança (mais visível agora que XTTS_SPEED
+        # subiu: a pausa fixa de 0.25s passou a pesar mais no total).
+        dur_frase = len(audio) / sample_rate if sample_rate else 0.0
+        palavras += _palavras_fallback(frase, t, dur_frase)
+        t += dur_frase
+        if i < len(frases) - 1:
+            t += _SILENCIO_ENTRE_FRASES
+
     if len(pedacos) > 1:
         gap = np.zeros(int(_SILENCIO_ENTRE_FRASES * sample_rate))
         partes = []
@@ -371,10 +418,7 @@ def _gerar_audio_xtts(texto: str, caminho: Path) -> list:
     sf.write(str(caminho), audio_final, sample_rate)
     _normalizar_volume(caminho)
 
-    # Timing por palavra estimado pela duração real do áudio gerado (sem
-    # pred_dur como no Kokoro) — proporcional ao nº de caracteres de cada palavra.
-    duracao = len(audio_final) / sample_rate if sample_rate else len(texto.split()) / 3
-    return _palavras_fallback(texto, 0.0, duracao)
+    return palavras
 
 
 def _normalizar_volume(caminho: Path) -> None:
@@ -584,8 +628,19 @@ def _comfyui_gerar_uma(prompt: str, dest: Path, client_id: str) -> bool:
     return False
 
 
+def _pixabay_buscar(endpoint: str, query: str, extra_params: dict) -> list:
+    try:
+        r = requests.get(f"https://pixabay.com/api/{endpoint}", params={
+            "key": PIXABAY_KEY, "q": query, "order": "relevance", "safesearch": "true",
+            "per_page": 20, **extra_params,
+        }, timeout=15)
+        return r.json().get("hits", []) if r.ok else []
+    except Exception:
+        return []
+
+
 def _pixabay_fallback(prompts: list, tema: str, dest_dir: Path) -> list:
-    print("   ↪️  ComfyUI indisponível — usando Pixabay como fallback de imagens")
+    print("   ↪️  ComfyUI indisponível — usando Pixabay como fallback de imagens/vídeos")
     if not PIXABAY_KEY:
         print("   ❌ PIXABAY_API_KEY não configurada — sem fallback de imagens")
         return []
@@ -596,29 +651,45 @@ def _pixabay_fallback(prompts: list, tema: str, dest_dir: Path) -> list:
 
     for i, termo in enumerate(termos):
         query = termo.split(",")[0][:100] or tema
-        try:
-            r = requests.get("https://pixabay.com/api/", params={
-                "key": PIXABAY_KEY, "q": query, "image_type": "photo",
-                "orientation": "vertical", "safesearch": "true", "per_page": 20,
-            }, timeout=15)
-            hits = r.json().get("hits", []) if r.ok else []
-        except Exception:
-            hits = []
+        # Busca com palavras-chave curtas (não a frase inteira) — a API do Pixabay casa
+        # por keyword, e uma frase de 10+ palavras dilui o match e traz resultado genérico.
+        # Pipeline é só pra conteúdo de finanças pessoais (ver CLAUDE.md) — "finance money"
+        # no fim ancora a busca no tema mesmo quando as palavras-chave da cena são fracas
+        # (verificado manualmente: sem a âncora, prompts como "coins stacking wooden table"
+        # retornam maçã/livro/gato no topo; com ela, voltam moedas/dinheiro/gráfico).
+        search_q = (_pixabay_keywords(query) or query) + " finance money"
 
-        hit = next((h for h in hits if h["id"] not in vistos), hits[0] if hits else None)
-        if not hit:
+        fotos = _pixabay_buscar("", search_q, {"image_type": "photo", "orientation": "vertical"})
+        videos = _pixabay_buscar("videos/", search_q, {})
+
+        # Foto e vídeo competem pelo mesmo score de relevância (_pixabay_relevancia) —
+        # usa o que combinar melhor com o termo buscado, não importa o tipo.
+        candidatos = (
+            [("foto", h, _pixabay_relevancia(query, h.get("tags", ""))) for h in fotos if ("foto", h["id"]) not in vistos]
+            + [("video", h, _pixabay_relevancia(query, h.get("tags", ""))) for h in videos if ("video", h["id"]) not in vistos]
+        )
+        if not candidatos:
             continue
-        vistos.add(hit["id"])
-        # Só log/diagnóstico (pedido do usuário) — nunca influencia qual hit foi escolhido acima.
-        _ULTIMA_RELEVANCIA_PIXABAY.append(_pixabay_relevancia(query, hit.get("tags", "")))
+        tipo, hit, score = max(candidatos, key=lambda c: c[2])
+        vistos.add((tipo, hit["id"]))
+        _ULTIMA_RELEVANCIA_PIXABAY.append(score)
 
         try:
-            img_r = requests.get(hit["largeImageURL"], timeout=30)
+            if tipo == "video":
+                arquivos_video = hit.get("videos", {})
+                video = arquivos_video.get("small") or arquivos_video.get("tiny") or arquivos_video.get("medium")
+                if not video:
+                    continue
+                media_r = requests.get(video["url"], timeout=60)
+                sufixo = ".mp4"
+            else:
+                media_r = requests.get(hit["largeImageURL"], timeout=30)
+                sufixo = ".jpg"
         except Exception:
             continue
-        if img_r.ok:
-            caminho = dest_dir / f"img_{i:02d}.jpg"
-            caminho.write_bytes(img_r.content)
+        if media_r.ok:
+            caminho = dest_dir / f"img_{i:02d}{sufixo}"
+            caminho.write_bytes(media_r.content)
             caminhos.append(caminho)
 
     return caminhos
@@ -669,8 +740,14 @@ def aplicar_imagens_de_fundo(script: dict, imagens: list) -> None:
         nomes.append(destino.name)
 
     print(f"\n🎞️  {len(nomes)} imagem(ns) pronta(s) em public/images/ (Ken Burns automático)")
+    # Cenas de card/dado/branding (proof, card, intro, outro) ficam sem foto de propósito —
+    # renderizam sobre o gradiente limpo do Remotion, estilo editorial (motionmaxxing), nunca
+    # consomem do ciclo pra não deslocar as imagens das cenas narrativas
+    SEM_FOTO = {"proof", "growth", "card", "intro", "outro"}
     ciclo = itertools.cycle(nomes)
     for scene in script["scenes"]:
+        if scene.get("type") in SEM_FOTO:
+            continue
         scene["backgroundImage"] = f"images/{next(ciclo)}"
 
 
@@ -855,27 +932,56 @@ def _qa_caption_tem_asterisco(script: dict) -> bool:
 
 _TOKEN_RE = re.compile(r"[a-zà-úA-ZÀ-Ú0-9]+")
 _ULTIMA_RELEVANCIA_PIXABAY: list = []
+_STOPWORDS_EN = {
+    "the", "and", "with", "for", "from", "into", "onto", "while", "her", "his", "their",
+    "she", "him", "them", "this", "that", "these", "those", "being", "over", "under",
+    "person", "someone", "wearing", "sitting", "standing", "looking", "holding",
+}
 
 
 def _relevance_tokens(texto: str) -> set:
     return {w.lower() for w in _TOKEN_RE.findall(texto or "") if len(w) > 2}
 
 
+def _pixabay_keywords(texto: str, n: int = 4) -> str:
+    """Reduz uma frase descritiva longa (ex: imagePrompt do Gemini) a ~5 palavras-chave
+    concretas, na ordem original, sem repetir. A busca do Pixabay é por palavra-chave —
+    mandar a frase inteira (10+ palavras, com stopwords em inglês tipo "with"/"while")
+    dilui o match e costuma trazer resultado genérico sem relação com a cena."""
+    vistos, out = set(), []
+    for w in _TOKEN_RE.findall((texto or "").lower()):
+        if len(w) <= 2 or w in _STOPWORDS_EN or w in vistos:
+            continue
+        vistos.add(w)
+        out.append(w)
+        if len(out) >= n:
+            break
+    return " ".join(out)
+
+
 def _pixabay_relevancia(query: str, tags: str) -> float:
-    """Sobreposição de tokens busca x tags do Pixabay — só log/diagnóstico (pedido
-    do usuário), nunca decide qual imagem é baixada."""
+    """Sobreposição de tokens busca x tags do Pixabay — usado em _pixabay_fallback
+    pra escolher o hit mais relevante entre os retornados, e também fica no
+    histórico (.historico_geracoes.json) como métrica de QA."""
     q, t = _relevance_tokens(query), _relevance_tokens(tags)
     if not q or not t:
         return 0.0
-    return len(q & t) / len(q)
+    score = len(q & t) / len(q)
+    # Empate é comum (overlap é uma fração discreta de poucos valores possíveis) e, sem
+    # desempate, max() fica com o primeiro candidato da lista — que costuma ser uma foto
+    # genérica de "celular/tela" (tags amplas tipo "smartphone, screen, wallpaper"), não a
+    # foto de finanças de verdade que empatou no mesmo score. Bônus pequeno (não muda a
+    # ordem entre scores diferentes, só desempata) pra quem tem as palavras-âncora do tema.
+    score += 0.001 * len(t & {"finance", "money"})
+    return score
 
 
 _XTTS_GRADES = {
     "temperature":        [0.65, 0.70, 0.75, 0.80, 0.85],
-    "speed":              [0.95, 1.00, 1.05, 1.10, 1.15],
+    "speed":              [1.05, 1.10, 1.15, 1.20, 1.25],
     "repetition_penalty": [8.0, 9.0, 10.0, 11.0, 12.0],
 }
-_XTTS_DEFAULTS = {"temperature": 0.75, "speed": 1.05, "repetition_penalty": 10.0}
+_XTTS_DEFAULTS = {"temperature": 0.75, "speed": 1.15, "repetition_penalty": 10.0}
 _XTTS_EPSILON  = 0.2
 
 
@@ -955,12 +1061,20 @@ def main():
         # 1. Roteiro
         script = gerar_roteiro(tema)
 
+        # imagePrompts precisa ter 1 item por cena, na mesma ordem (ver SYSTEM_PROMPT) —
+        # é isso que garante que a busca no Pixabay seja sobre o conteúdo daquela cena
+        # específica, não um pool genérico do tema cicládo por aplicar_imagens_de_fundo.
+        n_scenes = len(script["scenes"])
         image_prompts = script.pop("imagePrompts", None) or []
         if not image_prompts:
-            image_prompts = _prompts_fallback(script, tema)
-        image_prompts = image_prompts[:8]
-        if len(image_prompts) < 5:
-            image_prompts = (image_prompts * 5)[:5]
+            image_prompts = _prompts_fallback(script, tema, n_scenes)
+        if len(image_prompts) < n_scenes:
+            image_prompts = image_prompts + [image_prompts[-1] if image_prompts else tema] * (n_scenes - len(image_prompts))
+        image_prompts = image_prompts[:n_scenes]
+
+        print("\n🔎 Prompts de imagem (busca Pixabay):")
+        for i, p in enumerate(image_prompts):
+            print(f"   [{i+1}] {p}")
 
         print("\n📋 Cenas:")
         for i, scene in enumerate(script["scenes"]):

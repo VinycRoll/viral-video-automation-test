@@ -1,7 +1,7 @@
 import React from "react";
 import { useCurrentFrame, useVideoConfig, interpolate, spring, Easing } from "remotion";
 import { Scene } from "../types";
-import { TEXT_OUTLINE } from "../utils/text";
+import { SOFT_TEXT_SHADOW, SERIF_FONT, BlurReveal } from "../utils/text";
 
 export const IntroScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
   const frame = useCurrentFrame();
@@ -31,10 +31,10 @@ export const IntroScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, 
 
       <div style={{ width: `${lineW}%`, height: 3, background: `linear-gradient(90deg, ${accent}, transparent)`, marginBottom: 28 }} />
 
-      <div style={{ opacity: titleOp, transform: `translateY(${titleY}px)`, fontSize: 80, fontWeight: 900,
-                    color: "#fff", lineHeight: 1.1, textTransform: "uppercase", letterSpacing: -1, maxWidth: "90%",
-                    marginBottom: 20, textShadow: TEXT_OUTLINE }}>
-        {scene.title}
+      <div style={{ opacity: titleOp, transform: `translateY(${titleY}px)`, fontSize: 76, fontWeight: 700,
+                    fontFamily: SERIF_FONT, color: "#fff", lineHeight: 1.15, letterSpacing: -0.5, maxWidth: "90%",
+                    marginBottom: 20, textShadow: SOFT_TEXT_SHADOW }}>
+        <BlurReveal text={scene.title || ""} startFrame={10} />
       </div>
 
       {scene.subtitle && (

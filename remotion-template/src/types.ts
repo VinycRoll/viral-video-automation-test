@@ -5,6 +5,9 @@ export type SceneType =
   | "list"
   | "highlight"
   | "code"
+  | "chapter"
+  | "proof"
+  | "growth"
   | "outro";
 
 export interface WordTiming {
@@ -22,7 +25,7 @@ export interface Scene {
   words?: WordTiming[];   // timing real por palavra (via Kokoro) para a legenda karaokê
   backgroundImage?: string; // caminho relativo em public/ (ex: "images/00.png") — Ken Burns automático
 
-  // intro / outro
+  // intro / outro / chapter
   title?: string;
   subtitle?: string;
   channel?: string;
@@ -38,6 +41,19 @@ export interface Scene {
 
   // list
   items?: string[];
+
+  // proof — card com barras reais (ex: divisão 50/30/20 do salário), sem foto de fundo
+  proofTitle?: string;
+  proofBars?: { label: string; value: string; pct: number }[];
+
+  // growth — linha de crescimento (patrimônio) desenhada ao vivo, com bifurcação e
+  // contadores opcionais, sem foto de fundo (estilo motionmaxxing). Pontos em 0-100
+  // (x: progresso no tempo, y: valor — 0 = base, 100 = topo do gráfico).
+  growthTitle?: string;
+  growthPoints?: { x: number; y: number }[];
+  growthTurnIndex?: number;   // índice em growthPoints onde a linha vira de cinza (estagnada) pra accent (crescendo)
+  growthForkPoints?: { x: number; y: number }[]; // 2º ramo saindo do último ponto de growthPoints (bifurcação)
+  growthCounters?: { to: number; prefix?: string; suffix?: string; label?: string; accent?: boolean }[];
 
   // code
   code?: string;
