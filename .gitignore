@@ -10,6 +10,8 @@ __pycache__/
 client_secret.json
 remotion-template/node_modules/
 remotion-template/.cache/
+# POC Motion Canvas/Revideo — vive só na branch experimento-motion-canvas
+motion-canvas-experimento/
 ComfyUI/
 remotion-template.tar.gz
 
