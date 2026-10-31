@@ -1,0 +1,149 @@
+/* Portado de ~/.claude/skills/motionmaxxing/runtime/native-ui/native-ui.css (trecho
+   phone + lock screen + notification) — UI nativa iOS em proporções reais, escalada
+   por uma única variável --s. Trimado: sem status bar/tabbar/app screen (não usados
+   pela NotificationScene). */
+.nu {
+  --s: 1;
+  --u: calc(var(--s) * 1px);
+  font-family: -apple-system, "SF Pro Text", "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.25;
+}
+.nu * {
+  box-sizing: border-box;
+}
+
+.nu-phone {
+  position: relative;
+  width: calc(393 * var(--u));
+  height: calc(852 * var(--u));
+  border-radius: calc(56 * var(--u));
+  background: #000;
+  box-shadow:
+    0 0 0 calc(10 * var(--u)) #0a0a0b,
+    0 0 0 calc(11.5 * var(--u)) #48484c,
+    0 0 0 calc(12.5 * var(--u)) #1c1c1e,
+    0 calc(20 * var(--u)) calc(40 * var(--u)) rgba(0, 0, 0, 0.25),
+    0 calc(60 * var(--u)) calc(140 * var(--u)) calc(-30 * var(--u)) rgba(0, 0, 0, 0.5);
+}
+.nu-screen {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(56 * var(--u));
+  overflow: hidden;
+  color: #fff;
+}
+.nu-island {
+  position: absolute;
+  top: calc(11 * var(--u));
+  left: 50%;
+  width: calc(126 * var(--u));
+  height: calc(37 * var(--u));
+  margin-left: calc(-63 * var(--u));
+  border-radius: calc(20 * var(--u));
+  background: #000;
+  z-index: 20;
+}
+.nu-home {
+  position: absolute;
+  bottom: calc(8 * var(--u));
+  left: 50%;
+  width: calc(139 * var(--u));
+  height: calc(5 * var(--u));
+  margin-left: calc(-69.5 * var(--u));
+  border-radius: calc(3 * var(--u));
+  background: currentColor;
+  opacity: 0.85;
+  z-index: 20;
+}
+
+.nu-icon {
+  flex: none;
+  width: calc(var(--isz, 38) * var(--u));
+  height: calc(var(--isz, 38) * var(--u));
+  border-radius: 22.37%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: calc(var(--isz, 38) * 0.5 * var(--u));
+  box-shadow: inset 0 0 0 calc(0.5 * var(--u)) rgba(0, 0, 0, 0.12);
+}
+
+.nu-lock {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+}
+.nu-lock-date {
+  position: absolute;
+  top: calc(84 * var(--u));
+  width: 100%;
+  text-align: center;
+  font-size: calc(21 * var(--u));
+  font-weight: 600;
+  opacity: 0.88;
+}
+.nu-lock-time {
+  position: absolute;
+  top: calc(104 * var(--u));
+  width: 100%;
+  text-align: center;
+  font-size: calc(104 * var(--u));
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.nu-lock-stack {
+  position: absolute;
+  left: calc(12 * var(--u));
+  right: calc(12 * var(--u));
+  bottom: calc(120 * var(--u));
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  z-index: 3;
+}
+
+.nu-notif {
+  display: flex;
+  gap: calc(10 * var(--u));
+  align-items: flex-start;
+  width: 100%;
+  padding: calc(13 * var(--u)) calc(14 * var(--u)) calc(14 * var(--u)) calc(13 * var(--u));
+  border-radius: calc(23 * var(--u));
+  background: rgba(38, 38, 40, 0.62);
+  color: #fff;
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: 0 calc(2 * var(--u)) calc(12 * var(--u)) rgba(0, 0, 0, 0.25);
+}
+.nu-notif-main {
+  flex: 1;
+  min-width: 0;
+}
+.nu-notif-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: calc(8 * var(--u));
+}
+.nu-notif-title {
+  font-size: calc(15 * var(--u));
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.nu-notif-time {
+  font-size: calc(13 * var(--u));
+  opacity: 0.5;
+  white-space: nowrap;
+}
+.nu-notif-body {
+  font-size: calc(15 * var(--u));
+  letter-spacing: -0.01em;
+  margin-top: calc(1 * var(--u));
+}

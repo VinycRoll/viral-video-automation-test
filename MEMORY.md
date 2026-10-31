@@ -56,6 +56,102 @@ Opensquad) — aqui é progresso e decisões, não instruções fixas.
     Branch pode ser apagada quando quiser (`git branch -D experimento-motion-canvas`),
     `main` não foi tocada pelo experimento.
 
+- **Nova cena `notification`** (pedido do usuário, 2026-10-31) — notificação de app sobre
+  lock screen (estilo native-ui/motionmaxxing: `~/.claude/skills/motionmaxxing/runtime/
+  native-ui/`), **portada para React/Remotion em vez de usar o renderer próprio do skill**
+  (que é uma 2ª pipeline HTML+GSAP+Chrome headless — mesmo raciocínio da rejeição do
+  Revideo: não duplicar motor de render por um ganho visual que o pipeline atual já
+  consegue reproduzir). CSS trimado copiado para
+  `remotion-template/src/scenes/native-ui.css` (só phone/lock/notification — sem
+  status bar/tabbar/app screen, não usados). Componente novo
+  `remotion-template/src/scenes/NotificationScene.tsx`: notificação mais recente "chega"
+  deslizando de baixo (`interpolate` + easing, ~0.45s), depois a câmera avança (`scale`
+  em torno de `transformOrigin: "50% 76%"`) até a notificação virar o quadro — réplica
+  simplificada das funções `arrive`/`macro` do `native-ui.js` (que usam GSAP + medição de
+  DOM; aqui é só `interpolate()` porque o layout é conhecido/fixo). Sem foto de fundo
+  (mesmo padrão de `proof`/`growth`/`card`), adicionada ao `SEM_FOTO` em `gerar_motion.py`.
+  Campos no roteiro: `notifAppLetter`, `notifAppColor`, `notifTitle`, `notifBody`,
+  `notifTime`, `lockTime`, `lockDate`, `notifOlder*` (2ª notificação empilhada, opcional).
+  SYSTEM_PROMPT do Gemini atualizado: app/remetente são fictícios e **adaptados ao nicho**
+  do roteiro (app de investimento pra finanças, de receitas pra culinária, etc.), uso no
+  máx. 1x por roteiro, não obrigatório — mesma regra de uso esparso de `proof`/`growth`.
+  Validado com `npx remotion still`/`render` (stills em frames-chave + clipe de 5s da
+  cena isolada): chegada e push-in ficaram suaves, texto legível, zero erro de render.
+  Escopo desta rodada: só o beat "notificação chega + câmera lê" (o mais citado pelo
+  usuário como referência). Outros tipos de animação "estilo motionmaxxing" (ex: app
+  screen com lista, hero 3D) ficam pra uma próxima rodada se o usuário pedir — não foram
+  construídos agora pra não adivinhar requisito que não foi pedido.
+
+- **Maratona de cenas motionmaxxing concluída** (pedido do usuário, 2026-10-31) —
+  "gere o máximo possível de novos tipos de cena, trabalhando sem parar enquanto eu
+  estou fora". Ele citou 3 exemplos (calendário, relógio, pilha de dinheiro) e autorizou
+  ir além. Resultado final: **13 tipos de cena novos**, todos sem foto de fundo
+  (adicionados ao `SEM_FOTO`), documentados no `SYSTEM_PROMPT` do Gemini com regra de
+  uso esparso (máx. 1x por roteiro cada), com campos em `types.ts`, wired no `switch` de
+  `MotionReel.tsx`, com demo em `Root.tsx` e **todos testados via `npx remotion still`**
+  antes de marcar como prontos:
+  - `calendar` — card de calendário com dia "virando" (flip 3D) + anel de destaque.
+  - `clock` — digital (glow neon) ou analógico (ponteiros via spring).
+  - `moneystack` — pilha de notas caindo + contador subindo (bug de parse pt-BR achado
+    e corrigido no teste).
+  - `checklist` — itens marcando check em sequência (reaproveita `UiCard`).
+  - `progress` — anel de progresso enchendo + contador central.
+  - `timer` — cronômetro regressivo, anel esvaziando + dígitos "MM:SS".
+  - `rating` — 5 estrelas pipocando revelando nota (decimal via `clipPath`).
+  - `scale` — balança de 2 pratos pendendo via trigonometria simples (bug de overflow de
+    texto no prato achado e corrigido no teste).
+  - `map` — grade de pontos + pin caindo + radar pulsando em loop.
+  - `weather` — sol (raios girando) / nublado / chuva (gotas em loop escalonado).
+  - `achievement` — badge/medalha pipocando com burst + fitas, pra meta/conquista batida.
+  - `battery` — bateria enchendo de baixo pra cima + contador, pra reserva/energia
+    se acumulando aos poucos (distinto do anel de `progress`).
+  - `book` — livro fechado que abre (capa gira na lombada, mesma técnica de `rotateX`/
+    `rotateY` do flip do `calendar`) revelando título, pra aprendizado/educação.
+
+  Toda a animação usa só `interpolate`/`spring` nativos do Remotion (nunca GSAP/
+  Puppeteer — decisão já validada no experimento Revideo/Motion Canvas, que concluiu que
+  uma 2ª pipeline de render não compensa o ganho visual). Lista de ideias da instrução
+  original está essencialmente esgotada; se surgir necessidade de mais tipos de cena,
+  repetir o mesmo padrão de 7 passos (campos em `types.ts` → componente em `scenes/` →
+  wire em `MotionReel.tsx` → `SEM_FOTO` → `SYSTEM_PROMPT` → testar via still → documentar
+  aqui).
+
+- **4 ajustes de qualidade pedidos pelo usuário** (`remotion-template/gerar_motion.py`,
+  2026-10-31): vídeo abria em silêncio, narração "robótica/desanimada", sem trilha
+  sonora, e textos aparecendo com asteriscos literais (`**exemplo**`) na tela.
+  - **Silêncio no início**: `SYSTEM_PROMPT` agora exige narração não-vazia na cena
+    "intro" (antes era opcional) — o gancho falado tem que começar junto com o vídeo.
+  - **Asteriscos vazando**: causa raiz era a regra geral "use *texto*/**texto**" do
+    `SYSTEM_PROMPT` valendo pra qualquer campo, mas só `text`/`cardNote`/`items` (lista
+    do `ListScene`) são de fato renderizados via `parseText()`/`splitHighlightWords()`
+    (`src/utils/text.tsx`) — os ~20 outros tipos de cena (proof, calendar, checklist,
+    battery etc.) sempre mostraram a string crua. Fix: `_limpar_markdown_fora_de_escopo()`
+    varre o JSON do Gemini recursivamente logo após o parse e remove `*`/`**` de todo
+    campo fora da allowlist `{"text","cardNote","items"}` — inclui `narration` (corrige
+    de vez o vazamento pra legenda/karaokê, que usava o texto crú em `_caption`).
+  - **Voz robótica**: o `.env` já usa `XTTS_SPEAKER_WAV` (clone da voz do usuário, não um
+    speaker pré-treinado — já era o maior lever de expressividade, já aplicado). Ajuste
+    feito: `XTTS_TEMPERATURE` 0.75→0.85 e `XTTS_SPEED` 1.05→1.1 (mais variação prosódica),
+    `_XTTS_DEFAULTS` do autotune atualizado em conjunto. **Observação importante pro
+    usuário**: a clonagem do XTTS tende a herdar a energia/entonação do próprio arquivo
+    de referência (`voices/vinycius_ref.wav`) — se a gravação de referência foi feita num
+    tom calmo/monótono, regravar esse arquivo com mais energia é provavelmente o que mais
+    vai resolver, mais do que qualquer parâmetro. `.historico_geracoes.json` mostra 17
+    gerações, nenhuma avaliada ainda via `avaliar_video.py` — sem notas, o autotune
+    (`XTTS_AUTOTUNE=1`) não tem como aprender nada ainda.
+  - **Trilha sonora**: nova (API pública **freetouse.com**, achada via busca no GitHub/
+    web — sem API key, sem conta, sem limite documentado). `gerar_musica_de_fundo()`
+    baixa 1 faixa aleatória não-premium (`is_premium=false` — as "premium" exigem
+    licença paga, nunca usadas) por geração e anexa o crédito obrigatório à legenda do
+    Instagram (licença gratuita do freetouse.com permite monetizar conteúdo de rede
+    social, desde que com atribuição). `mixar_audio()` ganhou parâmetro `musica_path`:
+    `-stream_loop -1` + `volume=0.18` (fixo, sem ducking dinâmico — shortcut documentado
+    no código) + `afade` de saída de 1s + `-shortest` no comando final pra não esticar a
+    duração do vídeo. Testado de ponta a ponta com vídeo/áudio sintéticos via ffmpeg:
+    baixou faixa real, mixou, saída com duração exata e volume da trilha bem abaixo da
+    voz. Upgrade futuro se a voz ficar difícil de ouvir: troca pra
+    `ffmpeg sidechaincompress` (ducking real).
+
 ## Achados importantes (não esquecer)
 
 - **`chaves.zip` na raiz do repo contém credenciais reais** (`.env`,

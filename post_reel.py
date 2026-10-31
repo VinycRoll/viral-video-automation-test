@@ -508,16 +508,23 @@ def postar_video(video_path: Path, caption: str, forcar_make: bool = False) -> b
 
 
 def obter_credenciais_youtube():
-    """Carrega/renova/cria token OAuth do YouTube."""
+    """Carrega/renova token OAuth do YouTube. O login interativo (abre navegador) só
+    é tentado se houver um terminal de verdade por trás — em cron/automação sem tty,
+    isso travaria para sempre esperando um humano que nunca aparece."""
     creds = None
     if YOUTUBE_TOKEN_FILE.exists():
         creds = Credentials.from_authorized_user_file(str(YOUTUBE_TOKEN_FILE), YOUTUBE_SCOPES)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(GoogleRequest())
-        else:
+        elif sys.stdin.isatty():
             flow = InstalledAppFlow.from_client_secrets_file(str(YOUTUBE_CLIENT_SECRET), YOUTUBE_SCOPES)
             creds = flow.run_local_server(port=0)
+        else:
+            raise RuntimeError(
+                "Token do YouTube ausente/inválido e sem terminal interativo para logar "
+                "(rode manualmente uma vez pra autenticar)"
+            )
         YOUTUBE_TOKEN_FILE.write_text(creds.to_json())
     return creds
 
@@ -658,6 +665,11 @@ def main():
         print(f"📌 Tema: {tema}")
         print(f"🎞️  Vídeo: {video_path.name}")
         print()
+
+        if args.dry_run:
+            print(f"🔍 Modo dry-run: nada será postado")
+            print(f"\n✅ DRY RUN concluído! Vídeo: {video_path}")
+            return
 
         sucesso = postar_todas_redes(video_path, caption, tema, forcar_make=args.make)
 

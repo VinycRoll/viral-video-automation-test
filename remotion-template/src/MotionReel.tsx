@@ -11,6 +11,20 @@ import { CodeScene }      from "./scenes/CodeScene";
 import { ChapterScene, CHAPTER_REVEAL_FRAMES } from "./scenes/ChapterScene";
 import { ProofScene }     from "./scenes/ProofScene";
 import { GrowthScene }    from "./scenes/GrowthScene";
+import { NotificationScene } from "./scenes/NotificationScene";
+import { CalendarScene }     from "./scenes/CalendarScene";
+import { ClockScene }        from "./scenes/ClockScene";
+import { MoneyStackScene }   from "./scenes/MoneyStackScene";
+import { ChecklistScene }    from "./scenes/ChecklistScene";
+import { ProgressScene }     from "./scenes/ProgressScene";
+import { TimerScene }        from "./scenes/TimerScene";
+import { RatingScene }       from "./scenes/RatingScene";
+import { ScaleScene }        from "./scenes/ScaleScene";
+import { MapScene }          from "./scenes/MapScene";
+import { WeatherScene }      from "./scenes/WeatherScene";
+import { AchievementScene }  from "./scenes/AchievementScene";
+import { BatteryScene }      from "./scenes/BatteryScene";
+import { BookScene }         from "./scenes/BookScene";
 
 const TRANSITION_FRAMES = 10; // ~0.33s @ 30fps — duração do crossfade entre cenas
 const KEN_BURNS_HALF_CYCLE = 90; // 3s @ 30fps — tempo até atingir o zoom/pan máximo
@@ -295,6 +309,20 @@ const SceneRouter: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent
     case "chapter":   return <ChapterScene   scene={scene} accent={accent} />;
     case "proof":     return <ProofScene     scene={scene} accent={accent} />;
     case "growth":    return <GrowthScene    scene={scene} accent={accent} />;
+    case "notification": return <NotificationScene scene={scene} accent={accent} />;
+    case "calendar":  return <CalendarScene  scene={scene} accent={accent} />;
+    case "clock":     return <ClockScene     scene={scene} accent={accent} />;
+    case "moneystack": return <MoneyStackScene scene={scene} accent={accent} />;
+    case "checklist": return <ChecklistScene  scene={scene} accent={accent} />;
+    case "progress":  return <ProgressScene   scene={scene} accent={accent} />;
+    case "timer":     return <TimerScene      scene={scene} accent={accent} />;
+    case "rating":    return <RatingScene     scene={scene} accent={accent} />;
+    case "scale":     return <ScaleScene      scene={scene} accent={accent} />;
+    case "map":       return <MapScene        scene={scene} accent={accent} />;
+    case "weather":   return <WeatherScene    scene={scene} accent={accent} />;
+    case "achievement": return <AchievementScene scene={scene} accent={accent} />;
+    case "battery":   return <BatteryScene    scene={scene} accent={accent} />;
+    case "book":      return <BookScene       scene={scene} accent={accent} />;
     case "outro":     return <OutroScene     scene={scene} accent={accent} />;
     default:          return <TextScene      scene={scene} accent={accent} />;
   }

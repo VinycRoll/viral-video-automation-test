@@ -13,6 +13,7 @@ Uso:
 
 import os
 import sys
+import gc
 import json
 import copy
 import shutil
@@ -63,9 +64,9 @@ XTTS_SPEAKER_WAV = os.getenv("XTTS_SPEAKER_WAV", "")
 # O maior ganho de energia/expressividade, porém, vem de usar uma voz de
 # referência real (XTTS_SPEAKER_WAV) em vez de um speaker pré-treinado — os
 # speakers embutidos (como "Ana Florence") tendem a sair mais "planos".
-XTTS_TEMPERATURE        = float(os.getenv("XTTS_TEMPERATURE", "0.75"))
+XTTS_TEMPERATURE        = float(os.getenv("XTTS_TEMPERATURE", "0.85"))
 XTTS_REPETITION_PENALTY = float(os.getenv("XTTS_REPETITION_PENALTY", "10.0"))
-XTTS_SPEED              = float(os.getenv("XTTS_SPEED", "1.05"))
+XTTS_SPEED              = float(os.getenv("XTTS_SPEED", "1.1"))
 # Opt-in: ajusta os 3 parâmetros acima sozinho a cada geração, com base no
 # histórico de notas manuais + QA automático (.historico_geracoes.json).
 # Desligado (padrão) não muda nada; ligado, sem histórico cai nos defaults de cima.
@@ -124,7 +125,9 @@ regras abaixo normalmente.
 
 REGRAS VISUAIS:
 - Use *texto* para destacar em amarelo e **texto** para branco bold
-- Tipos de cena: intro, text, highlight, card, list, chapter, proof, growth, outro
+- Tipos de cena: intro, text, highlight, card, list, chapter, proof, growth, notification,
+  calendar, clock, moneystack, checklist, progress, timer, rating, scale, map, weather,
+  achievement, battery, book, outro
 - "chapter" é um card de abertura de capítulo (título curto, sem caixa de fundo) — use no
   máximo 1x por roteiro, só quando o vídeo realmente muda de assunto no meio (ex: depois de
   explicar o problema, antes de entrar na solução). Não use em roteiros muito curtos (<6 cenas)
@@ -143,6 +146,98 @@ REGRAS VISUAIS:
   2º ramo que sai do último ponto de growthPoints — só quando o roteiro compara 2 caminhos),
   "growthCounters" (opcional, lista de {"to": número, "prefix", "suffix", "label",
   "accent": true/false} — contador subindo de 0 até "to", números têm que vir da narração)
+- "notification" é uma notificação de app aparecendo na tela de bloqueio do celular (em vez
+  de foto) — use para um momento de "prova social" ou "resultado chegando" (ex: um alerta,
+  confirmação, lembrete ou marco que o app do nicho mandaria), no máximo 1x por roteiro, não
+  é obrigatório. O app e o remetente são FICTÍCIOS e têm que combinar com o nicho do roteiro
+  (app de investimento p/ finanças, app de receitas p/ culinária, app de treino p/ saúde, app
+  de hábitos p/ produtividade, etc. — nunca use um app de finanças em roteiro de outro nicho).
+  Campos: "notifAppLetter" (1-2 letras do ícone do app), "notifAppColor" (gradiente CSS, ex:
+  "linear-gradient(180deg,#8a7cff,#4636d9)"), "notifTitle" (nome do app/remetente), "notifBody"
+  (frase real da notificação, sem markdown, tem que bater com o que a narração está dizendo),
+  "notifTime" (ex: "agora"), "lockTime" (ex: "9:41"), "lockDate" (opcional). Campos opcionais
+  "notifOlderTitle"/"notifOlderBody"/"notifOlderTime" para uma 2ª notificação mais antiga
+  empilhada acima (visual mais rico, não obrigatório)
+- "calendar" é um card de calendário de mesa (em vez de foto) — use quando o roteiro menciona
+  uma DATA, PRAZO ou EVENTO específico (ex: dia do pagamento, prazo de um imposto, aniversário
+  de uma meta), no máximo 1x por roteiro, não é obrigatório. Campos: "calendarMonth" (ex:
+  "MARÇO", maiúsculo), "calendarDay" (ex: "15"), "calendarWeekday" (opcional, ex:
+  "SEXTA-FEIRA"), "calendarNote" (legenda curta abaixo, ex: "DIA DO PAGAMENTO") — tem que bater
+  com a data/evento citado na narração, nunca invente uma data diferente
+- "clock" é um relógio digital ou analógico (em vez de foto) — use quando o roteiro menciona um
+  HORÁRIO específico ou a passagem de um tempo do dia (ex: "às 7 da manhã", "antes de dormir",
+  "2 minutos"), no máximo 1x por roteiro, não é obrigatório. Campos: "clockType" ("digital" ou
+  "analog", padrão "digital"), "clockTime" (formato "HH:MM", ex: "07:30"), "clockNote"
+  (legenda curta abaixo, opcional) — o horário tem que bater com o que a narração diz
+- "moneystack" é uma pilha de notas de dinheiro crescendo, com contador subindo até o valor
+  final (em vez de foto) — use quando o roteiro fala de dinheiro/patrimônio/economia
+  CRESCENDO ou se ACUMULANDO de forma concreta/literal (diferente de "growth", que é uma
+  linha de gráfico abstrata), no máximo 1x por roteiro, não é obrigatório. Campos:
+  "moneyValue" (valor final no formato "R$ 1.247", tem que bater com o número citado na
+  narração, nunca invente), "moneyNote" (legenda curta abaixo, ex: "em 6 meses"),
+  "moneyBills" (opcional, número de notas na pilha, entre 3 e 8, padrão 6)
+- "checklist" é um card com itens marcando check (✓) em sequência, no estilo native-ui (em
+  vez de foto) — diferente de "list" (que é só texto com emoji, sem card/check): use
+  "checklist" quando o roteiro descreve um PASSO A PASSO ou lista de ações concretas pra
+  fazer (ex: "antes de investir, faça isso", "checklist de 3 passos"), no máximo 1x por
+  roteiro, não é obrigatório. Campos: "checklistTitle" (opcional, título curto do card),
+  "checklistItems" (lista de 3-5 strings curtas, cada uma um passo/ação)
+- "progress" é um anel de progresso enchendo até uma porcentagem, com contador no centro
+  (em vez de foto) — use quando o roteiro cita uma META, PERCENTUAL ou PROGRESSO em direção
+  a algo (ex: "73% das pessoas erram isso", "você já fez metade do caminho"), no máximo 1x
+  por roteiro, não é obrigatório. Campos: "progressPct" (número 0-100, tem que bater com o
+  que a narração diz), "progressLabel" (opcional, texto curto acima do anel), "progressNote"
+  (legenda curta abaixo, ex: "DAS PESSOAS NÃO FAZEM ISSO")
+- "timer" é um cronômetro regressivo com anel se esvaziando, com os dígitos contando (em vez
+  de foto) — use quando o roteiro menciona um tempo/prazo CURTO e concreto para fazer algo
+  (ex: "separe 10 minutos", "em 30 segundos", "2 minutos por dia"), diferente de "clock" (que
+  mostra um horário do dia, não uma duração), no máximo 1x por roteiro, não é obrigatório.
+  Campos: "timerFrom" (formato "MM:SS", valor inicial, ex: "10:00"), "timerTo" (opcional,
+  formato "MM:SS", padrão "0:00"), "timerLabel" (opcional, texto curto acima do anel),
+  "timerNote" (legenda curta abaixo) — o tempo tem que bater com o que a narração diz
+- "rating" é 5 estrelas pipocando em sequência revelando uma nota (em vez de foto) — use
+  quando o roteiro cita uma NOTA, AVALIAÇÃO ou APROVAÇÃO concreta (ex: "nota 4.8",
+  "a maioria aprova isso", "melhor avaliado"), no máximo 1x por roteiro, não é obrigatório.
+  Campos: "ratingValue" (número 0-5, decimais permitidos, ex: 4.8, tem que bater com o que
+  a narração diz), "ratingLabel" (opcional, texto curto acima das estrelas), "ratingNote"
+  (legenda curta abaixo, ex: "MAIS DE 10 MIL AVALIAÇÕES")
+- "scale" é uma balança de dois pratos pendendo pro lado vencedor (em vez de foto) — use
+  quando o roteiro faz uma COMPARAÇÃO direta entre duas opções (ex: "alugar ou financiar",
+  "risco vs retorno", "opção A vs opção B"), no máximo 1x por roteiro, não é obrigatório.
+  Campos: "scaleLabel" (opcional, texto curto acima), "scaleLeftLabel"/"scaleLeftValue"
+  (nome e valor curto do prato esquerdo), "scaleRightLabel"/"scaleRightValue" (idem direito),
+  "scaleWinner" ("left" ou "right" — lado que pende, tem que bater com o que a narração
+  diz ser a melhor opção), "scaleNote" (legenda curta abaixo) — valores têm que vir da
+  narração, nunca invente
+- "map" é um mapa estilizado (grade de pontos) com um pin caindo e radar pulsando (em vez
+  de foto) — use quando o roteiro menciona um LOCAL ou abrangência geográfica (ex: "em
+  qualquer lugar do Brasil", "perto de você", "não importa a cidade"), no máximo 1x por
+  roteiro, não é obrigatório. Campos: "mapLabel" (opcional, texto curto acima), "mapPinLabel"
+  (opcional, texto curto sob o pin, ex: "SÃO PAULO" — só use se o roteiro citar um lugar
+  específico, senão deixe vazio), "mapNote" (legenda curta abaixo)
+- "weather" é um ícone de clima animado (sol, nublado ou chuva) — use quando o roteiro usa
+  uma METÁFORA de clima/tempo (ex: "nem todo dia é dia de sol", "se prepare pra qualquer
+  cenário", "dias bons e ruins"), no máximo 1x por roteiro, não é obrigatório. Campos:
+  "weatherType" ("sunny", "cloudy" ou "rainy" — escolha o que combina com a metáfora),
+  "weatherTemp" (opcional, ex: "28°", só use se a narração citar temperatura),
+  "weatherLabel" (opcional, texto curto acima), "weatherNote" (legenda curta abaixo)
+- "achievement" é um badge/medalha pipocando com burst e fitas (em vez de foto) — use
+  quando o roteiro cita uma META BATIDA, MARCO ou CONQUISTA desbloqueada (ex: "primeiro
+  mil guardado", "meta do mês batida"), no máximo 1x por roteiro, não é obrigatório.
+  Campos: "achievementLabel" (opcional, texto curto acima do badge), "achievementTitle"
+  (texto curto dentro/abaixo do badge, ex: "PRIMEIRO MIL", tem que bater com a narração),
+  "achievementNote" (legenda curta abaixo)
+- "battery" é uma bateria enchendo de baixo pra cima com contador de porcentagem (em vez
+  de foto) — use quando o roteiro fala de energia/reserva/força se ACUMULANDO AOS POUCOS
+  de forma literal (diferente de "progress", que é um anel mais abstrato para metas/
+  percentuais gerais), no máximo 1x por roteiro, não é obrigatório. Campos: "batteryPct"
+  (número 0-100, tem que bater com o que a narração diz), "batteryLabel" (opcional, texto
+  curto acima), "batteryNote" (legenda curta abaixo)
+- "book" é um livro fechado que abre revelando um título na página (em vez de foto) — use
+  quando o roteiro fala de APRENDIZADO ou EDUCAÇÃO sobre o tema (ex: "estude antes de
+  investir", "conhecimento é a base de tudo"), no máximo 1x por roteiro, não é obrigatório.
+  Campos: "bookTitle" (título curto na página, ex: "EDUCAÇÃO FINANCEIRA"), "bookLabel"
+  (opcional, texto curto acima do livro), "bookNote" (legenda curta abaixo)
 - De 10 a 12 cenas (nunca menos de 10), sempre inclua intro e outro
 - Textos visuais em MAIÚSCULAS
 
@@ -152,7 +247,12 @@ REGRAS DE NARRAÇÃO:
 - NÃO use maiúsculas na narração, ela é falada não lida
 - A duração da cena deve ser compatível com o tempo de fala (~3 palavras/segundo);
   calcule: número de palavras ÷ 3, arredonde para cima
-- Cenas "intro" e "outro" podem ter narração curta ou vazia ("")
+- A cena "intro" SEMPRE tem narração (nunca ""): é o gancho falado que tem que começar
+  junto com o vídeo, não só o texto na tela — o vídeo não pode abrir em silêncio.
+  "outro" pode ter narração curta (ex: convite pra seguir/comentar) ou vazia só se o
+  CTA na tela já for autoexplicativo
+- Use pontuação natural de fala (!, reticências) pra variar a entonação — frases que só
+  terminam em ponto final soam mais monótonas na narração
 - O vídeo completo deve somar entre 55 e 70 segundos de narração — antes de responder, SOME
   a duração de todas as cenas; se o total ficar abaixo de 55s, aprofunde alguma narração ou
   adicione mais uma cena até chegar nesse total
@@ -195,7 +295,7 @@ aqui; a saída real tem que ter de 9 a 12 cenas, intercalando os tipos acima con
       "channel": "VinyBruno.ia",
       "title": "TÍTULO IMPACTANTE",
       "subtitle": "subtítulo explicativo",
-      "narration": ""
+      "narration": "narração do gancho aqui, já começando a falar desde o frame zero."
     },
     {
       "type": "highlight",
@@ -217,7 +317,7 @@ aqui; a saída real tem que ter de 9 a 12 cenas, intercalando os tipos acima con
       "channel": "VinyBruno.ia",
       "title": "CURTIU? SEGUE AÍ!",
       "cta": "▶ Seguir",
-      "narration": ""
+      "narration": "se isso te ajudou, segue aqui pra não perder o próximo."
     }
   ]
 }"""
@@ -275,6 +375,7 @@ def gerar_roteiro(tema: str) -> dict:
         raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
 
     script = json.loads(raw)
+    script = _limpar_markdown_fora_de_escopo(script)
     script["accentColor"] = ACCENT_COLOR
 
     for scene in script.get("scenes", []):
@@ -283,6 +384,24 @@ def gerar_roteiro(tema: str) -> dict:
 
     print(f"✅ Roteiro: {len(script['scenes'])} cenas")
     return script
+
+
+_MARKDOWN_CAMPOS_PERMITIDOS = {"text", "cardNote", "items"}  # únicos campos que o Remotion
+# renderiza via parseText()/splitHighlightWords() (ver src/utils/text.tsx) — qualquer outro
+# campo (narration, títulos, notes dos ~20 tipos de cena sem foto) mostra a string crua na
+# tela, então "*destaque*"/"**branco**" vazaria como asterisco literal em vez de formatação.
+
+
+def _limpar_markdown_fora_de_escopo(valor, campo=None):
+    if isinstance(valor, str):
+        if campo in _MARKDOWN_CAMPOS_PERMITIDOS or "*" not in valor:
+            return valor
+        return valor.replace("**", "").replace("*", "")
+    if isinstance(valor, list):
+        return [_limpar_markdown_fora_de_escopo(v, campo) for v in valor]
+    if isinstance(valor, dict):
+        return {k: _limpar_markdown_fora_de_escopo(v, k) for k, v in valor.items()}
+    return valor
 
 
 def _prompts_fallback(script: dict, tema: str, n: int) -> list:
@@ -315,6 +434,23 @@ def _get_xtts_model() -> "TTS":
         print(f"   Carregando modelo XTTS v2 ({XTTS_MODEL})...")
         _xtts_model = TTS(XTTS_MODEL).to(_xtts_device())
     return _xtts_model
+
+
+def _descarregar_xtts_model() -> None:
+    """Libera o modelo XTTS (torch) da RAM antes do Remotion abrir Chromium — em
+    máquina com pouca RAM, os dois ao mesmo tempo estourava memória e o kernel
+    matava o processo (SIGKILL / código -9 no post_reel.py)."""
+    global _xtts_model
+    if _xtts_model is None:
+        return
+    _xtts_model = None
+    gc.collect()
+    try:
+        import torch
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except Exception:
+        pass
 
 
 def _palavras_fallback(texto: str, offset: float, duracao: float) -> list:
@@ -497,6 +633,8 @@ def gerar_audios(script: dict, audio_dir: Path) -> tuple:
         scene["_words"]          = palavras
 
     qa["caption_markdown_leak"] = _qa_caption_tem_asterisco(script)
+    if qa["caption_markdown_leak"]:
+        print("   ⚠️  Aviso: asterisco de markdown vazou pra narração/legenda de alguma cena")
 
     print("✅ Áudios gerados")
     return script, qa
@@ -725,8 +863,14 @@ def gerar_imagens(prompts: list, tema: str, dest_dir: Path, usar_ia: bool = Fals
     return caminhos
 
 
+# Cenas de card/dado/branding (proof, card, intro, outro) ficam sem foto de propósito —
+# renderizam sobre o gradiente limpo do Remotion, estilo editorial (motionmaxxing). Módulo
+# usa o mesmo set em main() pra nem buscar/baixar imagem pras cenas que nunca vão exibi-la.
+SCENE_TYPES_SEM_FOTO = {"proof", "growth", "card", "intro", "outro", "notification", "calendar", "clock", "moneystack", "checklist", "progress", "timer", "rating", "scale", "map", "weather", "achievement", "battery", "book"}
+
+
 def aplicar_imagens_de_fundo(script: dict, imagens: list) -> None:
-    """Copia as imagens geradas para public/images/ e associa uma a cada cena
+    """Copia as imagens geradas para public/images/ e associa uma a cada cena elegível
     (cicla se houver menos imagens que cenas) para o Ken Burns no Remotion."""
     public_images_dir = SCRIPT_DIR / "public" / "images"
     if public_images_dir.exists():
@@ -740,20 +884,77 @@ def aplicar_imagens_de_fundo(script: dict, imagens: list) -> None:
         nomes.append(destino.name)
 
     print(f"\n🎞️  {len(nomes)} imagem(ns) pronta(s) em public/images/ (Ken Burns automático)")
-    # Cenas de card/dado/branding (proof, card, intro, outro) ficam sem foto de propósito —
-    # renderizam sobre o gradiente limpo do Remotion, estilo editorial (motionmaxxing), nunca
-    # consomem do ciclo pra não deslocar as imagens das cenas narrativas
-    SEM_FOTO = {"proof", "growth", "card", "intro", "outro"}
     ciclo = itertools.cycle(nomes)
     for scene in script["scenes"]:
-        if scene.get("type") in SEM_FOTO:
+        if scene.get("type") in SCENE_TYPES_SEM_FOTO:
             continue
         scene["backgroundImage"] = f"images/{next(ciclo)}"
 
 
+# ── Trilha sonora (freetouse.com) ────────────────────────────────────────────
+# API pública sem API key/conta (freetouse.com/api) — catálogo com faixas "Free License"
+# (is_premium=false): podem ser usadas em conteúdo monetizado de rede social (Reels)
+# desde que com atribuição — por isso o crédito da faixa é anexado à legenda do Instagram
+# em gerar_musica_de_fundo(). Faixas "premium" (is_premium=true) exigem licença paga —
+# nunca usadas aqui.
+FREETOUSE_API = "https://api.freetouse.com/v3"
+
+
+def _freetouse_escolher_faixa() -> "dict | None":
+    try:
+        r = requests.get(f"{FREETOUSE_API}/music/tracks/all",
+                          params={"limit": 20, "order": "random"}, timeout=15)
+        if not r.ok:
+            return None
+        candidatas = [t for t in r.json().get("data", []) if not t.get("is_premium")]
+        return random.choice(candidatas) if candidatas else None
+    except Exception as e:
+        print(f"   ⚠️  freetouse.com indisponível: {e}")
+        return None
+
+
+def _freetouse_baixar(faixa: dict, dest: Path) -> bool:
+    url = (faixa.get("files") or {}).get("mp3")
+    if not url:
+        return False
+    try:
+        r = requests.get(url, timeout=60)
+        if not r.ok:
+            return False
+        dest.write_bytes(r.content)
+        return True
+    except Exception:
+        return False
+
+
+def gerar_musica_de_fundo(script: dict, dest_dir: Path) -> "Path | None":
+    """Baixa 1 faixa royalty-free pra trilha de fundo e anexa o crédito obrigatório da
+    licença gratuita à legenda do Instagram (script['caption']). Best-effort: qualquer
+    falha (rede, API fora) só pula a trilha — nunca interrompe a geração do vídeo."""
+    faixa = _freetouse_escolher_faixa()
+    if not faixa:
+        print("   ⚠️  Nenhuma faixa de música disponível agora — vídeo sai sem trilha")
+        return None
+
+    dest = dest_dir / "musica.mp3"
+    if not _freetouse_baixar(faixa, dest):
+        print("   ⚠️  Falha ao baixar a música — vídeo sai sem trilha")
+        return None
+
+    titulo = faixa.get("title", "Sem título")
+    artistas = faixa.get("artists") or []
+    artista = (artistas[0][1].get("name") if artistas else None) or "Artista desconhecido"
+    credito = f'🎵 "{titulo}" por {artista} (freetouse.com)'
+    script["caption"] = (script.get("caption", "").rstrip() + f"\n\n{credito}").strip()
+    print(f"   🎵 Trilha: \"{titulo}\" — {artista}")
+    return dest
+
+
 # ── ffmpeg mix ───────────────────────────────────────────────────────────────
-def mixar_audio(script: dict, video_sem_audio: Path, output_path: Path) -> bool:
-    """Combina o vídeo mudo com os áudios de cada cena usando ffmpeg."""
+def mixar_audio(script: dict, video_sem_audio: Path, output_path: Path,
+                 musica_path: "Path | None" = None) -> bool:
+    """Combina o vídeo mudo com os áudios de cada cena (e, se houver, a trilha de
+    fundo) usando ffmpeg."""
     if not shutil.which("ffmpeg"):
         print("⚠️  ffmpeg não encontrado — copiando vídeo sem áudio")
         shutil.copy(video_sem_audio, output_path)
@@ -792,10 +993,24 @@ def mixar_audio(script: dict, video_sem_audio: Path, output_path: Path) -> bool:
         else:
             t += scene_dur
 
-    if not maps:
+    musica_ok = musica_path and pathlib.Path(musica_path).exists()
+    if not maps and not musica_ok:
         print("⚠️  Nenhum áudio encontrado — copiando vídeo sem áudio")
         shutil.copy(video_sem_audio, output_path)
         return True
+
+    inputs_musica = []
+    if musica_ok:
+        # shortcut: volume fixo (sem sidechain/ducking dinâmico) — suficiente pra dar
+        # presença de trilha sem abafar a narração, já normalizada a -16 LUFS. Se a voz
+        # ficar difícil de ouvir em cenas longas, trocar por ffmpeg sidechaincompress.
+        musica_idx = audio_idx + 1
+        inputs_musica = ["-stream_loop", "-1", "-i", str(musica_path)]
+        fade_start = max(0.0, t - 1.0)
+        filters.append(
+            f"[{musica_idx}:a]volume=0.18,atrim=0:{t:.3f},afade=t=out:st={fade_start:.3f}:d=1[music]"
+        )
+        maps.append("[music]")
 
     # Mixar todos os áudios e combinar com vídeo
     # O vídeo mudo já tem a duração correta (ajustada via scene.duration no main)
@@ -804,12 +1019,14 @@ def mixar_audio(script: dict, video_sem_audio: Path, output_path: Path) -> bool:
     cmd = (
         ["ffmpeg", "-y", "-i", str(video_sem_audio)]
         + inputs
+        + inputs_musica
         + [
             "-filter_complex", filter_complex,
             "-map", "0:v",
             "-map", "[aout]",
             "-c:v", "copy",
             "-c:a", "aac",
+            "-shortest",
             str(output_path),
         ]
     )
@@ -977,11 +1194,11 @@ def _pixabay_relevancia(query: str, tags: str) -> float:
 
 
 _XTTS_GRADES = {
-    "temperature":        [0.65, 0.70, 0.75, 0.80, 0.85],
-    "speed":              [1.05, 1.10, 1.15, 1.20, 1.25],
+    "temperature":        [0.75, 0.80, 0.85, 0.90, 0.95],
+    "speed":              [1.00, 1.05, 1.10, 1.15, 1.20],
     "repetition_penalty": [8.0, 9.0, 10.0, 11.0, 12.0],
 }
-_XTTS_DEFAULTS = {"temperature": 0.75, "speed": 1.15, "repetition_penalty": 10.0}
+_XTTS_DEFAULTS = {"temperature": 0.85, "speed": 1.1, "repetition_penalty": 10.0}
 _XTTS_EPSILON  = 0.2
 
 
@@ -1072,8 +1289,16 @@ def main():
             image_prompts = image_prompts + [image_prompts[-1] if image_prompts else tema] * (n_scenes - len(image_prompts))
         image_prompts = image_prompts[:n_scenes]
 
+        # Só busca imagem pra cena que vai de fato exibir uma (aplicar_imagens_de_fundo
+        # pula os tipos em SCENE_TYPES_SEM_FOTO) — evita Pixabay/ComfyUI gastar tempo e
+        # banda buscando foto pra cena de card/intro/outro que nunca vai usá-la.
+        image_prompts_fetch = [
+            p for p, scene in zip(image_prompts, script["scenes"])
+            if scene.get("type") not in SCENE_TYPES_SEM_FOTO
+        ]
+
         print("\n🔎 Prompts de imagem (busca Pixabay):")
-        for i, p in enumerate(image_prompts):
+        for i, p in enumerate(image_prompts_fetch):
             print(f"   [{i+1}] {p}")
 
         print("\n📋 Cenas:")
@@ -1090,12 +1315,13 @@ def main():
         # 2. Áudios (salvos em output_dir/audios/, caminho em scene['_audio_path'])
         script, qa_audio = gerar_audios(script, audio_dir)
         geracao["qa"].update(qa_audio)
+        _descarregar_xtts_model()
 
         # 2b. Imagens de fundo com Ken Burns (Pixabay por padrão; --ai-image sobe o ComfyUI
         # automaticamente, usa, e derruba de novo ao final — só se fomos nós que subimos)
         comfyui_proc = _iniciar_comfyui() if ai_image else None
         try:
-            imagens = gerar_imagens(image_prompts, tema, output_dir / "images", usar_ia=ai_image)
+            imagens = gerar_imagens(image_prompts_fetch, tema, output_dir / "images", usar_ia=ai_image)
             if imagens:
                 aplicar_imagens_de_fundo(script, imagens)
             else:
@@ -1124,6 +1350,9 @@ def main():
                 return
         finally:
             _parar_comfyui(comfyui_proc)
+
+        # 2c. Trilha sonora de fundo (freetouse.com, best-effort — ver gerar_musica_de_fundo)
+        musica_path = gerar_musica_de_fundo(script, output_dir)
 
         # 3. Monta script limpo para o Remotion:
         #    - remove _audio_path (campo privado Python)
@@ -1160,7 +1389,7 @@ def main():
 
         if ok:
             # 5. Mixa áudio com ffmpeg
-            ok = mixar_audio(script, video_mudo, output_path)
+            ok = mixar_audio(script, video_mudo, output_path, musica_path)
             video_mudo.unlink(missing_ok=True)
 
         if ok:
