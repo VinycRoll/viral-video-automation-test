@@ -2,6 +2,7 @@ import React from "react";
 import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
 import { Scene } from "../types";
 import { UiCard } from "../utils/uiCard";
+import { SOFT_TEXT_SHADOW, SERIF_FONT, BlurReveal } from "../utils/text";
 
 const ITEM_GAP = 20; // frames entre cada item marcando check
 
@@ -55,15 +56,34 @@ const CheckItem: React.FC<{ text: string; index: number; accent: string }> = ({ 
 
 // Card de checklist (estilo native-ui) — itens marcam check em sequência, sem foto de
 // fundo. Usado quando o roteiro descreve um passo a passo ou lista de ações concretas.
-export const ChecklistScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
+// variant 0 = itens soltos direto no gradiente (sem card); variant 1 = dentro do UiCard
+// (visual original) — dá outra textura pra mesma cena entre vídeos diferentes.
+export const ChecklistScene: React.FC<{ scene: Scene; accent: string; variant?: number }> = ({ scene, accent, variant = 1 }) => {
   const items = scene.checklistItems || [];
+  const list = (
+    <div style={{ marginTop: scene.checklistTitle ? 8 : 0 }}>
+      {items.map((text, i) => (
+        <CheckItem key={i} text={text} index={i} accent={accent} />
+      ))}
+    </div>
+  );
+  if (variant % 2 === 0) {
+    return (
+      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
+                    alignItems: "center", justifyContent: "center", padding: "60px 90px", boxSizing: "border-box" }}>
+        {scene.checklistTitle && (
+          <div style={{ fontSize: 38, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff", marginBottom: 24,
+                        textAlign: "center", letterSpacing: -0.5, textShadow: SOFT_TEXT_SHADOW }}>
+            <BlurReveal text={scene.checklistTitle} startFrame={0} />
+          </div>
+        )}
+        {list}
+      </div>
+    );
+  }
   return (
     <UiCard title={scene.checklistTitle} width="92%">
-      <div style={{ marginTop: scene.checklistTitle ? 8 : 0 }}>
-        {items.map((text, i) => (
-          <CheckItem key={i} text={text} index={i} accent={accent} />
-        ))}
-      </div>
+      {list}
     </UiCard>
   );
 };

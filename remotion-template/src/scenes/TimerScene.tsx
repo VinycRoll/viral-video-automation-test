@@ -2,6 +2,7 @@ import React from "react";
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { VariantFrame } from "../utils/variant";
 
 const SIZE = 320;
 const STROKE = 16;
@@ -25,7 +26,7 @@ function formatMMSS(totalSeconds: number): string {
 // Cronômetro regressivo (estilo native-ui) — anel se esvaziando enquanto os dígitos
 // contam de timerFrom até timerTo, sem foto de fundo. Usado quando o roteiro menciona
 // um tempo/prazo curto e concreto (ex: "separe 10 minutos", "em 30 segundos").
-export const TimerScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
+export const TimerScene: React.FC<{ scene: Scene; accent: string; variant?: number }> = ({ scene, accent, variant = 0 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -55,22 +56,24 @@ export const TimerScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, 
         </div>
       )}
 
-      <div style={{ position: "relative", width: SIZE, height: SIZE, opacity: ringOp }}>
-        <svg width={SIZE} height={SIZE} style={{ transform: "rotate(-90deg)" }}>
-          <circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none"
-            stroke="rgba(255,255,255,0.1)" strokeWidth={STROKE} />
-          <circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none"
-            stroke={accent} strokeWidth={STROKE} strokeLinecap="round"
-            strokeDasharray={CIRC} strokeDashoffset={dashoffset}
-            style={{ filter: `drop-shadow(0 0 14px ${accent}90)` }} />
-        </svg>
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ fontSize: 78, fontWeight: 900, color: "#fff", letterSpacing: -2,
-                        fontVariantNumeric: "tabular-nums", textShadow: SOFT_TEXT_SHADOW }}>
-            {formatMMSS(current)}
+      <VariantFrame variant={variant} accent={accent}>
+        <div style={{ position: "relative", width: SIZE, height: SIZE, opacity: ringOp }}>
+          <svg width={SIZE} height={SIZE} style={{ transform: "rotate(-90deg)" }}>
+            <circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none"
+              stroke="rgba(255,255,255,0.1)" strokeWidth={STROKE} />
+            <circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none"
+              stroke={accent} strokeWidth={STROKE} strokeLinecap="round"
+              strokeDasharray={CIRC} strokeDashoffset={dashoffset}
+              style={{ filter: `drop-shadow(0 0 14px ${accent}90)` }} />
+          </svg>
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ fontSize: 78, fontWeight: 900, color: "#fff", letterSpacing: -2,
+                          fontVariantNumeric: "tabular-nums", textShadow: SOFT_TEXT_SHADOW }}>
+              {formatMMSS(current)}
+            </div>
           </div>
         </div>
-      </div>
+      </VariantFrame>
 
       {scene.timerNote && (
         <div style={{ opacity: noteOp, fontSize: 34, fontWeight: 800, color: accent,

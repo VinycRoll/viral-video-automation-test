@@ -2,11 +2,12 @@ import React from "react";
 import { useCurrentFrame, useVideoConfig, interpolate, spring, Easing } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW } from "../utils/text";
+import { VariantFrame } from "../utils/variant";
 
 // Card de calendário de mesa (estilo native-ui) — usado quando o roteiro cita uma data,
 // prazo ou evento específico. O dia "vira" (flip vertical) revelando o número marcado,
 // com um anel de destaque pulsando atrás pra marcar a data como importante.
-export const CalendarScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
+export const CalendarScene: React.FC<{ scene: Scene; accent: string; variant?: number }> = ({ scene, accent, variant = 0 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -36,6 +37,7 @@ export const CalendarScene: React.FC<{ scene: Scene; accent: string }> = ({ scen
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 36 }}>
+      <VariantFrame variant={variant} accent={accent}>
       <div style={{ opacity: cardOp, transform: `scale(${cardScale})`, width: 360, borderRadius: 28,
                     overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.4)", background: "#fff" }}>
         <div style={{ background: accent, padding: "18px 0", textAlign: "center" }}>
@@ -65,6 +67,7 @@ export const CalendarScene: React.FC<{ scene: Scene; accent: string }> = ({ scen
           )}
         </div>
       </div>
+      </VariantFrame>
 
       {scene.calendarNote && (
         <div style={{ opacity: noteOp, fontSize: 34, fontWeight: 800, color: accent,

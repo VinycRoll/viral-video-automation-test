@@ -2,6 +2,7 @@ import React from "react";
 import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { VariantFrame } from "../utils/variant";
 
 const BILL_W = 260;
 const BILL_H = 60;
@@ -10,7 +11,7 @@ const STACK_GAP = 14; // frames entre cada nota empilhando
 // Pilha de notas de dinheiro crescendo, uma de cada vez, com leve rotação aleatória
 // (parece jogada ali, não um retângulo perfeito) — termina num contador subindo até
 // o valor final. Usado quando o roteiro fala de dinheiro/patrimônio se acumulando.
-export const MoneyStackScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
+export const MoneyStackScene: React.FC<{ scene: Scene; accent: string; variant?: number }> = ({ scene, accent, variant = 0 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const bills = Math.min(8, Math.max(1, scene.moneyBills || 6));
@@ -38,6 +39,7 @@ export const MoneyStackScene: React.FC<{ scene: Scene; accent: string }> = ({ sc
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 44 }}>
+      <VariantFrame variant={variant} accent={accent}>
       <div style={{ position: "relative", width: BILL_W + 60, height: bills * (BILL_H * 0.46) + BILL_H }}>
         {Array.from({ length: bills }, (_, i) => {
           const billStart = i * STACK_GAP;
@@ -63,6 +65,7 @@ export const MoneyStackScene: React.FC<{ scene: Scene; accent: string }> = ({ sc
           );
         })}
       </div>
+      </VariantFrame>
 
       <div style={{ opacity: titleOp, textAlign: "center" }}>
         {counterStart <= frame && (

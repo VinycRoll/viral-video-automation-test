@@ -1,1071 +1,980 @@
 {
-  "title": "A regra dos 2 minutos pra vencer a procrastinação",
+  "title": "Como organizar o dia em 3 blocos e render mais",
   "accentColor": "#FFD700",
-  "caption": "Sempre que você travar diante de uma tarefa difícil, lembre-se: o cérebro odeia o peso do começo. A regra dos 2 minutos reduz a barreira de entrada e engana a inércia. Já testou isso hoje? Comenta aqui embaixo! 👇🧠 #produtividade #foco #habitos #desenvolvimentopessoal #procrastinacao",
+  "caption": "A sensação de fim do dia sem ter feito nada importante acaba hoje! 🛑 O método de organização em 3 blocos de tempo é o segredo para blindar seu foco e multiplicar sua produtividade sem burnout. Salve esse post para aplicar amanhã e comenta aqui qual é o seu maior ladrão de tempo! ⏱️👇\n\n#Produtividade #GestãoDeTempo #Foco #RotinaProdutiva #OrganizaçãoPessoal",
   "scenes": [
     {
       "type": "intro",
       "duration": 5,
       "channel": "VinyBruno.ia",
-      "title": "TRAVADO EM UMA TAREFA DIFÍCIL?",
-      "subtitle": "a ciência explica como resolver isso",
-      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261031_173325/audios/cena_00.wav",
+      "title": "FIM DOS DIAS SEM FOCO",
+      "subtitle": "o método dos 3 blocos",
+      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261101_072245/audios/cena_00.wav",
       "_audio_duration": 8.768667,
-      "_caption": "se você sempre empurra aquela tarefa importante pra depois, o problema não é falta de disciplina, é o jeito que o seu cérebro processa o começo.",
+      "_caption": "se você passa o dia inteiro apagando incêndios e no fim parece que não fez nada, o problema não é a sua falta de esforço, é a falta de estrutura.",
       "_words": [
         {
           "text": "se",
           "start": 0.0,
-          "end": 0.149
+          "end": 0.152
         },
         {
           "text": "você",
-          "start": 0.149,
-          "end": 0.446
+          "start": 0.152,
+          "end": 0.457
         },
         {
-          "text": "sempre",
-          "start": 0.446,
-          "end": 0.892
-        },
-        {
-          "text": "empurra",
-          "start": 0.892,
-          "end": 1.412
-        },
-        {
-          "text": "aquela",
-          "start": 1.412,
-          "end": 1.858
-        },
-        {
-          "text": "tarefa",
-          "start": 1.858,
-          "end": 2.304
-        },
-        {
-          "text": "importante",
-          "start": 2.304,
-          "end": 3.047
-        },
-        {
-          "text": "pra",
-          "start": 3.047,
-          "end": 3.27
-        },
-        {
-          "text": "depois,",
-          "start": 3.27,
-          "end": 3.79
+          "text": "passa",
+          "start": 0.457,
+          "end": 0.839
         },
         {
           "text": "o",
-          "start": 3.79,
-          "end": 3.864
+          "start": 0.839,
+          "end": 0.915
         },
         {
-          "text": "problema",
-          "start": 3.864,
-          "end": 4.459
+          "text": "dia",
+          "start": 0.915,
+          "end": 1.144
         },
         {
-          "text": "não",
-          "start": 4.459,
-          "end": 4.682
+          "text": "inteiro",
+          "start": 1.144,
+          "end": 1.677
         },
         {
-          "text": "é",
-          "start": 4.682,
-          "end": 4.756
+          "text": "apagando",
+          "start": 1.677,
+          "end": 2.287
         },
         {
-          "text": "falta",
-          "start": 4.756,
-          "end": 5.127
+          "text": "incêndios",
+          "start": 2.287,
+          "end": 2.974
         },
         {
-          "text": "de",
-          "start": 5.127,
-          "end": 5.276
+          "text": "e",
+          "start": 2.974,
+          "end": 3.05
         },
         {
-          "text": "disciplina,",
-          "start": 5.276,
-          "end": 6.093
+          "text": "no",
+          "start": 3.05,
+          "end": 3.202
         },
         {
-          "text": "é",
-          "start": 6.093,
-          "end": 6.168
+          "text": "fim",
+          "start": 3.202,
+          "end": 3.431
         },
         {
-          "text": "o",
-          "start": 6.168,
-          "end": 6.242
-        },
-        {
-          "text": "jeito",
-          "start": 6.242,
-          "end": 6.614
+          "text": "parece",
+          "start": 3.431,
+          "end": 3.889
         },
         {
           "text": "que",
-          "start": 6.614,
-          "end": 6.837
+          "start": 3.889,
+          "end": 4.117
+        },
+        {
+          "text": "não",
+          "start": 4.117,
+          "end": 4.346
+        },
+        {
+          "text": "fez",
+          "start": 4.346,
+          "end": 4.575
+        },
+        {
+          "text": "nada,",
+          "start": 4.575,
+          "end": 4.956
         },
         {
           "text": "o",
-          "start": 6.837,
-          "end": 6.911
+          "start": 4.956,
+          "end": 5.032
         },
         {
-          "text": "seu",
-          "start": 6.911,
-          "end": 7.134
+          "text": "problema",
+          "start": 5.032,
+          "end": 5.642
         },
         {
-          "text": "cérebro",
-          "start": 7.134,
-          "end": 7.654
+          "text": "não",
+          "start": 5.642,
+          "end": 5.871
         },
         {
-          "text": "processa",
-          "start": 7.654,
-          "end": 8.248
+          "text": "é",
+          "start": 5.871,
+          "end": 5.947
         },
         {
-          "text": "o",
-          "start": 8.248,
-          "end": 8.323
+          "text": "a",
+          "start": 5.947,
+          "end": 6.024
         },
         {
-          "text": "começo",
-          "start": 8.323,
+          "text": "sua",
+          "start": 6.024,
+          "end": 6.252
+        },
+        {
+          "text": "falta",
+          "start": 6.252,
+          "end": 6.634
+        },
+        {
+          "text": "de",
+          "start": 6.634,
+          "end": 6.786
+        },
+        {
+          "text": "esforço,",
+          "start": 6.786,
+          "end": 7.396
+        },
+        {
+          "text": "é",
+          "start": 7.396,
+          "end": 7.472
+        },
+        {
+          "text": "a",
+          "start": 7.472,
+          "end": 7.549
+        },
+        {
+          "text": "falta",
+          "start": 7.549,
+          "end": 7.93
+        },
+        {
+          "text": "de",
+          "start": 7.93,
+          "end": 8.082
+        },
+        {
+          "text": "estrutura",
+          "start": 8.082,
           "end": 8.769
         }
       ]
     },
     {
-      "type": "timer",
+      "type": "highlight",
       "duration": 5,
-      "timerFrom": "02:00",
-      "timerTo": "00:00",
-      "timerLabel": "REGRA DOS",
-      "timerNote": "dois minutos pra começar",
-      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261031_173325/audios/cena_01.wav",
-      "_audio_duration": 9.323333,
-      "_caption": "a solução criada pelo especialista james clear é simples: pegue qualquer hábito que te paralisa e reduza ele a uma versão de apenas dois minutos.",
+      "text": "o cérebro humano não foi feito para **multitasking** o dia todo",
+      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261101_072245/audios/cena_01.wav",
+      "_audio_duration": 5.611333,
+      "_caption": "o cérebro humano simplesmente não foi feito para pular de tarefa em tarefa o dia todo sem um rumo claro.",
       "_words": [
-        {
-          "text": "a",
-          "start": 0.0,
-          "end": 0.078
-        },
-        {
-          "text": "solução",
-          "start": 0.078,
-          "end": 0.622
-        },
-        {
-          "text": "criada",
-          "start": 0.622,
-          "end": 1.088
-        },
-        {
-          "text": "pelo",
-          "start": 1.088,
-          "end": 1.399
-        },
-        {
-          "text": "especialista",
-          "start": 1.399,
-          "end": 2.331
-        },
-        {
-          "text": "james",
-          "start": 2.331,
-          "end": 2.719
-        },
-        {
-          "text": "clear",
-          "start": 2.719,
-          "end": 3.108
-        },
-        {
-          "text": "é",
-          "start": 3.108,
-          "end": 3.185
-        },
-        {
-          "text": "simples:",
-          "start": 3.185,
-          "end": 3.807
-        },
-        {
-          "text": "pegue",
-          "start": 3.807,
-          "end": 4.196
-        },
-        {
-          "text": "qualquer",
-          "start": 4.196,
-          "end": 4.817
-        },
-        {
-          "text": "hábito",
-          "start": 4.817,
-          "end": 5.283
-        },
-        {
-          "text": "que",
-          "start": 5.283,
-          "end": 5.516
-        },
-        {
-          "text": "te",
-          "start": 5.516,
-          "end": 5.672
-        },
-        {
-          "text": "paralisa",
-          "start": 5.672,
-          "end": 6.293
-        },
-        {
-          "text": "e",
-          "start": 6.293,
-          "end": 6.371
-        },
-        {
-          "text": "reduza",
-          "start": 6.371,
-          "end": 6.837
-        },
-        {
-          "text": "ele",
-          "start": 6.837,
-          "end": 7.07
-        },
-        {
-          "text": "a",
-          "start": 7.07,
-          "end": 7.148
-        },
-        {
-          "text": "uma",
-          "start": 7.148,
-          "end": 7.381
-        },
-        {
-          "text": "versão",
-          "start": 7.381,
-          "end": 7.847
-        },
-        {
-          "text": "de",
-          "start": 7.847,
-          "end": 8.003
-        },
-        {
-          "text": "apenas",
-          "start": 8.003,
-          "end": 8.469
-        },
-        {
-          "text": "dois",
-          "start": 8.469,
-          "end": 8.779
-        },
-        {
-          "text": "minutos",
-          "start": 8.779,
-          "end": 9.323
-        }
-      ]
-    },
-    {
-      "type": "book",
-      "duration": 6,
-      "bookTitle": "HÁBITOS ATÔMICOS",
-      "bookLabel": "A CIÊNCIA DA AÇÃO",
-      "bookNote": "o segredo está na barreira de entrada",
-      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261031_173325/audios/cena_02.wav",
-      "_audio_duration": 8.827333,
-      "_caption": "a física nos ensina que a maior energia gasta em qualquer movimento é sempre no arranque. com o cérebro humano funciona exatamente igual.",
-      "_words": [
-        {
-          "text": "a",
-          "start": 0.0,
-          "end": 0.077
-        },
-        {
-          "text": "física",
-          "start": 0.077,
-          "end": 0.538
-        },
-        {
-          "text": "nos",
-          "start": 0.538,
-          "end": 0.769
-        },
-        {
-          "text": "ensina",
-          "start": 0.769,
-          "end": 1.23
-        },
-        {
-          "text": "que",
-          "start": 1.23,
-          "end": 1.46
-        },
-        {
-          "text": "a",
-          "start": 1.46,
-          "end": 1.537
-        },
-        {
-          "text": "maior",
-          "start": 1.537,
-          "end": 1.922
-        },
-        {
-          "text": "energia",
-          "start": 1.922,
-          "end": 2.46
-        },
-        {
-          "text": "gasta",
-          "start": 2.46,
-          "end": 2.844
-        },
-        {
-          "text": "em",
-          "start": 2.844,
-          "end": 2.998
-        },
-        {
-          "text": "qualquer",
-          "start": 2.998,
-          "end": 3.613
-        },
-        {
-          "text": "movimento",
-          "start": 3.613,
-          "end": 4.305
-        },
-        {
-          "text": "é",
-          "start": 4.305,
-          "end": 4.381
-        },
-        {
-          "text": "sempre",
-          "start": 4.381,
-          "end": 4.843
-        },
-        {
-          "text": "no",
-          "start": 4.843,
-          "end": 4.996
-        },
-        {
-          "text": "arranque",
-          "start": 4.996,
-          "end": 5.611
-        },
-        {
-          "text": "com",
-          "start": 5.861,
-          "end": 6.084
-        },
         {
           "text": "o",
-          "start": 6.084,
-          "end": 6.158
+          "start": 0.0,
+          "end": 0.067
         },
         {
           "text": "cérebro",
-          "start": 6.158,
-          "end": 6.677
+          "start": 0.067,
+          "end": 0.534
         },
         {
           "text": "humano",
-          "start": 6.677,
-          "end": 7.122
+          "start": 0.534,
+          "end": 0.935
         },
         {
-          "text": "funciona",
-          "start": 7.122,
-          "end": 7.715
+          "text": "simplesmente",
+          "start": 0.935,
+          "end": 1.737
         },
         {
-          "text": "exatamente",
-          "start": 7.715,
-          "end": 8.457
+          "text": "não",
+          "start": 1.737,
+          "end": 1.937
         },
         {
-          "text": "igual",
-          "start": 8.457,
-          "end": 8.827
-        }
-      ]
-    },
-    {
-      "type": "notification",
-      "duration": 6,
-      "notifAppLetter": "P",
-      "notifAppColor": "linear-gradient(180deg,#00FF88,#00aa55)",
-      "notifTitle": "Produtividade Diária",
-      "notifBody": "meta de 2 minutos concluída com sucesso",
-      "notifTime": "agora",
-      "lockTime": "09:41",
-      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261031_173325/audios/cena_03.wav",
-      "_audio_duration": 9.478,
-      "_caption": "em vez de pensar em ler um livro inteiro, você se compromete a ler apenas uma página. em vez de ir pra academia, você só calça o tênis.",
-      "_words": [
-        {
-          "text": "em",
-          "start": 0.0,
-          "end": 0.165
+          "text": "foi",
+          "start": 1.937,
+          "end": 2.138
         },
         {
-          "text": "vez",
-          "start": 0.165,
-          "end": 0.413
+          "text": "feito",
+          "start": 2.138,
+          "end": 2.472
+        },
+        {
+          "text": "para",
+          "start": 2.472,
+          "end": 2.739
+        },
+        {
+          "text": "pular",
+          "start": 2.739,
+          "end": 3.073
         },
         {
           "text": "de",
-          "start": 0.413,
-          "end": 0.578
+          "start": 3.073,
+          "end": 3.206
         },
         {
-          "text": "pensar",
-          "start": 0.578,
-          "end": 1.073
+          "text": "tarefa",
+          "start": 3.206,
+          "end": 3.607
         },
         {
           "text": "em",
-          "start": 1.073,
-          "end": 1.238
+          "start": 3.607,
+          "end": 3.741
         },
         {
-          "text": "ler",
-          "start": 1.238,
-          "end": 1.485
+          "text": "tarefa",
+          "start": 3.741,
+          "end": 4.142
+        },
+        {
+          "text": "o",
+          "start": 4.142,
+          "end": 4.209
+        },
+        {
+          "text": "dia",
+          "start": 4.209,
+          "end": 4.409
+        },
+        {
+          "text": "todo",
+          "start": 4.409,
+          "end": 4.676
+        },
+        {
+          "text": "sem",
+          "start": 4.676,
+          "end": 4.877
         },
         {
           "text": "um",
-          "start": 1.485,
-          "end": 1.65
+          "start": 4.877,
+          "end": 5.01
         },
         {
-          "text": "livro",
-          "start": 1.65,
-          "end": 2.063
+          "text": "rumo",
+          "start": 5.01,
+          "end": 5.277
         },
         {
-          "text": "inteiro,",
-          "start": 2.063,
-          "end": 2.723
-        },
-        {
-          "text": "você",
-          "start": 2.723,
-          "end": 3.053
-        },
-        {
-          "text": "se",
-          "start": 3.053,
-          "end": 3.218
-        },
-        {
-          "text": "compromete",
-          "start": 3.218,
-          "end": 4.043
-        },
-        {
-          "text": "a",
-          "start": 4.043,
-          "end": 4.126
-        },
-        {
-          "text": "ler",
-          "start": 4.126,
-          "end": 4.374
-        },
-        {
-          "text": "apenas",
-          "start": 4.374,
-          "end": 4.869
-        },
-        {
-          "text": "uma",
-          "start": 4.869,
-          "end": 5.116
-        },
-        {
-          "text": "página",
-          "start": 5.116,
+          "text": "claro",
+          "start": 5.277,
           "end": 5.611
-        },
-        {
-          "text": "em",
-          "start": 5.861,
-          "end": 6.052
-        },
-        {
-          "text": "vez",
-          "start": 6.052,
-          "end": 6.337
-        },
-        {
-          "text": "de",
-          "start": 6.337,
-          "end": 6.528
-        },
-        {
-          "text": "ir",
-          "start": 6.528,
-          "end": 6.718
-        },
-        {
-          "text": "pra",
-          "start": 6.718,
-          "end": 7.003
-        },
-        {
-          "text": "academia,",
-          "start": 7.003,
-          "end": 7.86
-        },
-        {
-          "text": "você",
-          "start": 7.86,
-          "end": 8.241
-        },
-        {
-          "text": "só",
-          "start": 8.241,
-          "end": 8.431
-        },
-        {
-          "text": "calça",
-          "start": 8.431,
-          "end": 8.907
-        },
-        {
-          "text": "o",
-          "start": 8.907,
-          "end": 9.002
-        },
-        {
-          "text": "tênis",
-          "start": 9.002,
-          "end": 9.478
-        }
-      ]
-    },
-    {
-      "type": "highlight",
-      "duration": 6,
-      "text": "o segredo é tornar o **início tão fácil** que é impossível dizer não",
-      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261031_173325/audios/cena_04.wav",
-      "_audio_duration": 7.936667,
-      "_caption": "o segredo é tornar o início tão ridículo de fácil que fica praticamente impossível encontrar uma desculpa válida pra recusar.",
-      "_words": [
-        {
-          "text": "o",
-          "start": 0.0,
-          "end": 0.076
-        },
-        {
-          "text": "segredo",
-          "start": 0.076,
-          "end": 0.605
-        },
-        {
-          "text": "é",
-          "start": 0.605,
-          "end": 0.68
-        },
-        {
-          "text": "tornar",
-          "start": 0.68,
-          "end": 1.134
-        },
-        {
-          "text": "o",
-          "start": 1.134,
-          "end": 1.209
-        },
-        {
-          "text": "início",
-          "start": 1.209,
-          "end": 1.663
-        },
-        {
-          "text": "tão",
-          "start": 1.663,
-          "end": 1.89
-        },
-        {
-          "text": "ridículo",
-          "start": 1.89,
-          "end": 2.494
-        },
-        {
-          "text": "de",
-          "start": 2.494,
-          "end": 2.646
-        },
-        {
-          "text": "fácil",
-          "start": 2.646,
-          "end": 3.023
-        },
-        {
-          "text": "que",
-          "start": 3.023,
-          "end": 3.25
-        },
-        {
-          "text": "fica",
-          "start": 3.25,
-          "end": 3.553
-        },
-        {
-          "text": "praticamente",
-          "start": 3.553,
-          "end": 4.46
-        },
-        {
-          "text": "impossível",
-          "start": 4.46,
-          "end": 5.216
-        },
-        {
-          "text": "encontrar",
-          "start": 5.216,
-          "end": 5.896
-        },
-        {
-          "text": "uma",
-          "start": 5.896,
-          "end": 6.123
-        },
-        {
-          "text": "desculpa",
-          "start": 6.123,
-          "end": 6.727
-        },
-        {
-          "text": "válida",
-          "start": 6.727,
-          "end": 7.181
-        },
-        {
-          "text": "pra",
-          "start": 7.181,
-          "end": 7.408
-        },
-        {
-          "text": "recusar",
-          "start": 7.408,
-          "end": 7.937
         }
       ],
       "backgroundImage": "images/00.jpg"
     },
     {
-      "type": "checklist",
+      "type": "clock",
       "duration": 6,
-      "checklistTitle": "PASSO A PASSO",
-      "checklistItems": [
-        "escolha a tarefa travada",
-        "reduza para a versão de 2 minutos",
-        "execute sem pensar no resto"
-      ],
-      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261031_173325/audios/cena_05.wav",
-      "_audio_duration": 8.075333,
-      "_caption": "quando você finalmente dá o primeiro passo, a resistência química do cérebro desaba e a inércia deixa de trabalhar contra você.",
+      "clockType": "digital",
+      "clockTime": "08:00",
+      "clockNote": "bloco da manhã para foco profundo",
+      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261101_072245/audios/cena_02.wav",
+      "_audio_duration": 8.176667,
+      "_caption": "a solução é dividir o seu dia em três blocos estratégicos. o primeiro bloco é a manhã, reservada exclusivamente para o seu trabalho mais pesado.",
       "_words": [
         {
-          "text": "quando",
+          "text": "a",
           "start": 0.0,
-          "end": 0.457
+          "end": 0.071
         },
         {
-          "text": "você",
-          "start": 0.457,
-          "end": 0.762
+          "text": "solução",
+          "start": 0.071,
+          "end": 0.568
         },
         {
-          "text": "finalmente",
-          "start": 0.762,
-          "end": 1.524
+          "text": "é",
+          "start": 0.568,
+          "end": 0.639
         },
         {
-          "text": "dá",
-          "start": 1.524,
-          "end": 1.676
+          "text": "dividir",
+          "start": 0.639,
+          "end": 1.137
         },
         {
           "text": "o",
-          "start": 1.676,
-          "end": 1.752
+          "start": 1.137,
+          "end": 1.208
+        },
+        {
+          "text": "seu",
+          "start": 1.208,
+          "end": 1.421
+        },
+        {
+          "text": "dia",
+          "start": 1.421,
+          "end": 1.634
+        },
+        {
+          "text": "em",
+          "start": 1.634,
+          "end": 1.776
+        },
+        {
+          "text": "três",
+          "start": 1.776,
+          "end": 2.06
+        },
+        {
+          "text": "blocos",
+          "start": 2.06,
+          "end": 2.487
+        },
+        {
+          "text": "estratégicos",
+          "start": 2.487,
+          "end": 3.339
+        },
+        {
+          "text": "o",
+          "start": 3.589,
+          "end": 3.654
         },
         {
           "text": "primeiro",
-          "start": 1.752,
-          "end": 2.362
+          "start": 3.654,
+          "end": 4.171
         },
         {
-          "text": "passo,",
-          "start": 2.362,
-          "end": 2.819
+          "text": "bloco",
+          "start": 4.171,
+          "end": 4.494
         },
         {
-          "text": "a",
-          "start": 2.819,
-          "end": 2.895
-        },
-        {
-          "text": "resistência",
-          "start": 2.895,
-          "end": 3.733
-        },
-        {
-          "text": "química",
-          "start": 3.733,
-          "end": 4.266
-        },
-        {
-          "text": "do",
-          "start": 4.266,
-          "end": 4.419
-        },
-        {
-          "text": "cérebro",
-          "start": 4.419,
-          "end": 4.952
-        },
-        {
-          "text": "desaba",
-          "start": 4.952,
-          "end": 5.409
-        },
-        {
-          "text": "e",
-          "start": 5.409,
-          "end": 5.485
+          "text": "é",
+          "start": 4.494,
+          "end": 4.558
         },
         {
           "text": "a",
-          "start": 5.485,
-          "end": 5.561
+          "start": 4.558,
+          "end": 4.623
         },
         {
-          "text": "inércia",
-          "start": 5.561,
-          "end": 6.095
+          "text": "manhã,",
+          "start": 4.623,
+          "end": 5.011
         },
         {
-          "text": "deixa",
-          "start": 6.095,
-          "end": 6.476
+          "text": "reservada",
+          "start": 5.011,
+          "end": 5.592
         },
         {
-          "text": "de",
-          "start": 6.476,
-          "end": 6.628
+          "text": "exclusivamente",
+          "start": 5.592,
+          "end": 6.497
         },
         {
-          "text": "trabalhar",
-          "start": 6.628,
-          "end": 7.314
+          "text": "para",
+          "start": 6.497,
+          "end": 6.755
         },
         {
-          "text": "contra",
-          "start": 7.314,
-          "end": 7.771
+          "text": "o",
+          "start": 6.755,
+          "end": 6.82
         },
         {
-          "text": "você",
-          "start": 7.771,
-          "end": 8.075
+          "text": "seu",
+          "start": 6.82,
+          "end": 7.014
+        },
+        {
+          "text": "trabalho",
+          "start": 7.014,
+          "end": 7.531
+        },
+        {
+          "text": "mais",
+          "start": 7.531,
+          "end": 7.789
+        },
+        {
+          "text": "pesado",
+          "start": 7.789,
+          "end": 8.177
         }
       ]
     },
     {
-      "type": "calendar",
-      "duration": 5,
-      "calendarMonth": "HOJE",
-      "calendarDay": "01",
-      "calendarWeekday": "SEGUNDA",
-      "calendarNote": "o dia de mudar o foco",
-      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261031_173325/audios/cena_06.wav",
-      "_audio_duration": 8.075333,
-      "_caption": "a maioria das pessoas falha porque tenta fazer tudo de uma vez logo no primeiro dia, gerando exaustão antes mesmo do hábito se formar.",
+      "type": "checklist",
+      "duration": 6,
+      "checklistTitle": "BLOCO DA MANHÃ",
+      "checklistItems": [
+        "zero redes sociais",
+        "tarefa mais complexa primeiro",
+        "ambiente livre de distrações"
+      ],
+      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261101_072245/audios/cena_03.wav",
+      "_audio_duration": 8.358,
+      "_caption": "é quando sua energia mental está no pico. nada de abrir e-mail ou WhatsApp logo cedo, vá direto para a atividade que exige mais raciocínio.",
       "_words": [
         {
-          "text": "a",
+          "text": "é",
           "start": 0.0,
-          "end": 0.073
+          "end": 0.076
         },
         {
-          "text": "maioria",
-          "start": 0.073,
-          "end": 0.587
+          "text": "quando",
+          "start": 0.076,
+          "end": 0.53
         },
         {
-          "text": "das",
-          "start": 0.587,
-          "end": 0.808
+          "text": "sua",
+          "start": 0.53,
+          "end": 0.757
         },
         {
-          "text": "pessoas",
-          "start": 0.808,
-          "end": 1.321
+          "text": "energia",
+          "start": 0.757,
+          "end": 1.286
         },
         {
-          "text": "falha",
-          "start": 1.321,
-          "end": 1.688
+          "text": "mental",
+          "start": 1.286,
+          "end": 1.74
         },
         {
-          "text": "porque",
-          "start": 1.688,
-          "end": 2.129
-        },
-        {
-          "text": "tenta",
-          "start": 2.129,
-          "end": 2.496
-        },
-        {
-          "text": "fazer",
-          "start": 2.496,
-          "end": 2.863
-        },
-        {
-          "text": "tudo",
-          "start": 2.863,
-          "end": 3.157
-        },
-        {
-          "text": "de",
-          "start": 3.157,
-          "end": 3.304
-        },
-        {
-          "text": "uma",
-          "start": 3.304,
-          "end": 3.524
-        },
-        {
-          "text": "vez",
-          "start": 3.524,
-          "end": 3.744
-        },
-        {
-          "text": "logo",
-          "start": 3.744,
-          "end": 4.038
+          "text": "está",
+          "start": 1.74,
+          "end": 2.043
         },
         {
           "text": "no",
-          "start": 4.038,
-          "end": 4.184
+          "start": 2.043,
+          "end": 2.194
         },
         {
-          "text": "primeiro",
-          "start": 4.184,
-          "end": 4.772
+          "text": "pico",
+          "start": 2.194,
+          "end": 2.497
         },
         {
-          "text": "dia,",
-          "start": 4.772,
-          "end": 5.065
+          "text": "nada",
+          "start": 2.747,
+          "end": 3.027
         },
         {
-          "text": "gerando",
-          "start": 5.065,
-          "end": 5.579
+          "text": "de",
+          "start": 3.027,
+          "end": 3.168
         },
         {
-          "text": "exaustão",
-          "start": 5.579,
-          "end": 6.167
+          "text": "abrir",
+          "start": 3.168,
+          "end": 3.518
         },
         {
-          "text": "antes",
-          "start": 6.167,
-          "end": 6.534
+          "text": "e-mail",
+          "start": 3.518,
+          "end": 3.939
         },
         {
-          "text": "mesmo",
-          "start": 6.534,
-          "end": 6.901
+          "text": "ou",
+          "start": 3.939,
+          "end": 4.079
+        },
+        {
+          "text": "WhatsApp",
+          "start": 4.079,
+          "end": 4.64
+        },
+        {
+          "text": "logo",
+          "start": 4.64,
+          "end": 4.921
+        },
+        {
+          "text": "cedo,",
+          "start": 4.921,
+          "end": 5.272
+        },
+        {
+          "text": "vá",
+          "start": 5.272,
+          "end": 5.412
+        },
+        {
+          "text": "direto",
+          "start": 5.412,
+          "end": 5.833
+        },
+        {
+          "text": "para",
+          "start": 5.833,
+          "end": 6.113
+        },
+        {
+          "text": "a",
+          "start": 6.113,
+          "end": 6.184
+        },
+        {
+          "text": "atividade",
+          "start": 6.184,
+          "end": 6.815
+        },
+        {
+          "text": "que",
+          "start": 6.815,
+          "end": 7.025
+        },
+        {
+          "text": "exige",
+          "start": 7.025,
+          "end": 7.376
+        },
+        {
+          "text": "mais",
+          "start": 7.376,
+          "end": 7.657
+        },
+        {
+          "text": "raciocínio",
+          "start": 7.657,
+          "end": 8.358
+        }
+      ]
+    },
+    {
+      "type": "clock",
+      "duration": 6,
+      "clockType": "digital",
+      "clockTime": "14:00",
+      "clockNote": "bloco da tarde para demandas",
+      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261101_072245/audios/cena_04.wav",
+      "_audio_duration": 7.659333,
+      "_caption": "o segundo bloco começa depois do almoço e é dedicado às demandas operacionais e comunicação com outras pessoas.",
+      "_words": [
+        {
+          "text": "o",
+          "start": 0.0,
+          "end": 0.082
+        },
+        {
+          "text": "segundo",
+          "start": 0.082,
+          "end": 0.659
+        },
+        {
+          "text": "bloco",
+          "start": 0.659,
+          "end": 1.071
+        },
+        {
+          "text": "começa",
+          "start": 1.071,
+          "end": 1.565
+        },
+        {
+          "text": "depois",
+          "start": 1.565,
+          "end": 2.059
         },
         {
           "text": "do",
-          "start": 6.901,
-          "end": 7.048
+          "start": 2.059,
+          "end": 2.224
         },
         {
-          "text": "hábito",
-          "start": 7.048,
-          "end": 7.488
+          "text": "almoço",
+          "start": 2.224,
+          "end": 2.718
         },
         {
-          "text": "se",
-          "start": 7.488,
-          "end": 7.635
+          "text": "e",
+          "start": 2.718,
+          "end": 2.8
         },
         {
-          "text": "formar",
-          "start": 7.635,
-          "end": 8.075
+          "text": "é",
+          "start": 2.8,
+          "end": 2.883
+        },
+        {
+          "text": "dedicado",
+          "start": 2.883,
+          "end": 3.541
+        },
+        {
+          "text": "às",
+          "start": 3.541,
+          "end": 3.706
+        },
+        {
+          "text": "demandas",
+          "start": 3.706,
+          "end": 4.365
+        },
+        {
+          "text": "operacionais",
+          "start": 4.365,
+          "end": 5.353
+        },
+        {
+          "text": "e",
+          "start": 5.353,
+          "end": 5.436
+        },
+        {
+          "text": "comunicação",
+          "start": 5.436,
+          "end": 6.342
+        },
+        {
+          "text": "com",
+          "start": 6.342,
+          "end": 6.589
+        },
+        {
+          "text": "outras",
+          "start": 6.589,
+          "end": 7.083
+        },
+        {
+          "text": "pessoas",
+          "start": 7.083,
+          "end": 7.659
+        }
+      ]
+    },
+    {
+      "type": "highlight",
+      "duration": 5,
+      "text": "reúna reuniões e e-mails em um **único período**",
+      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261101_072245/audios/cena_05.wav",
+      "_audio_duration": 5.984667,
+      "_caption": "aqui entram as reuniões, resposta de mensagens, aprovações e alinhamentos rápidos com a equipe.",
+      "_words": [
+        {
+          "text": "aqui",
+          "start": 0.0,
+          "end": 0.296
+        },
+        {
+          "text": "entram",
+          "start": 0.296,
+          "end": 0.739
+        },
+        {
+          "text": "as",
+          "start": 0.739,
+          "end": 0.887
+        },
+        {
+          "text": "reuniões,",
+          "start": 0.887,
+          "end": 1.552
+        },
+        {
+          "text": "resposta",
+          "start": 1.552,
+          "end": 2.143
+        },
+        {
+          "text": "de",
+          "start": 2.143,
+          "end": 2.29
+        },
+        {
+          "text": "mensagens,",
+          "start": 2.29,
+          "end": 3.029
+        },
+        {
+          "text": "aprovações",
+          "start": 3.029,
+          "end": 3.768
+        },
+        {
+          "text": "e",
+          "start": 3.768,
+          "end": 3.842
+        },
+        {
+          "text": "alinhamentos",
+          "start": 3.842,
+          "end": 4.729
+        },
+        {
+          "text": "rápidos",
+          "start": 4.729,
+          "end": 5.246
+        },
+        {
+          "text": "com",
+          "start": 5.246,
+          "end": 5.467
+        },
+        {
+          "text": "a",
+          "start": 5.467,
+          "end": 5.541
+        },
+        {
+          "text": "equipe",
+          "start": 5.541,
+          "end": 5.985
+        }
+      ],
+      "backgroundImage": "images/01.jpg"
+    },
+    {
+      "type": "clock",
+      "duration": 6,
+      "clockType": "digital",
+      "clockTime": "17:30",
+      "clockNote": "bloco final para planejamento",
+      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261101_072245/audios/cena_06.wav",
+      "_audio_duration": 6.166,
+      "_caption": "o terceiro e último bloco acontece nos trinta minutos finais do expediente, servindo para organizar o dia seguinte.",
+      "_words": [
+        {
+          "text": "o",
+          "start": 0.0,
+          "end": 0.064
+        },
+        {
+          "text": "terceiro",
+          "start": 0.064,
+          "end": 0.572
+        },
+        {
+          "text": "e",
+          "start": 0.572,
+          "end": 0.636
+        },
+        {
+          "text": "último",
+          "start": 0.636,
+          "end": 1.017
+        },
+        {
+          "text": "bloco",
+          "start": 1.017,
+          "end": 1.335
+        },
+        {
+          "text": "acontece",
+          "start": 1.335,
+          "end": 1.843
+        },
+        {
+          "text": "nos",
+          "start": 1.843,
+          "end": 2.034
+        },
+        {
+          "text": "trinta",
+          "start": 2.034,
+          "end": 2.416
+        },
+        {
+          "text": "minutos",
+          "start": 2.416,
+          "end": 2.861
+        },
+        {
+          "text": "finais",
+          "start": 2.861,
+          "end": 3.242
+        },
+        {
+          "text": "do",
+          "start": 3.242,
+          "end": 3.369
+        },
+        {
+          "text": "expediente,",
+          "start": 3.369,
+          "end": 4.068
+        },
+        {
+          "text": "servindo",
+          "start": 4.068,
+          "end": 4.577
+        },
+        {
+          "text": "para",
+          "start": 4.577,
+          "end": 4.831
+        },
+        {
+          "text": "organizar",
+          "start": 4.831,
+          "end": 5.403
+        },
+        {
+          "text": "o",
+          "start": 5.403,
+          "end": 5.467
+        },
+        {
+          "text": "dia",
+          "start": 5.467,
+          "end": 5.657
+        },
+        {
+          "text": "seguinte",
+          "start": 5.657,
+          "end": 6.166
         }
       ]
     },
     {
       "type": "progress",
-      "duration": 5,
-      "progressPct": 80,
-      "progressLabel": "FLUXO DE TRABALHO",
-      "progressNote": "das pessoas continuam a tarefa após começar",
-      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261031_173325/audios/cena_07.wav",
-      "_audio_duration": 9.099333,
-      "_caption": "a mágica acontece porque, uma vez em movimento, é fisicamente mais fácil continuar executando do que parar no meio do caminho.",
+      "duration": 6,
+      "progressPct": 100,
+      "progressLabel": "CHECKLIST DIÁRIO",
+      "progressNote": "clareza total para o dia seguinte",
+      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261101_072245/audios/cena_07.wav",
+      "_audio_duration": 7.883333,
+      "_caption": "você mapeia o que foi concluído, define as três prioridades de amanhã e desliga o computador com a mente totalmente livre.",
       "_words": [
         {
-          "text": "a",
+          "text": "você",
           "start": 0.0,
-          "end": 0.087
+          "end": 0.312
         },
         {
-          "text": "mágica",
-          "start": 0.087,
-          "end": 0.607
+          "text": "mapeia",
+          "start": 0.312,
+          "end": 0.781
         },
         {
-          "text": "acontece",
-          "start": 0.607,
-          "end": 1.3
-        },
-        {
-          "text": "porque,",
-          "start": 1.3,
-          "end": 1.907
-        },
-        {
-          "text": "uma",
-          "start": 1.907,
-          "end": 2.167
-        },
-        {
-          "text": "vez",
-          "start": 2.167,
-          "end": 2.426
-        },
-        {
-          "text": "em",
-          "start": 2.426,
-          "end": 2.6
-        },
-        {
-          "text": "movimento,",
-          "start": 2.6,
-          "end": 3.466
-        },
-        {
-          "text": "é",
-          "start": 3.466,
-          "end": 3.553
-        },
-        {
-          "text": "fisicamente",
-          "start": 3.553,
-          "end": 4.506
-        },
-        {
-          "text": "mais",
-          "start": 4.506,
-          "end": 4.853
-        },
-        {
-          "text": "fácil",
-          "start": 4.853,
-          "end": 5.286
-        },
-        {
-          "text": "continuar",
-          "start": 5.286,
-          "end": 6.066
-        },
-        {
-          "text": "executando",
-          "start": 6.066,
-          "end": 6.933
-        },
-        {
-          "text": "do",
-          "start": 6.933,
-          "end": 7.106
+          "text": "o",
+          "start": 0.781,
+          "end": 0.859
         },
         {
           "text": "que",
-          "start": 7.106,
-          "end": 7.366
+          "start": 0.859,
+          "end": 1.093
         },
         {
-          "text": "parar",
-          "start": 7.366,
-          "end": 7.799
+          "text": "foi",
+          "start": 1.093,
+          "end": 1.327
         },
         {
-          "text": "no",
-          "start": 7.799,
-          "end": 7.973
+          "text": "concluído,",
+          "start": 1.327,
+          "end": 2.107
         },
         {
-          "text": "meio",
-          "start": 7.973,
-          "end": 8.319
+          "text": "define",
+          "start": 2.107,
+          "end": 2.576
         },
         {
-          "text": "do",
-          "start": 8.319,
-          "end": 8.493
+          "text": "as",
+          "start": 2.576,
+          "end": 2.732
         },
         {
-          "text": "caminho",
-          "start": 8.493,
-          "end": 9.099
+          "text": "três",
+          "start": 2.732,
+          "end": 3.044
+        },
+        {
+          "text": "prioridades",
+          "start": 3.044,
+          "end": 3.903
+        },
+        {
+          "text": "de",
+          "start": 3.903,
+          "end": 4.059
+        },
+        {
+          "text": "amanhã",
+          "start": 4.059,
+          "end": 4.527
+        },
+        {
+          "text": "e",
+          "start": 4.527,
+          "end": 4.605
+        },
+        {
+          "text": "desliga",
+          "start": 4.605,
+          "end": 5.151
+        },
+        {
+          "text": "o",
+          "start": 5.151,
+          "end": 5.23
+        },
+        {
+          "text": "computador",
+          "start": 5.23,
+          "end": 6.01
+        },
+        {
+          "text": "com",
+          "start": 6.01,
+          "end": 6.244
+        },
+        {
+          "text": "a",
+          "start": 6.244,
+          "end": 6.322
+        },
+        {
+          "text": "mente",
+          "start": 6.322,
+          "end": 6.713
+        },
+        {
+          "text": "totalmente",
+          "start": 6.713,
+          "end": 7.493
+        },
+        {
+          "text": "livre",
+          "start": 7.493,
+          "end": 7.883
         }
       ]
     },
     {
       "type": "growth",
       "duration": 6,
-      "growthTitle": "GANHO DE MOMENTUM",
+      "growthTitle": "CURVA DE RENDIMENTO",
       "growthPoints": [
         {
           "x": 0,
-          "y": 10
+          "y": 20
         },
         {
           "x": 25,
-          "y": 12
-        },
-        {
-          "x": 50,
           "y": 30
         },
         {
+          "x": 50,
+          "y": 60
+        },
+        {
           "x": 75,
-          "y": 65
+          "y": 85
         },
         {
           "x": 100,
@@ -1075,121 +984,131 @@
       "growthTurnIndex": 2,
       "growthCounters": [
         {
-          "to": 10,
-          "prefix": "+",
+          "to": 3,
+          "prefix": "",
           "suffix": "x",
-          "label": "foco real",
+          "label": "mais foco diário",
           "accent": true
         }
       ],
-      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261031_173325/audios/cena_08.wav",
-      "_audio_duration": 8.032667,
-      "_caption": "aquele livro que parecia impossível de terminar acaba lido inteiro só porque você teve a coragem de abrir a primeira página.",
+      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261101_072245/audios/cena_08.wav",
+      "_audio_duration": 7.840667,
+      "_caption": "separando o dia dessa forma, a sua curva de rendimento dispara e a sensação de cansaço mental no fim do dia diminui drasticamente.",
       "_words": [
         {
-          "text": "aquele",
+          "text": "separando",
           "start": 0.0,
-          "end": 0.468
+          "end": 0.659
         },
         {
-          "text": "livro",
-          "start": 0.468,
-          "end": 0.858
+          "text": "o",
+          "start": 0.659,
+          "end": 0.733
         },
         {
-          "text": "que",
-          "start": 0.858,
-          "end": 1.092
+          "text": "dia",
+          "start": 0.733,
+          "end": 0.953
         },
         {
-          "text": "parecia",
-          "start": 1.092,
-          "end": 1.638
+          "text": "dessa",
+          "start": 0.953,
+          "end": 1.319
         },
         {
-          "text": "impossível",
-          "start": 1.638,
+          "text": "forma,",
+          "start": 1.319,
+          "end": 1.759
+        },
+        {
+          "text": "a",
+          "start": 1.759,
+          "end": 1.832
+        },
+        {
+          "text": "sua",
+          "start": 1.832,
+          "end": 2.052
+        },
+        {
+          "text": "curva",
+          "start": 2.052,
           "end": 2.418
         },
         {
           "text": "de",
           "start": 2.418,
-          "end": 2.574
+          "end": 2.565
         },
         {
-          "text": "terminar",
-          "start": 2.574,
-          "end": 3.197
+          "text": "rendimento",
+          "start": 2.565,
+          "end": 3.297
         },
         {
-          "text": "acaba",
-          "start": 3.197,
-          "end": 3.587
+          "text": "dispara",
+          "start": 3.297,
+          "end": 3.81
         },
         {
-          "text": "lido",
-          "start": 3.587,
-          "end": 3.899
-        },
-        {
-          "text": "inteiro",
-          "start": 3.899,
-          "end": 4.445
-        },
-        {
-          "text": "só",
-          "start": 4.445,
-          "end": 4.601
-        },
-        {
-          "text": "porque",
-          "start": 4.601,
-          "end": 5.069
-        },
-        {
-          "text": "você",
-          "start": 5.069,
-          "end": 5.381
-        },
-        {
-          "text": "teve",
-          "start": 5.381,
-          "end": 5.693
+          "text": "e",
+          "start": 3.81,
+          "end": 3.884
         },
         {
           "text": "a",
-          "start": 5.693,
-          "end": 5.771
+          "start": 3.884,
+          "end": 3.957
         },
         {
-          "text": "coragem",
-          "start": 5.771,
-          "end": 6.317
+          "text": "sensação",
+          "start": 3.957,
+          "end": 4.543
         },
         {
           "text": "de",
-          "start": 6.317,
-          "end": 6.473
+          "start": 4.543,
+          "end": 4.69
         },
         {
-          "text": "abrir",
-          "start": 6.473,
-          "end": 6.863
+          "text": "cansaço",
+          "start": 4.69,
+          "end": 5.203
         },
         {
-          "text": "a",
-          "start": 6.863,
-          "end": 6.941
+          "text": "mental",
+          "start": 5.203,
+          "end": 5.642
         },
         {
-          "text": "primeira",
-          "start": 6.941,
-          "end": 7.565
+          "text": "no",
+          "start": 5.642,
+          "end": 5.789
         },
         {
-          "text": "página",
-          "start": 7.565,
-          "end": 8.033
+          "text": "fim",
+          "start": 5.789,
+          "end": 6.009
+        },
+        {
+          "text": "do",
+          "start": 6.009,
+          "end": 6.155
+        },
+        {
+          "text": "dia",
+          "start": 6.155,
+          "end": 6.375
+        },
+        {
+          "text": "diminui",
+          "start": 6.375,
+          "end": 6.888
+        },
+        {
+          "text": "drasticamente",
+          "start": 6.888,
+          "end": 7.841
         }
       ]
     },
@@ -1197,96 +1116,96 @@
       "type": "outro",
       "duration": 4,
       "channel": "VinyBruno.ia",
-      "title": "SALVA ESSE VÍDEO E PRATICA HOJE!",
-      "cta": "▶ Seguir",
-      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261031_173325/audios/cena_09.wav",
-      "_audio_duration": 6.304667,
-      "_caption": "aplica essa regra agora na sua próxima pendência e me conta aqui nos comentários o que aconteceu.",
+      "title": "SALVE ESTE MÉTODO",
+      "cta": "▶ Seguir para mais dicas",
+      "_audio_path": "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels/videos_gerados/motion_20261101_072245/audios/cena_09.wav",
+      "_audio_duration": 6.651333,
+      "_caption": "gostou da estratégia? salva esse vídeo para aplicar amanhã e me segue para mais dicas de produtividade.",
       "_words": [
         {
-          "text": "aplica",
+          "text": "gostou",
           "start": 0.0,
-          "end": 0.473
+          "end": 0.512
         },
         {
-          "text": "essa",
-          "start": 0.473,
-          "end": 0.788
+          "text": "da",
+          "start": 0.512,
+          "end": 0.683
         },
         {
-          "text": "regra",
-          "start": 0.788,
-          "end": 1.182
+          "text": "estratégia?",
+          "start": 0.683,
+          "end": 1.622
         },
         {
-          "text": "agora",
-          "start": 1.182,
-          "end": 1.576
+          "text": "salva",
+          "start": 1.872,
+          "end": 2.229
         },
         {
-          "text": "na",
-          "start": 1.576,
-          "end": 1.734
+          "text": "esse",
+          "start": 2.229,
+          "end": 2.514
         },
         {
-          "text": "sua",
-          "start": 1.734,
-          "end": 1.97
+          "text": "vídeo",
+          "start": 2.514,
+          "end": 2.871
         },
         {
-          "text": "próxima",
-          "start": 1.97,
-          "end": 2.522
+          "text": "para",
+          "start": 2.871,
+          "end": 3.156
         },
         {
-          "text": "pendência",
-          "start": 2.522,
-          "end": 3.231
+          "text": "aplicar",
+          "start": 3.156,
+          "end": 3.655
+        },
+        {
+          "text": "amanhã",
+          "start": 3.655,
+          "end": 4.083
         },
         {
           "text": "e",
-          "start": 3.231,
-          "end": 3.31
+          "start": 4.083,
+          "end": 4.155
         },
         {
           "text": "me",
-          "start": 3.31,
-          "end": 3.468
+          "start": 4.155,
+          "end": 4.297
         },
         {
-          "text": "conta",
-          "start": 3.468,
-          "end": 3.862
+          "text": "segue",
+          "start": 4.297,
+          "end": 4.654
         },
         {
-          "text": "aqui",
-          "start": 3.862,
-          "end": 4.177
+          "text": "para",
+          "start": 4.654,
+          "end": 4.939
         },
         {
-          "text": "nos",
-          "start": 4.177,
-          "end": 4.413
+          "text": "mais",
+          "start": 4.939,
+          "end": 5.225
         },
         {
-          "text": "comentários",
-          "start": 4.413,
-          "end": 5.28
+          "text": "dicas",
+          "start": 5.225,
+          "end": 5.581
         },
         {
-          "text": "o",
-          "start": 5.28,
-          "end": 5.359
+          "text": "de",
+          "start": 5.581,
+          "end": 5.724
         },
         {
-          "text": "que",
-          "start": 5.359,
-          "end": 5.595
-        },
-        {
-          "text": "aconteceu",
-          "start": 5.595,
-          "end": 6.305
+          "text": "produtividade",
+          "start": 5.724,
+          "end": 6.651
         }
       ]
     }

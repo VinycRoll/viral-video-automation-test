@@ -2,6 +2,7 @@ import React from "react";
 import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { VariantFrame } from "../utils/variant";
 
 const BADGE_SIZE = 180;
 const STAR_PATH =
@@ -22,7 +23,7 @@ const Burst: React.FC<{ accent: string; op: number }> = ({ accent, op }) => (
 
 // Badge de conquista (estrela/medalha) "pipocando" com burst e fitas, sem foto de fundo.
 // Usado quando o roteiro cita uma meta batida, marco ou conquista desbloqueada.
-export const AchievementScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
+export const AchievementScene: React.FC<{ scene: Scene; accent: string; variant?: number }> = ({ scene, accent, variant = 0 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -44,22 +45,24 @@ export const AchievementScene: React.FC<{ scene: Scene; accent: string }> = ({ s
         </div>
       )}
 
-      <div style={{ position: "relative", width: BADGE_SIZE, height: BADGE_SIZE + 46, transform: `scale(${scale})` }}>
-        <Burst accent={accent} op={burstOp} />
-        <div style={{ position: "absolute", left: BADGE_SIZE / 2 - 54, top: BADGE_SIZE - 30,
-                      width: 0, height: 0, borderLeft: "26px solid transparent", borderRight: "26px solid transparent",
-                      borderTop: `58px solid ${accent}c0`, transform: "rotate(-14deg)" }} />
-        <div style={{ position: "absolute", left: BADGE_SIZE / 2 + 2, top: BADGE_SIZE - 30,
-                      width: 0, height: 0, borderLeft: "26px solid transparent", borderRight: "26px solid transparent",
-                      borderTop: `58px solid ${accent}c0`, transform: "rotate(14deg)" }} />
-        <div style={{ position: "absolute", left: 0, top: 0, width: BADGE_SIZE, height: BADGE_SIZE, borderRadius: "50%",
-                      background: `radial-gradient(circle at 35% 30%, ${accent}, ${accent}aa)`,
-                      boxShadow: `0 0 36px ${accent}80`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <svg width={88} height={88} viewBox="0 0 24 24">
-            <path d={STAR_PATH} fill="#fff" />
-          </svg>
+      <VariantFrame variant={variant} accent={accent}>
+        <div style={{ position: "relative", width: BADGE_SIZE, height: BADGE_SIZE + 46, transform: `scale(${scale})` }}>
+          <Burst accent={accent} op={burstOp} />
+          <div style={{ position: "absolute", left: BADGE_SIZE / 2 - 54, top: BADGE_SIZE - 30,
+                        width: 0, height: 0, borderLeft: "26px solid transparent", borderRight: "26px solid transparent",
+                        borderTop: `58px solid ${accent}c0`, transform: "rotate(-14deg)" }} />
+          <div style={{ position: "absolute", left: BADGE_SIZE / 2 + 2, top: BADGE_SIZE - 30,
+                        width: 0, height: 0, borderLeft: "26px solid transparent", borderRight: "26px solid transparent",
+                        borderTop: `58px solid ${accent}c0`, transform: "rotate(14deg)" }} />
+          <div style={{ position: "absolute", left: 0, top: 0, width: BADGE_SIZE, height: BADGE_SIZE, borderRadius: "50%",
+                        background: `radial-gradient(circle at 35% 30%, ${accent}, ${accent}aa)`,
+                        boxShadow: `0 0 36px ${accent}80`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width={88} height={88} viewBox="0 0 24 24">
+              <path d={STAR_PATH} fill="#fff" />
+            </svg>
+          </div>
         </div>
-      </div>
+      </VariantFrame>
 
       {scene.achievementTitle && (
         <div style={{ opacity: titleOp, fontSize: 40, fontWeight: 900, color: "#fff", textAlign: "center",

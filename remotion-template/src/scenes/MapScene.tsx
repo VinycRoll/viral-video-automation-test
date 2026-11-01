@@ -8,10 +8,44 @@ const PIN_LAND_FRAME = 10;
 const PIN_PATH =
   "M12 2C7.58 2 4 5.58 4 10c0 5.25 7 12 7 12s1 .01 1 0c0 0 7-6.75 7-12 0-4.42-3.58-8-8-8zm0 10.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z";
 
+// Variante 1 do mapa: globo com linhas de latitude/longitude girando lentamente, em vez
+// da grade plana — mesmo pin/radar por cima, só a base visual muda (ver pickVariant em
+// MotionReel.tsx). Cobre a ideia de "GlobePinScene" sem duplicar a lógica da MapScene.
+const GlobeGrid: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
+  const spin = (frame / fps) * 14; // graus/seg
+  const lons = [0, 30, 60, 90, 120, 150];
+  return (
+    <svg width={CARD_SIZE} height={CARD_SIZE} viewBox="0 0 200 200" style={{ position: "absolute", inset: 0 }}>
+      <defs>
+        <radialGradient id="globeShade" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.10)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.01)" />
+        </radialGradient>
+      </defs>
+      <circle cx="100" cy="100" r="98" fill="url(#globeShade)" stroke="rgba(255,255,255,0.22)" strokeWidth={2} />
+      {[-60, -30, 0, 30, 60].map((lat) => {
+        const r = Math.sqrt(Math.max(0, 98 * 98 - (lat * 0.95) ** 2));
+        return (
+          <ellipse key={lat} cx="100" cy={100 - lat * 0.95} rx={r} ry={6}
+                   fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth={1} />
+        );
+      })}
+      {lons.map((lon) => {
+        const angle = ((lon + spin) % 180) - 90;
+        const rx = Math.abs(Math.cos((angle * Math.PI) / 180)) * 98;
+        return (
+          <ellipse key={lon} cx="100" cy="100" rx={rx} ry="98"
+                   fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth={1} />
+        );
+      })}
+    </svg>
+  );
+};
+
 // Mapa estilizado (grade de pontos, estilo native-ui) com um pin caindo e quicando no
 // alvo, radar pulsando embaixo, sem foto de fundo real. Usado quando o roteiro menciona
 // um LOCAL ou abrangência geográfica (ex: "em qualquer lugar do Brasil", "perto de você").
-export const MapScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
+export const MapScene: React.FC<{ scene: Scene; accent: string; variant?: number }> = ({ scene, accent, variant = 0 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -38,13 +72,14 @@ export const MapScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, ac
       )}
 
       <div style={{
-        position: "relative", width: CARD_SIZE, height: CARD_SIZE, borderRadius: 28,
+        position: "relative", width: CARD_SIZE, height: CARD_SIZE, borderRadius: variant % 2 === 1 ? "50%" : 28,
         border: "1px solid rgba(255,255,255,0.15)", overflow: "hidden", opacity: cardOp,
         backgroundColor: "rgba(255,255,255,0.03)",
-        backgroundImage:
+        backgroundImage: variant % 2 === 1 ? undefined :
           "repeating-linear-gradient(0deg, rgba(255,255,255,0.07) 0px, rgba(255,255,255,0.07) 1px, transparent 1px, transparent 38px)," +
           "repeating-linear-gradient(90deg, rgba(255,255,255,0.07) 0px, rgba(255,255,255,0.07) 1px, transparent 1px, transparent 38px)",
       }}>
+        {variant % 2 === 1 && <GlobeGrid frame={frame} fps={fps} />}
         {pingVisible && (
           <div style={{
             position: "absolute", left: "50%", top: "50%", width: 70, height: 70,

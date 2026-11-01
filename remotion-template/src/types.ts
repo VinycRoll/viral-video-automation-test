@@ -22,6 +22,28 @@ export type SceneType =
   | "achievement"
   | "battery"
   | "book"
+  | "thermometer"
+  | "piggybank"
+  | "receipt"
+  | "roadmap"
+  | "quote"
+  | "alert"
+  | "split"
+  | "counter"
+  | "sizecompare"
+  | "xray"
+  | "proportiongrid"
+  | "speedrace"
+  | "timelineera"
+  | "orbit"
+  | "dna"
+  | "mythfact"
+  | "redacted"
+  | "magnify"
+  | "censored"
+  | "domino"
+  | "treebranch"
+  | "vsbattle"
   | "outro";
 
 export interface WordTiming {
@@ -183,6 +205,162 @@ export interface Scene {
   bookTitle?: string;        // título na página revelada, ex: "EDUCAÇÃO FINANCEIRA"
   bookLabel?: string;        // texto curto acima do livro (opcional)
   bookNote?: string;         // legenda abaixo
+
+  // thermometer — termômetro enchendo de baixo pra cima, sem foto de fundo. Use para
+  // NÍVEL ou INTENSIDADE (ex: "nível de risco desse investimento", "quanto falta pra
+  // bater sua meta") — diferente de "battery" (energia/reserva) e "progress" (anel).
+  thermoPct?: number;        // 0-100, valor final
+  thermoLabel?: string;      // texto curto acima (opcional)
+  thermoNote?: string;       // legenda abaixo
+
+  // piggybank — moedas caindo num pote de vidro até formar um valor, sem foto de fundo.
+  // Use quando o roteiro fala de ECONOMIZAR/GUARDAR dinheiro pouco a pouco (mais literal
+  // que "moneystack", que empilha notas).
+  piggyValue?: string;       // valor final, ex: "R$ 500"
+  piggyLabel?: string;       // texto curto acima (opcional)
+  piggyNote?: string;        // legenda abaixo, ex: "em 3 meses"
+  piggyCoins?: number;       // nº de moedas (padrão 5, máx. 8)
+
+  // receipt — recibo com itens somando um total em destaque, sem foto de fundo. Use
+  // quando o roteiro DETALHA gastos/itens que compõem um valor (ex: "pra onde vai seu
+  // salário"), diferente de "proof" (barras de % de divisão).
+  receiptTitle?: string;     // título do recibo (opcional)
+  receiptItems?: { label: string; value: string }[]; // 3-5 itens
+  receiptTotal?: string;     // valor total, destacado na cor do vídeo
+  receiptNote?: string;      // legenda abaixo
+
+  // roadmap — linha do tempo horizontal com 3-4 marcos acendendo em sequência, sem foto
+  // de fundo. Use para uma JORNADA ou PLANO em etapas (ex: "sua reserva em 3 passos"),
+  // diferente de "checklist" (tarefas marcando check uma a uma).
+  roadmapTitle?: string;     // título curto acima (opcional)
+  roadmapSteps?: { label: string }[]; // 3-4 marcos, label curto
+  roadmapNote?: string;      // legenda abaixo
+
+  // quote — citação editorial com aspas grandes, sem foto de fundo. Use quando o roteiro
+  // cita uma frase de autoridade ou dado curto pra reforçar o argumento.
+  quoteText?: string;        // a frase (sem aspas, o componente já adiciona)
+  quoteAuthor?: string;      // ex: "Warren Buffett" (opcional)
+
+  // alert — triângulo de alerta pulsando em vermelho, sem foto de fundo. Use quando o
+  // roteiro aponta um ERRO COMUM ou RISCO a evitar — tom de advertência.
+  alertLabel?: string;       // texto curto acima, ex: "ATENÇÃO" (opcional)
+  alertTitle?: string;       // a mensagem de alerta principal
+  alertNote?: string;        // legenda abaixo
+
+  // split — dois valores lado a lado com divisória central, sem foto de fundo. Use para
+  // comparar dois ESTADOS/MOMENTOS (ex: "antes e depois da reserva") sem indicar
+  // vencedor — diferente de "scale", que faz a balança pender pra um lado.
+  splitLabel?: string;       // texto curto acima (opcional)
+  splitLeftLabel?: string;
+  splitLeftValue?: string;
+  splitRightLabel?: string;
+  splitRightValue?: string;  // lado direito é sempre destacado na cor do vídeo
+  splitNote?: string;        // legenda abaixo
+
+  // counter — número gigante contando até um valor, sem ícone, sem foto de fundo. Use
+  // pra uma ESTATÍSTICA de impacto pura (ex: "87% das pessoas", "+10 mil investidores"),
+  // quando o dado em si já é o choque, sem precisar de um elemento visual concreto.
+  counterTo?: number;        // valor final
+  counterPrefix?: string;    // ex: "+" ou "R$ " (opcional)
+  counterSuffix?: string;    // ex: "%" ou " mil" (opcional)
+  counterLabel?: string;     // texto curto acima (opcional)
+  counterNote?: string;      // legenda abaixo
+
+  // sizecompare — dois elementos lado a lado em escalas muito diferentes, com zoom-out
+  // revelando a diferença de tamanho. Use pra fatos de ESCALA/TAMANHO (ex: comparar o
+  // tamanho de dois objetos, animais, prédios).
+  sizeLabel?: string;
+  sizeLeftLabel?: string;
+  sizeLeftValue?: string;
+  sizeRightLabel?: string;
+  sizeRightValue?: string;
+  sizeRatio?: number;        // quantas vezes o lado direito é maior que o esquerdo (padrão 20)
+  sizeNote?: string;
+
+  // xray — um scanner/lente passa sobre um ícone revelando uma camada "interna" diferente.
+  // Use pra explicar COMO ALGO FUNCIONA POR DENTRO.
+  xrayLabel?: string;
+  xrayOutside?: string;      // rótulo do lado ainda não escaneado
+  xrayInside?: string;       // rótulo do lado revelado
+  xrayNote?: string;
+
+  // proportiongrid — grade de ícones onde só uma fração acende, pra ilustrar estatística.
+  // Use pra proporções do tipo "X em cada Y".
+  gridLabel?: string;
+  gridTotal?: number;        // total de ícones na grade (padrão 100)
+  gridHighlight?: number;    // quantos acendem na cor do vídeo
+  gridNote?: string;
+
+  // speedrace — 2-3 barras cruzando a tela em velocidades diferentes. Use pra comparar a
+  // RAPIDEZ de coisas distintas (ex: som vs. luz).
+  raceLabel?: string;
+  raceItems?: { label: string; value?: string; speed: number }[]; // speed relativo, maior = mais rápido
+  raceNote?: string;
+
+  // timelineera — régua temporal horizontal deslizando com inércia até parar numa data.
+  // Use pra uma data ou período histórico específico.
+  eraLabel?: string;
+  eraFrom?: number;          // ano inicial da régua
+  eraTo?: number;            // ano onde a régua para
+  eraNote?: string;
+
+  // orbit — núcleo central com 2-3 elementos orbitando. Use pra conceitos CENTRAIS com
+  // coisas girando em torno (planetas, átomo, ideias que giram em torno de um tema).
+  orbitLabel?: string;
+  orbitCenterLabel?: string; // texto curto no núcleo
+  orbitItems?: { label: string }[]; // 2-3 itens orbitando
+  orbitNote?: string;
+
+  // dna — hélice dupla estilizada girando suavemente. Curinga pra biologia, saúde,
+  // genética, evolução.
+  dnaLabel?: string;
+  dnaNote?: string;
+
+  // mythfact — afirmação recebe carimbo "FALSO" e vira revelando a verdade em verde. Use
+  // pra desmentir um mito comum sobre o tema.
+  mythLabel?: string;        // o mito/afirmação falsa
+  factLabel?: string;        // a verdade revelada
+  mythNote?: string;
+
+  // redacted — documento com tarjas pretas que deslizam revelando uma palavra escondida.
+  // Use pra um "segredo"/informação pouco conhecida sobre o tema.
+  redactedTitle?: string;    // ex: "ARQUIVO CONFIDENCIAL"
+  redactedWord?: string;     // palavra revelada
+  redactedNote?: string;
+
+  // magnify — lupa que passeia pela tela até focar e ampliar um detalhe escondido. Use
+  // pra revelar um detalhe pouco notado sobre o tema.
+  magnifyLabel?: string;
+  magnifyTitle?: string;     // texto revelado em foco
+  magnifyNote?: string;
+
+  // censored — texto/valor borrado ou pixelado que fica nítido. Use pra criar suspense
+  // antes de revelar um número ou fato.
+  censoredLabel?: string;
+  censoredText?: string;     // o texto/valor que começa borrado e revela nítido
+  censoredNote?: string;
+
+  // domino — fileira de blocos que tombam em cadeia. Use pra ilustrar causa-e-efeito (um
+  // evento pequeno causando uma consequência grande).
+  dominoLabel?: string;
+  dominoCount?: number;      // nº de blocos (padrão 6)
+  dominoNote?: string;
+
+  // treebranch — linha única que sobe e se bifurca em vários ramos. Use pra mostrar como
+  // uma coisa deu origem a várias outras (língua, espécie, invenção).
+  treeLabel?: string;
+  treeRootLabel?: string;    // nó raiz
+  treeBranches?: { label: string }[]; // 2-4 ramos
+  treeNote?: string;
+
+  // vsbattle — duas metades colidem na diagonal com emblema "VS" pulsante. Use pra
+  // comparar dois animais, países ou fenômenos — mais "confronto" que "split" (que é
+  // uma comparação passiva lado a lado).
+  vsLeftLabel?: string;
+  vsLeftValue?: string;
+  vsRightLabel?: string;
+  vsRightValue?: string;
+  vsNote?: string;
 }
 
 export interface VideoScript {

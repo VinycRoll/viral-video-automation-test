@@ -2,6 +2,7 @@ import React from "react";
 import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { VariantFrame } from "../utils/variant";
 
 const STAR_PATH =
   "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.27 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z";
@@ -35,7 +36,7 @@ const Star: React.FC<{ index: number; fillFrac: number; accent: string }> = ({ i
 // Avaliação em estrelas (estilo native-ui) — estrelas "pipocam" em sequência e revelam
 // o preenchimento até a nota, sem foto de fundo. Usado quando o roteiro cita uma nota,
 // avaliação ou aprovação (ex: "nota 4.8", "a maioria aprova isso").
-export const RatingScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
+export const RatingScene: React.FC<{ scene: Scene; accent: string; variant?: number }> = ({ scene, accent, variant = 0 }) => {
   const frame = useCurrentFrame();
   const value = Math.max(0, Math.min(5, scene.ratingValue ?? 5));
 
@@ -53,17 +54,21 @@ export const RatingScene: React.FC<{ scene: Scene; accent: string }> = ({ scene,
         </div>
       )}
 
-      <div style={{ display: "flex", gap: STAR_GAP }}>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Star key={i} index={i} fillFrac={Math.max(0, Math.min(1, value - i))} accent={accent} />
-        ))}
-      </div>
+      <VariantFrame variant={variant} accent={accent}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
+          <div style={{ display: "flex", gap: STAR_GAP }}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star key={i} index={i} fillFrac={Math.max(0, Math.min(1, value - i))} accent={accent} />
+            ))}
+          </div>
 
-      <div style={{ opacity: valueOp, fontSize: 56, fontWeight: 900, color: "#fff",
-                    fontVariantNumeric: "tabular-nums", textShadow: SOFT_TEXT_SHADOW }}>
-        {value.toFixed(1).replace(".", ",")}
-        <span style={{ fontSize: 30, color: accent }}>/5</span>
-      </div>
+          <div style={{ opacity: valueOp, fontSize: 56, fontWeight: 900, color: "#fff",
+                        fontVariantNumeric: "tabular-nums", textShadow: SOFT_TEXT_SHADOW }}>
+            {value.toFixed(1).replace(".", ",")}
+            <span style={{ fontSize: 30, color: accent }}>/5</span>
+          </div>
+        </div>
+      </VariantFrame>
 
       {scene.ratingNote && (
         <div style={{ opacity: noteOp, fontSize: 34, fontWeight: 800, color: accent,

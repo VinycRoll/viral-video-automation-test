@@ -2,6 +2,7 @@ import React from "react";
 import { useCurrentFrame, useVideoConfig, interpolate, spring, Easing } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { VariantFrame } from "../utils/variant";
 
 function parseTime(raw: string | undefined): { h: number; m: number } {
   const m = /^(\d{1,2}):(\d{2})/.exec((raw || "").trim());
@@ -60,7 +61,7 @@ const AnalogClock: React.FC<{ h: number; m: number; accent: string; frame: numbe
 
 // Relógio digital (glow neon) ou analógico (ponteiros animando até o horário alvo) —
 // usado quando o roteiro cita um horário específico ou a passagem de um tempo do dia.
-export const ClockScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
+export const ClockScene: React.FC<{ scene: Scene; accent: string; variant?: number }> = ({ scene, accent, variant = 0 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { h, m } = parseTime(scene.clockTime);
@@ -76,9 +77,11 @@ export const ClockScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, 
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 40 }}>
       <div style={{ opacity: wrapOp, transform: `scale(${wrapScale})` }}>
-        {digital
-          ? <DigitalClock time={`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`} accent={accent} frame={frame} />
-          : <AnalogClock h={h} m={m} accent={accent} frame={frame} fps={fps} />}
+        <VariantFrame variant={variant} accent={accent}>
+          {digital
+            ? <DigitalClock time={`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`} accent={accent} frame={frame} />
+            : <AnalogClock h={h} m={m} accent={accent} frame={frame} fps={fps} />}
+        </VariantFrame>
       </div>
       {scene.clockNote && (
         <div style={{ opacity: noteOp, fontSize: 36, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",

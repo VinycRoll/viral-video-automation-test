@@ -127,7 +127,9 @@ REGRAS VISUAIS:
 - Use *texto* para destacar em amarelo e **texto** para branco bold
 - Tipos de cena: intro, text, highlight, card, list, chapter, proof, growth, notification,
   calendar, clock, moneystack, checklist, progress, timer, rating, scale, map, weather,
-  achievement, battery, book, outro
+  achievement, battery, book, thermometer, piggybank, receipt, roadmap, quote, alert, split,
+  counter, sizecompare, xray, proportiongrid, speedrace, timelineera, orbit, dna, mythfact,
+  redacted, magnify, censored, domino, treebranch, vsbattle, outro
 - "chapter" é um card de abertura de capítulo (título curto, sem caixa de fundo) — use no
   máximo 1x por roteiro, só quando o vídeo realmente muda de assunto no meio (ex: depois de
   explicar o problema, antes de entrar na solução). Não use em roteiros muito curtos (<6 cenas)
@@ -238,6 +240,116 @@ REGRAS VISUAIS:
   investir", "conhecimento é a base de tudo"), no máximo 1x por roteiro, não é obrigatório.
   Campos: "bookTitle" (título curto na página, ex: "EDUCAÇÃO FINANCEIRA"), "bookLabel"
   (opcional, texto curto acima do livro), "bookNote" (legenda curta abaixo)
+- "thermometer" é um termômetro enchendo de baixo pra cima (em vez de foto) — use quando o
+  roteiro cita um NÍVEL ou INTENSIDADE (ex: "nível de risco desse investimento", "quanto
+  falta pra bater sua meta"), diferente de "battery" (energia/reserva se acumulando) e
+  "progress" (meta/percentual geral), no máximo 1x por roteiro, não é obrigatório. Campos:
+  "thermoPct" (número 0-100, tem que bater com a narração), "thermoLabel" (opcional, texto
+  curto acima), "thermoNote" (legenda curta abaixo)
+- "piggybank" é moedas caindo uma a uma num pote até formar um valor (em vez de foto) — use
+  quando o roteiro fala de ECONOMIZAR/GUARDAR dinheiro pouco a pouco, de forma mais literal
+  que "moneystack" (que empilha notas), no máximo 1x por roteiro, não é obrigatório. Campos:
+  "piggyValue" (valor final, ex: "R$ 500", tem que bater com a narração), "piggyLabel"
+  (opcional, texto curto acima), "piggyNote" (legenda curta abaixo, ex: "em 3 meses"),
+  "piggyCoins" (opcional, número de moedas entre 4 e 8, padrão 5)
+- "receipt" é um recibo com itens somando um total em destaque (em vez de foto) — use
+  quando o roteiro DETALHA gastos/itens que compõem um valor (ex: "pra onde vai seu
+  salário"), diferente de "proof" (barras de %), no máximo 1x por roteiro, não é
+  obrigatório. Campos: "receiptTitle" (opcional, título curto), "receiptItems" (lista de
+  3-5 {"label": string, "value": string}, valores têm que vir da narração), "receiptTotal"
+  (valor total, destacado, tem que ser a soma dos itens), "receiptNote" (legenda abaixo)
+- "roadmap" é uma linha do tempo horizontal com 3-4 marcos acendendo em sequência (em vez
+  de foto) — use para uma JORNADA ou PLANO em etapas (ex: "sua reserva em 3 passos"),
+  diferente de "checklist" (tarefas marcando check), no máximo 1x por roteiro, não é
+  obrigatório. Campos: "roadmapTitle" (opcional, título curto), "roadmapSteps" (lista de
+  3-4 {"label": string}, cada uma uma etapa curta), "roadmapNote" (legenda abaixo)
+- "quote" é uma citação editorial com aspas grandes (em vez de foto) — use quando o roteiro
+  cita uma frase de autoridade real ou dado curto pra reforçar o argumento, no máximo 1x
+  por roteiro, não é obrigatório. NUNCA invente uma citação falsa atribuída a uma pessoa
+  real — use só frases verdadeiras e conhecidas, ou deixe "quoteAuthor" vazio se for uma
+  frase de efeito sem autoria. Campos: "quoteText" (a frase, sem aspas), "quoteAuthor"
+  (opcional, ex: "Warren Buffett")
+- "alert" é um triângulo de alerta pulsando em vermelho (em vez de foto) — use quando o
+  roteiro aponta um ERRO COMUM ou RISCO a evitar (ex: "cuidado com esse erro"), tom de
+  advertência, no máximo 1x por roteiro, não é obrigatório. Campos: "alertLabel" (opcional,
+  ex: "ATENÇÃO"), "alertTitle" (a mensagem de alerta principal), "alertNote" (legenda
+  abaixo)
+- "split" é dois valores lado a lado com divisória central (em vez de foto) — use para
+  comparar dois ESTADOS/MOMENTOS (ex: "antes e depois da reserva") sem indicar vencedor,
+  diferente de "scale" (que pende pra um lado), no máximo 1x por roteiro, não é
+  obrigatório. Campos: "splitLabel" (opcional, texto curto acima), "splitLeftLabel"/
+  "splitLeftValue" (nome e valor curto do lado esquerdo), "splitRightLabel"/
+  "splitRightValue" (idem direito, sempre o lado em destaque), "splitNote" (legenda abaixo)
+- "counter" é um número gigante contando até um valor, sem ícone (em vez de foto) — use
+  pra uma ESTATÍSTICA de impacto pura (ex: "87% das pessoas", "+10 mil investidores"),
+  quando o dado em si já é o choque, no máximo 1x por roteiro, não é obrigatório. Campos:
+  "counterTo" (número final, tem que bater com a narração), "counterPrefix"/"counterSuffix"
+  (opcionais, ex: "+" / "%"), "counterLabel" (opcional, texto curto acima), "counterNote"
+  (legenda abaixo)
+- "sizecompare" é dois elementos lado a lado em escalas muito diferentes, com zoom-out
+  revelando a diferença (em vez de foto) — use pra um fato de ESCALA/TAMANHO impressionante
+  (ex: comparar o tamanho de dois objetos, animais, prédios, planetas), no máximo 1x por
+  roteiro, não é obrigatório. Campos: "sizeLabel" (opcional), "sizeLeftLabel"/
+  "sizeLeftValue", "sizeRightLabel"/"sizeRightValue" (o lado direito é sempre o maior),
+  "sizeRatio" (opcional, número de quantas vezes o direito é maior, tem que bater com a
+  narração), "sizeNote"
+- "xray" é um scanner que passa sobre um ícone revelando uma camada "interna" diferente
+  (em vez de foto) — use pra explicar COMO ALGO FUNCIONA POR DENTRO, no máximo 1x por
+  roteiro, não é obrigatório. Campos: "xrayLabel" (opcional), "xrayOutside" (rótulo do
+  lado não escaneado), "xrayInside" (rótulo do lado revelado), "xrayNote"
+- "proportiongrid" é uma grade de ícones onde só uma fração acende (em vez de foto) — use
+  pra uma proporção/estatística do tipo "X em cada Y" (ex: "apenas 3 em cada 100 pessoas"),
+  no máximo 1x por roteiro, não é obrigatório. Campos: "gridLabel" (opcional), "gridTotal"
+  (opcional, padrão 100), "gridHighlight" (quantos acendem, tem que bater com a narração),
+  "gridNote"
+- "speedrace" é 2-3 barras cruzando a tela em velocidades diferentes (em vez de foto) —
+  use pra comparar a RAPIDEZ de coisas distintas (ex: "som viaja mais rápido que..."), no
+  máximo 1x por roteiro, não é obrigatório. Campos: "raceLabel" (opcional), "raceItems"
+  (lista de 2-3 {"label": string, "value": string opcional, "speed": número, maior =
+  mais rápido}), "raceNote"
+- "timelineera" é uma régua temporal deslizando rápido até parar numa data específica
+  (em vez de foto) — diferente de "roadmap" (que são passos de um plano, não anos): use
+  "timelineera" quando o roteiro cita um ANO ou PERÍODO HISTÓRICO concreto, no máximo 1x
+  por roteiro, não é obrigatório. Campos: "eraLabel" (opcional), "eraFrom" (opcional, ano
+  inicial da régua), "eraTo" (ano onde a régua para, tem que bater com a narração), "eraNote"
+- "orbit" é um núcleo central com 2-3 elementos orbitando ao redor (em vez de foto) — use
+  pra conceitos CENTRAIS com coisas girando em torno (planetas, átomo, ideias que giram em
+  torno de um tema central), no máximo 1x por roteiro, não é obrigatório. Campos:
+  "orbitLabel" (opcional), "orbitCenterLabel" (texto curto no núcleo), "orbitItems" (lista
+  de 2-3 {"label": string}), "orbitNote"
+- "dna" é uma hélice dupla estilizada girando suavemente (em vez de foto) — curinga visual
+  pra curiosidades de biologia, saúde, genética ou evolução, sem dado numérico, no máximo
+  1x por roteiro, não é obrigatório. Campos: "dnaLabel" (opcional), "dnaNote" (opcional)
+- "mythfact" é uma afirmação que recebe um carimbo "FALSO" e vira revelando a verdade em
+  verde (em vez de foto) — use pra DESMENTIR um mito/crença popular comum sobre o tema, no
+  máximo 1x por roteiro, não é obrigatório. NUNCA invente um mito ou verdade falsa — só use
+  se o roteiro já citar essa desconstrução. Campos: "mythLabel" (o mito/afirmação falsa),
+  "factLabel" (a verdade), "mythNote" (opcional)
+- "redacted" é um documento com tarja preta que desliza revelando uma palavra escondida
+  (em vez de foto) — use pra um dado pouco conhecido/"segredo" sobre o tema, no máximo 1x
+  por roteiro, não é obrigatório. Campos: "redactedTitle" (ex: "ARQUIVO CONFIDENCIAL"),
+  "redactedWord" (a palavra revelada, tem que bater com a narração), "redactedNote"
+- "magnify" é uma lupa que passeia pela tela até focar e ampliar um detalhe escondido (em
+  vez de foto) — use pra revelar um detalhe pouco notado sobre o tema, no máximo 1x por
+  roteiro, não é obrigatório. Campos: "magnifyLabel" (opcional), "magnifyTitle" (o detalhe
+  revelado), "magnifyNote"
+- "censored" é um texto/valor que começa borrado e fica nítido (em vez de foto) — use pra
+  criar suspense antes de revelar um número ou fato chocante, no máximo 1x por roteiro,
+  não é obrigatório. Campos: "censoredLabel" (opcional), "censoredText" (o texto/valor
+  revelado), "censoredNote"
+- "domino" é uma fileira de blocos que tombam em cadeia (em vez de foto) — use pra
+  ilustrar causa-e-efeito, um evento pequeno causando uma consequência grande, no máximo
+  1x por roteiro, não é obrigatório. Campos: "dominoLabel" (opcional), "dominoCount"
+  (opcional, padrão 6), "dominoNote"
+- "treebranch" é uma linha que sobe e se bifurca em vários ramos (em vez de foto) — use
+  pra mostrar como uma coisa deu origem a várias outras (uma língua, espécie, invenção),
+  no máximo 1x por roteiro, não é obrigatório. Campos: "treeLabel" (opcional),
+  "treeRootLabel" (nó raiz), "treeBranches" (lista de 2-4 {"label": string}), "treeNote"
+- "vsbattle" é duas metades colidindo na diagonal com um emblema "VS" pulsante (em vez de
+  foto) — diferente de "split" (comparação passiva lado a lado sem confronto): use
+  "vsbattle" quando o roteiro faz um CONFRONTO direto entre dois animais, países ou
+  fenômenos, no máximo 1x por roteiro, não é obrigatório. Campos: "vsLeftLabel"/
+  "vsLeftValue", "vsRightLabel"/"vsRightValue", "vsNote"
 - De 10 a 12 cenas (nunca menos de 10), sempre inclua intro e outro
 - Textos visuais em MAIÚSCULAS
 
@@ -866,7 +978,7 @@ def gerar_imagens(prompts: list, tema: str, dest_dir: Path, usar_ia: bool = Fals
 # Cenas de card/dado/branding (proof, card, intro, outro) ficam sem foto de propósito —
 # renderizam sobre o gradiente limpo do Remotion, estilo editorial (motionmaxxing). Módulo
 # usa o mesmo set em main() pra nem buscar/baixar imagem pras cenas que nunca vão exibi-la.
-SCENE_TYPES_SEM_FOTO = {"proof", "growth", "card", "intro", "outro", "notification", "calendar", "clock", "moneystack", "checklist", "progress", "timer", "rating", "scale", "map", "weather", "achievement", "battery", "book"}
+SCENE_TYPES_SEM_FOTO = {"proof", "growth", "card", "intro", "outro", "notification", "calendar", "clock", "moneystack", "checklist", "progress", "timer", "rating", "scale", "map", "weather", "achievement", "battery", "book", "thermometer", "piggybank", "receipt", "roadmap", "quote", "alert", "split", "counter", "sizecompare", "xray", "proportiongrid", "speedrace", "timelineera", "orbit", "dna", "mythfact", "redacted", "magnify", "censored", "domino", "treebranch", "vsbattle"}
 
 
 def aplicar_imagens_de_fundo(script: dict, imagens: list) -> None:

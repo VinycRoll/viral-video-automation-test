@@ -25,6 +25,29 @@ import { WeatherScene }      from "./scenes/WeatherScene";
 import { AchievementScene }  from "./scenes/AchievementScene";
 import { BatteryScene }      from "./scenes/BatteryScene";
 import { BookScene }         from "./scenes/BookScene";
+import { pickVariant }       from "./utils/variant";
+import { ThermometerScene }  from "./scenes/ThermometerScene";
+import { PiggyBankScene }    from "./scenes/PiggyBankScene";
+import { ReceiptScene }      from "./scenes/ReceiptScene";
+import { RoadmapScene }      from "./scenes/RoadmapScene";
+import { QuoteScene }        from "./scenes/QuoteScene";
+import { AlertScene }        from "./scenes/AlertScene";
+import { SplitScene }        from "./scenes/SplitScene";
+import { CounterScene }      from "./scenes/CounterScene";
+import { SizeComparisonScene } from "./scenes/SizeComparisonScene";
+import { AnatomyXRayScene }    from "./scenes/AnatomyXRayScene";
+import { ProportionGridScene } from "./scenes/ProportionGridScene";
+import { SpeedRaceScene }      from "./scenes/SpeedRaceScene";
+import { TimelineEraScene }    from "./scenes/TimelineEraScene";
+import { SolarOrbitScene }     from "./scenes/SolarOrbitScene";
+import { DNAStrandScene }      from "./scenes/DNAStrandScene";
+import { MythVsFactScene }     from "./scenes/MythVsFactScene";
+import { RedactedDocScene }    from "./scenes/RedactedDocScene";
+import { MagnifyingGlassScene } from "./scenes/MagnifyingGlassScene";
+import { CensoredRevealScene } from "./scenes/CensoredRevealScene";
+import { DominoEffectScene }   from "./scenes/DominoEffectScene";
+import { TreeBranchScene }     from "./scenes/TreeBranchScene";
+import { VsBattleScene }       from "./scenes/VsBattleScene";
 
 const TRANSITION_FRAMES = 10; // ~0.33s @ 30fps — duração do crossfade entre cenas
 const KEN_BURNS_HALF_CYCLE = 90; // 3s @ 30fps — tempo até atingir o zoom/pan máximo
@@ -298,7 +321,7 @@ const AmbientDrift: React.FC<{ index: number; children: React.ReactNode }> = ({ 
   return <div style={{ width: "100%", height: "100%", transform: `scale(${scale})` }}>{children}</div>;
 };
 
-const SceneRouter: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
+const SceneRouter: React.FC<{ scene: Scene; accent: string; variant: number }> = ({ scene, accent, variant }) => {
   switch (scene.type) {
     case "intro":     return <IntroScene     scene={scene} accent={accent} />;
     case "text":      return <TextScene      scene={scene} accent={accent} />;
@@ -310,19 +333,41 @@ const SceneRouter: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent
     case "proof":     return <ProofScene     scene={scene} accent={accent} />;
     case "growth":    return <GrowthScene    scene={scene} accent={accent} />;
     case "notification": return <NotificationScene scene={scene} accent={accent} />;
-    case "calendar":  return <CalendarScene  scene={scene} accent={accent} />;
-    case "clock":     return <ClockScene     scene={scene} accent={accent} />;
-    case "moneystack": return <MoneyStackScene scene={scene} accent={accent} />;
-    case "checklist": return <ChecklistScene  scene={scene} accent={accent} />;
-    case "progress":  return <ProgressScene   scene={scene} accent={accent} />;
-    case "timer":     return <TimerScene      scene={scene} accent={accent} />;
-    case "rating":    return <RatingScene     scene={scene} accent={accent} />;
+    case "calendar":  return <CalendarScene  scene={scene} accent={accent} variant={variant} />;
+    case "clock":     return <ClockScene     scene={scene} accent={accent} variant={variant} />;
+    case "moneystack": return <MoneyStackScene scene={scene} accent={accent} variant={variant} />;
+    case "checklist": return <ChecklistScene  scene={scene} accent={accent} variant={variant} />;
+    case "progress":  return <ProgressScene   scene={scene} accent={accent} variant={variant} />;
+    case "timer":     return <TimerScene      scene={scene} accent={accent} variant={variant} />;
+    case "rating":    return <RatingScene     scene={scene} accent={accent} variant={variant} />;
     case "scale":     return <ScaleScene      scene={scene} accent={accent} />;
-    case "map":       return <MapScene        scene={scene} accent={accent} />;
+    case "map":       return <MapScene        scene={scene} accent={accent} variant={variant} />;
     case "weather":   return <WeatherScene    scene={scene} accent={accent} />;
-    case "achievement": return <AchievementScene scene={scene} accent={accent} />;
-    case "battery":   return <BatteryScene    scene={scene} accent={accent} />;
-    case "book":      return <BookScene       scene={scene} accent={accent} />;
+    case "achievement": return <AchievementScene scene={scene} accent={accent} variant={variant} />;
+    case "battery":   return <BatteryScene    scene={scene} accent={accent} variant={variant} />;
+    case "book":      return <BookScene       scene={scene} accent={accent} variant={variant} />;
+    case "thermometer": return <ThermometerScene scene={scene} accent={accent} />;
+    case "piggybank": return <PiggyBankScene  scene={scene} accent={accent} />;
+    case "receipt":   return <ReceiptScene    scene={scene} accent={accent} />;
+    case "roadmap":   return <RoadmapScene    scene={scene} accent={accent} />;
+    case "quote":     return <QuoteScene      scene={scene} accent={accent} />;
+    case "alert":     return <AlertScene      scene={scene} accent={accent} />;
+    case "split":     return <SplitScene      scene={scene} accent={accent} />;
+    case "counter":   return <CounterScene    scene={scene} accent={accent} />;
+    case "sizecompare":   return <SizeComparisonScene scene={scene} accent={accent} />;
+    case "xray":          return <AnatomyXRayScene    scene={scene} accent={accent} />;
+    case "proportiongrid": return <ProportionGridScene scene={scene} accent={accent} />;
+    case "speedrace":      return <SpeedRaceScene      scene={scene} accent={accent} />;
+    case "timelineera":    return <TimelineEraScene    scene={scene} accent={accent} />;
+    case "orbit":          return <SolarOrbitScene     scene={scene} accent={accent} />;
+    case "dna":            return <DNAStrandScene      scene={scene} accent={accent} />;
+    case "mythfact":       return <MythVsFactScene     scene={scene} accent={accent} />;
+    case "redacted":       return <RedactedDocScene    scene={scene} accent={accent} />;
+    case "magnify":        return <MagnifyingGlassScene scene={scene} accent={accent} />;
+    case "censored":       return <CensoredRevealScene scene={scene} accent={accent} />;
+    case "domino":         return <DominoEffectScene   scene={scene} accent={accent} />;
+    case "treebranch":     return <TreeBranchScene     scene={scene} accent={accent} />;
+    case "vsbattle":       return <VsBattleScene       scene={scene} accent={accent} />;
     case "outro":     return <OutroScene     scene={scene} accent={accent} />;
     default:          return <TextScene      scene={scene} accent={accent} />;
   }
@@ -350,18 +395,19 @@ export const MotionReel: React.FC<{ script: VideoScript }> = ({ script }) => {
     const from = offset;
     offset += dur;
 
-    const variant: "fade" | "collage" = !isLast && i === collageIndex ? "collage" : "fade";
+    const crossfadeVariant: "fade" | "collage" = !isLast && i === collageIndex ? "collage" : "fade";
+    const sceneVariant = pickVariant(`${scene.type}|${i}|${script.title || ""}`, 2);
 
     // Cena visual: só estende além de "dur" na variante collage (pra sobrepor com a
     // próxima durante a cascata) — as demais são corte seco, sem overlap.
-    const extend = !isLast && variant === "collage";
+    const extend = !isLast && crossfadeVariant === "collage";
     visualElements.push(
       <Sequence key={`v${i}`} from={from} durationInFrames={extend ? dur + TRANSITION_FRAMES : dur}>
-        <SceneCrossfade nominalDur={dur} isLast={isLast} variant={variant}>
+        <SceneCrossfade nominalDur={dur} isLast={isLast} variant={crossfadeVariant}>
           <AbsoluteFill>
             <SceneBackdrop scene={scene} accent={accent} index={i} />
             <AmbientDrift index={i}>
-              <SceneRouter scene={scene} accent={accent} />
+              <SceneRouter scene={scene} accent={accent} variant={sceneVariant} />
             </AmbientDrift>
           </AbsoluteFill>
         </SceneCrossfade>

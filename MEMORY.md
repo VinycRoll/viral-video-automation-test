@@ -152,6 +152,50 @@ Opensquad) — aqui é progresso e decisões, não instruções fixas.
     voz. Upgrade futuro se a voz ficar difícil de ouvir: troca pra
     `ffmpeg sidechaincompress` (ducking real).
 
+## Em andamento (2026-10-31, à noite)
+
+- **Auditoria ponytail pós-maratona de cenas**: rodada de `/ponytail:ponytail-audit` sobre
+  os fixes do dia (OOM no XTTS, OAuth do YouTube travando, `--video --dry-run` postando
+  de verdade, fetch de imagem desperdiçado pra cena sem foto, grades do autotune
+  descentralizadas, `.gitignore` duplicado) + os 13 componentes de cena novos. Tudo
+  commitado (`42c684d`). 2 achados nos componentes novos, 1 já corrigido:
+  - **Corrigido**: `NotificationScene`/`native-ui.css` — `.nu-notif-body` sem
+    `line-clamp` deixava `notifBody` longo ser cortado no meio da frase pelo
+    `overflow:hidden` do `.nu-screen`. Fix: `-webkit-line-clamp: 2` (Chromium do Remotion
+    suporta, trunca com "…").
+  - **Pendente, baixa prioridade**: `UiCard` (`src/utils/uiCard.tsx`) foi extraído pra
+    não duplicar o wrapper visual do card, mas `ProofScene`/`CardScene` continuam com o
+    mesmo bloco de estilo inline — só `ChecklistScene` usa o componente de fato. Migrar
+    os dois quando sobrar tempo (~10 linhas duplicadas cada).
+
+- **Batch de geração rodando em background** (pedido do usuário, "crie roteiros, analise,
+  crie animações, alimente o banco de dados, sem limite de tempo") — script
+  `batch_gerar.sh` (raiz do repo) roda `python3 post_reel.py --dry-run` em loop, até 100
+  vezes, parando sozinho após 3 falhas consecutivas. Lançado com `nohup`+`disown`
+  (processo sobrevive ao fim da sessão do Claude Code; só para se a máquina reiniciar ou
+  alguém matar o processo manualmente). Log em `batch_log.txt` (raiz do repo, não
+  commitado — ver se cabe no `.gitignore` se crescer muito).
+  - **`XTTS_AUTOTUNE=1` foi ligado no `.env`** especificamente pra este batch (estava
+    desligado/"0" por padrão) — sem isso, toda rodada usaria os mesmos parâmetros fixos
+    e o histórico não teria variedade nenhuma pro bandit explorar. Cada rodada agora
+    sorteia um ponto da grade de `temperature`/`speed`/`repetition_penalty`
+    (`_selecionar_parametros_xtts()` em `gerar_motion.py`). **Decisão a revisitar**: se
+    o usuário não quiser isso ligado permanentemente depois do batch, desligar de volta
+    (`XTTS_AUTOTUNE=0` ou remover a linha do `.env`).
+  - `.historico_geracoes.json` tinha 18 entradas antes do batch começar (acumuladas de
+    testes manuais anteriores nesta sessão, nenhuma avaliada via `avaliar_video.py`).
+  - **Limitação conhecida, avisada ao usuário**: como é tudo `--dry-run` não-assistido,
+    nenhuma entrada vai ganhar `rating` manual — o autotune só vai aprender com os QA
+    automáticos (binário: teve problema ou não), nunca vai saber qual geração ficou
+    *boa* de verdade. Pra aproveitar o volume gerado, o usuário precisa rodar
+    `avaliar_video.py` depois e dar notas em uma amostra dos vídeos em
+    `videos_gerados/`.
+  - Um loop de monitoramento (`/loop`, modo dinâmico, sem Monitor tool disponível neste
+    ambiente — só `ScheduleWakeup` de ~20-25min) foi armado pra avisar o usuário a cada
+    rodada concluída e dar o resumo final quando `batch_gerar.sh` não estiver mais no
+    `pgrep`. Se a sessão acabar e o loop não sobreviver, o usuário ainda pode checar
+    manualmente: `tail -f batch_log.txt` e `python3 -c "import json; print(len(json.load(open('.historico_geracoes.json'))))"`.
+
 ## Achados importantes (não esquecer)
 
 - **`chaves.zip` na raiz do repo contém credenciais reais** (`.env`,

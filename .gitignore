@@ -4,6 +4,7 @@ __pycache__/
 *.mp4
 .historico.json
 .historico_geracoes.json
+batch_log.txt
 .env
 .youtube_token.json
 client_secret.json
