@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { sfxAlert } from "../utils/soundSynth";
 
 const TRI_SIZE = 180;
 
@@ -39,7 +40,7 @@ export const AlertScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, 
       </div>
 
       {scene.alertTitle && (
-        <div style={{ opacity: titleOp, fontSize: 42, fontWeight: 900, color: "#fff", textAlign: "center",
+        <div style={{ opacity: titleOp, fontSize: 42, fontWeight: 900, color: "var(--ink)", textAlign: "center",
                       letterSpacing: -0.5, textShadow: SOFT_TEXT_SHADOW }}>
           {scene.alertTitle}
         </div>
@@ -52,6 +53,10 @@ export const AlertScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, 
           {scene.alertNote}
         </div>
       )}
+
+      <Sequence from={0} durationInFrames={10} layout="none">
+        <Audio src={sfxAlert()} volume={0.2} />
+      </Sequence>
     </div>
   );
 };

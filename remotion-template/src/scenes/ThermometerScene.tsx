@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { sfxBubble, sfxAlert } from "../utils/soundSynth";
 
 const TUBE_W = 56;
 const TUBE_H = 340;
@@ -27,8 +28,17 @@ export const ThermometerScene: React.FC<{ scene: Scene; accent: string }> = ({ s
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 28 }}>
+      {Array.from({ length: 6 }).map((_, k) => (
+        <Sequence key={k} from={6 + k * 8} durationInFrames={6} layout="none">
+          <Audio src={sfxBubble()} volume={0.11} />
+        </Sequence>
+      ))}
+      <Sequence from={56} durationInFrames={10} layout="none">
+        <Audio src={sfxAlert()} volume={0.2} />
+      </Sequence>
+
       {scene.thermoLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW, padding: "0 60px" }}>
           {scene.thermoLabel}
         </div>
@@ -37,21 +47,21 @@ export const ThermometerScene: React.FC<{ scene: Scene; accent: string }> = ({ s
       <div style={{ position: "relative", width: TUBE_W + 40, height: TUBE_H + BULB_SIZE, opacity: bodyOp,
                     display: "flex", flexDirection: "column", alignItems: "center" }}>
         <div style={{ position: "relative", width: TUBE_W, height: TUBE_H, borderRadius: TUBE_W,
-                      border: "6px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.05)",
+                      border: "6px solid var(--ink-3)", background: "var(--ink-05)",
                       overflow: "hidden" }}>
           <div style={{ position: "absolute", left: 4, right: 4, bottom: -BULB_SIZE / 2, height: fillHeight + BULB_SIZE / 2,
                         background: accent, boxShadow: `0 0 20px ${accent}80` }} />
           {[20, 40, 60, 80].map((tick) => (
             <div key={tick} style={{ position: "absolute", left: -16, bottom: `${tick}%`,
-                                      width: 10, height: 3, background: "rgba(255,255,255,0.35)" }} />
+                                      width: 10, height: 3, background: "var(--ink-35)" }} />
           ))}
         </div>
         <div style={{ position: "relative", width: BULB_SIZE, height: BULB_SIZE, marginTop: -10, borderRadius: "50%",
-                      border: "6px solid rgba(255,255,255,0.3)", background: accent,
+                      border: "6px solid var(--ink-3)", background: accent,
                       boxShadow: `0 0 28px ${accent}90` }} />
       </div>
 
-      <div style={{ opacity: pctOp, fontSize: 64, fontWeight: 900, color: "#fff",
+      <div style={{ opacity: pctOp, fontSize: 64, fontWeight: 900, color: "var(--ink)",
                     fontVariantNumeric: "tabular-nums", textShadow: SOFT_TEXT_SHADOW }}>
         {Math.round(pct)}<span style={{ fontSize: 36, color: accent }}>%</span>
       </div>

@@ -1,8 +1,9 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
 import { VariantFrame } from "../utils/variant";
+import { sfxWhoosh, sfxSuccess } from "../utils/soundSynth";
 
 const BADGE_SIZE = 180;
 const STAR_PATH =
@@ -38,7 +39,7 @@ export const AchievementScene: React.FC<{ scene: Scene; accent: string; variant?
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 30 }}>
       {scene.achievementLabel && (
-        <div style={{ opacity: labelOp, fontSize: 28, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 28, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW, padding: "0 60px",
                       textTransform: "uppercase" }}>
           {scene.achievementLabel}
@@ -58,14 +59,14 @@ export const AchievementScene: React.FC<{ scene: Scene; accent: string; variant?
                         background: `radial-gradient(circle at 35% 30%, ${accent}, ${accent}aa)`,
                         boxShadow: `0 0 36px ${accent}80`, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width={88} height={88} viewBox="0 0 24 24">
-              <path d={STAR_PATH} fill="#fff" />
+              <path d={STAR_PATH} fill="var(--ink)" />
             </svg>
           </div>
         </div>
       </VariantFrame>
 
       {scene.achievementTitle && (
-        <div style={{ opacity: titleOp, fontSize: 40, fontWeight: 900, color: "#fff", textAlign: "center",
+        <div style={{ opacity: titleOp, fontSize: 40, fontWeight: 900, color: "var(--ink)", textAlign: "center",
                       letterSpacing: -0.5, textShadow: SOFT_TEXT_SHADOW, padding: "0 60px" }}>
           {scene.achievementTitle}
         </div>
@@ -78,6 +79,13 @@ export const AchievementScene: React.FC<{ scene: Scene; accent: string; variant?
           {scene.achievementNote}
         </div>
       )}
+
+      <Sequence from={0} durationInFrames={10} layout="none">
+        <Audio src={sfxWhoosh()} volume={0.15} />
+      </Sequence>
+      <Sequence from={20} durationInFrames={11} layout="none">
+        <Audio src={sfxSuccess()} volume={0.2} />
+      </Sequence>
     </div>
   );
 };

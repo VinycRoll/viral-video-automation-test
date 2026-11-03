@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { useCurrentFrame, interpolate, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { sfxAlert, sfxSuccess } from "../utils/soundSynth";
 
 const REVEAL_START = 30;
 const REVEAL_END = 50;
@@ -38,7 +39,7 @@ export const CensoredRevealScene: React.FC<{ scene: Scene; accent: string }> = (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 28, padding: "0 60px", boxSizing: "border-box" }}>
       {scene.censoredLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW }}>
           {scene.censoredLabel}
         </div>
@@ -63,6 +64,13 @@ export const CensoredRevealScene: React.FC<{ scene: Scene; accent: string }> = (
           {scene.censoredNote}
         </div>
       )}
+
+      <Sequence from={0} durationInFrames={10} layout="none">
+        <Audio src={sfxAlert()} volume={0.15} />
+      </Sequence>
+      <Sequence from={REVEAL_END} durationInFrames={11} layout="none">
+        <Audio src={sfxSuccess()} volume={0.2} />
+      </Sequence>
     </div>
   );
 };

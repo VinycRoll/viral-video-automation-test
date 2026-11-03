@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """
 gerar_motion.py — Gera roteiro JSON via Gemini, narração via XTTS v2,
-imagens de fundo via Pixabay (ou ComfyUI com --ai-image) e renderiza com Remotion.
+imagens de fundo via ComfyUI (SD 1.5 local) e renderiza com Remotion.
 
 Uso:
-    python3 gerar_motion.py                    # tema aleatório, fundo com imagens do Pixabay
+    python3 gerar_motion.py                    # tema aleatório, fundo via ComfyUI
     python3 gerar_motion.py "juros compostos"  # tema específico
     python3 gerar_motion.py --dry-run          # só gera JSON + áudios, não renderiza
-    python3 gerar_motion.py --ai-image         # imagens de fundo geradas por IA (ComfyUI);
-                                                # cai para o Pixabay se o ComfyUI falhar/indisponível
 """
 
 import os
@@ -26,6 +24,7 @@ import time
 import uuid
 import pathlib
 import re
+import hashlib
 from pathlib import Path
 
 try:
@@ -48,8 +47,46 @@ load_dotenv(SCRIPT_DIR.parent / "viral-video-automation" / ".env", override=Fals
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 CHANNEL_NAME   = os.getenv("CHANNEL_NAME", "VinyBruno.ia")
-ACCENT_COLOR   = os.getenv("ACCENT_COLOR", "#FFD700")
 GEMINI_MODEL   = os.getenv("LLM_MODEL", "gemini-3.5-flash-lite")
+
+# Paletas de cor do fundo (fica escuro em todas, só varia o tom) + accent combinando.
+# Escolhida de forma determinística pelo tema (mesmo tema = mesma paleta sempre), senão
+# varia entre vídeos. Defina ACCENT_COLOR na .env pra forçar uma cor fixa (ignora a paleta).
+PALETTES = [
+    {"accent": "#FFD700", "hueFrom": 255, "hueTo": 275},  # azul-roxo / dourado (original)
+    {"accent": "#FF8A5B", "hueFrom": 160, "hueTo": 180},  # verde-petróleo / coral
+    {"accent": "#FFD166", "hueFrom": 340, "hueTo": 360},  # vinho / âmbar claro
+    {"accent": "#4FD1C5", "hueFrom": 20,  "hueTo": 40},   # marrom-âmbar / ciano
+    {"accent": "#A3E635", "hueFrom": 290, "hueTo": 310},  # violeta-rosa / lima
+    {"accent": "#60A5FA", "hueFrom": 95,  "hueTo": 115},  # verde-musgo / azul
+]
+
+# Mesmas 6 famílias de hue acima, mas com accent mais escuro/saturado — sobre fundo
+# claro (ver MotionReel.tsx Background/themeVars), o accent dourado/pastel original
+# lavaria e ficaria ilegível.
+LIGHT_PALETTES = [
+    {"accent": "#B45309", "hueFrom": 255, "hueTo": 275},
+    {"accent": "#0D9488", "hueFrom": 160, "hueTo": 180},
+    {"accent": "#B91C1C", "hueFrom": 340, "hueTo": 360},
+    {"accent": "#0369A1", "hueFrom": 20,  "hueTo": 40},
+    {"accent": "#7C3AED", "hueFrom": 290, "hueTo": 310},
+    {"accent": "#15803D", "hueFrom": 95,  "hueTo": 115},
+]
+
+
+def _escolher_paleta(tema: str, theme: str = "dark") -> dict:
+    palettes = LIGHT_PALETTES if theme == "light" else PALETTES
+    idx = int(hashlib.md5(tema.encode()).hexdigest(), 16) % len(palettes)
+    return palettes[idx]
+
+
+def _escolher_tema_visual() -> str:
+    """"dark" ou "light" — sorteado por execução (independente da paleta, que é
+    determinística pelo tema). FORCE_THEME=dark|light na .env força em testes manuais."""
+    forced = os.environ.get("FORCE_THEME", "").strip().lower()
+    if forced in ("dark", "light"):
+        return forced
+    return random.choice(["dark", "light"])
 
 # XTTS v2 (Coqui TTS) — roda localmente, sem API key.
 XTTS_MODEL       = os.getenv("XTTS_MODEL", "tts_models/multilingual/multi-dataset/xtts_v2")
@@ -78,7 +115,7 @@ XTTS_AUTOTUNE           = os.getenv("XTTS_AUTOTUNE", "0") == "1"
 # monetizado.
 os.environ.setdefault("COQUI_TOS_AGREED", "1")
 
-# ComfyUI (SD 1.5 local) — fallback automático para Pixabay se não estiver rodando
+# ComfyUI (SD 1.5 local) — única fonte de imagem de fundo; sem foto se não estiver rodando
 COMFYUI_DIR        = SCRIPT_DIR.parent / "ComfyUI"
 COMFYUI_URL        = os.getenv("COMFYUI_URL", "http://localhost:8188")
 COMFYUI_CHECKPOINT = os.getenv("COMFYUI_CHECKPOINT", "v1-5-pruned-emaonly-fp16.safetensors")
@@ -86,7 +123,6 @@ COMFYUI_WIDTH      = int(os.getenv("COMFYUI_WIDTH", "512"))
 COMFYUI_HEIGHT     = int(os.getenv("COMFYUI_HEIGHT", "768"))
 COMFYUI_STEPS      = int(os.getenv("COMFYUI_STEPS", "20"))
 COMFYUI_AUTOSTART_TIMEOUT = int(os.getenv("COMFYUI_AUTOSTART_TIMEOUT", "120"))
-PIXABAY_KEY        = os.getenv("PIXABAY_API_KEY", "")
 
 # Render sem GPU (CPU-only) pode passar de 5 minutos tranquilamente — timeout
 # generoso para não abandonar um render que está progredindo normalmente.
@@ -125,11 +161,31 @@ regras abaixo normalmente.
 
 REGRAS VISUAIS:
 - Use *texto* para destacar em amarelo e **texto** para branco bold
-- Tipos de cena: intro, text, highlight, card, list, chapter, proof, growth, notification,
+- Tipos de cena (lista completa, gerada a partir dos 110 tipos reais que o Remotion sabe
+  renderizar — todos abaixo são válidos). IMPORTANTE sobre variedade: existe uma tendência
+  forte de usar sempre os mesmos tipos "coringa" (highlight, checklist, growth, card, alert,
+  timer, clock, scale) em quase todo roteiro — evite isso. Use no máximo 1 cena de cada um
+  desses tipos coringa por roteiro (já é o limite natural da maioria), e para as outras cenas
+  dê preferência ativa a tipos mais específicos que combinem com o conteúdo real da narração,
+  mesmo que menos óbvios à primeira vista — a lista tem mais de 100 opções por um motivo.
+  intro, text, card, highlight, list, code, chapter, proof, growth, notification,
   calendar, clock, moneystack, checklist, progress, timer, rating, scale, map, weather,
-  achievement, battery, book, thermometer, piggybank, receipt, roadmap, quote, alert, split,
-  counter, sizecompare, xray, proportiongrid, speedrace, timelineera, orbit, dna, mythfact,
-  redacted, magnify, censored, domino, treebranch, vsbattle, outro
+  achievement, battery, book, thermometer, piggybank, receipt, roadmap, quote, alert,
+  split, counter, sizecompare, xray, proportiongrid, speedrace, timelineera, orbit,
+  dna, mythfact, redacted, magnify, censored, domino, treebranch, vsbattle, brain, ecg,
+  illusion, soundwave, depthdive, pressure, chainreaction, pendulum, slotmachine,
+  labmix, pyramid, supplychain, crowd, balancebeam, glitch, radar, evolution,
+  microscope, telescope, blueprint, vortex, chess, morse, hourglass, satellite,
+  barcode, stamp, metronome, compass, liquidfill, radiotuner, spotlight, shredder,
+  magnetic, circuit, shatter, curtain, bombfuse, kaleidoscope, abacus, lever,
+  cardhouse, centrifuge, chromatography, cointoss, conveyor, cubeunfold, cuckoo,
+  decibel, safedial, droplet, elevator, filmstrip, hydraulicpress, lasermaze, origami,
+  parachute, periscope, pinball, rubiks, sieve, stethoscope, tuningfork, windvane,
+  outro
+- "code" é um bloco de código com syntax highlight (editor escuro fixo, não usa foto nem
+  paleta) — use só quando o tema for sobre programação/tecnologia e a narração citar um
+  trecho de código real e curto (4-8 linhas). Campos: "code" (string com `\n` entre linhas)
+  e "language" (opcional, ex: "python", "javascript")
 - "chapter" é um card de abertura de capítulo (título curto, sem caixa de fundo) — use no
   máximo 1x por roteiro, só quando o vídeo realmente muda de assunto no meio (ex: depois de
   explicar o problema, antes de entrar na solução). Não use em roteiros muito curtos (<6 cenas)
@@ -350,6 +406,278 @@ REGRAS VISUAIS:
   "vsbattle" quando o roteiro faz um CONFRONTO direto entre dois animais, países ou
   fenômenos, no máximo 1x por roteiro, não é obrigatório. Campos: "vsLeftLabel"/
   "vsLeftValue", "vsRightLabel"/"vsRightValue", "vsNote"
+- "brain" é uma silhueta de cérebro com pulsos elétricos viajando entre regiões até uma
+  acender (em vez de foto) — use pra curiosidades sobre memória, medo, sono, QI ou
+  ilusões cognitivas, no máximo 1x por roteiro, não é obrigatório. Campos: "brainLabel"
+  (opcional), "brainRegionLabel" (nome da região que acende, ex: "AMÍGDALA", opcional),
+  "brainNote"
+- "ecg" é um monitor cardíaco batendo normal que acelera (vermelho) ou fica reto/flatline
+  (em vez de foto) — use pra tensão, adrenalina, sobrevivência ou medicina, no máximo 1x
+  por roteiro, não é obrigatório. Campos: "ecgLabel" (opcional), "ecgMode" ("spike" ou
+  "flatline", opcional, padrão "spike"), "ecgNote"
+- "illusion" é duas formas idênticas cercadas por referências que enganam o olho até se
+  aproximarem revelando que são iguais (em vez de foto) — use pra ilusões de ótica, no
+  máximo 1x por roteiro, não é obrigatório. Campos: "illusionLabel" (opcional),
+  "illusionNote" (ex: "OS DOIS CÍRCULOS SÃO IDÊNTICOS")
+- "soundwave" é um equalizador de barras oscilando que explode em amplitude ou vira
+  agudo/rápido (em vez de foto) — use pra música, voz, ecolocalização ou ruído, no
+  máximo 1x por roteiro, não é obrigatório. Campos: "soundLabel" (opcional), "soundMode"
+  ("loud" ou "highpitch", opcional, padrão "loud"), "soundNote"
+- "depthdive" é um mergulho vertical contínuo que escurece o gradiente e revela
+  marcadores de profundidade em sequência (em vez de foto) — use pra oceano, camadas da
+  Terra ou altitude na atmosfera, no máximo 1x por roteiro, não é obrigatório. Campos:
+  "depthLabel" (opcional), "depthMarks" (lista de 3-4 {"label": string} em ordem, ex:
+  "-200m", "-4.000m", "-11.000m", tem que bater com a narração), "depthNote"
+- "pressure" é duas placas esmagando um objeto central até comprimir/rachar (em vez de
+  foto) — use pra gravidade de outros planetas, pressão atmosférica ou força de mordida,
+  no máximo 1x por roteiro, não é obrigatório. Campos: "pressureLabel" (opcional),
+  "pressureTitle" (o que está sendo esmagado, ex: "A 11KM DE PROFUNDIDADE"), "pressureNote"
+- "chainreaction" é 1 bolinha colidindo e gerando 2, 4, 8, 16, 32..., tomando a tela (em
+  vez de foto) — use pra crescimento exponencial, vírus, fofoca ou reação nuclear,
+  diferente de "domino" (cadeia linear, não multiplicação), no máximo 1x por roteiro, não
+  é obrigatório. Campos: "chainLabel" (opcional), "chainRounds" (opcional, padrão 5),
+  "chainNote"
+- "pendulum" é 2-3 pêndulos balançando em velocidades diferentes até sincronizarem (em
+  vez de foto) — use pra física, hipnose, ritmo ou passagem do tempo, no máximo 1x por
+  roteiro, não é obrigatório. Campos: "pendulumLabel" (opcional), "pendulumNote"
+- "slotmachine" é 3 rolos de caça-níquel girando que travam um por um revelando um valor
+  (em vez de foto) — use pra coincidências bizarras, loteria ou probabilidade da vida
+  existir, no máximo 1x por roteiro, não é obrigatório. Campos: "slotLabel" (opcional),
+  "slotValue" (valor final revelado, ex: "1 EM 1.000.000", tem que bater com a narração),
+  "slotNote"
+- "labmix" é dois tubos de ensaio despejando líquidos num béquer central que muda de cor
+  e borbulha (em vez de foto) — use pra química, culinária, venenos ou invenções
+  acidentais, no máximo 1x por roteiro, não é obrigatório. Campos: "labLabel" (opcional),
+  "labLeftLabel"/"labRightLabel" (rótulo de cada tubo), "labResultLabel" (texto no béquer
+  final), "labNote"
+- "pyramid" é uma pirâmide fatiada em camadas que se constroem da base ao topo iluminado
+  (em vez de foto) — use pra classes sociais históricas, cadeia alimentar ou níveis de
+  raridade, no máximo 1x por roteiro, não é obrigatório. Campos: "pyramidLabel"
+  (opcional), "pyramidLevels" (lista de 3-5 {"label": string}, ordem da base ao topo),
+  "pyramidNote"
+- "supplychain" é 3 estações numa esteira acendendo em sequência, cada uma uma etapa de
+  transformação (em vez de foto) — use pra "como isso é feito" ou a jornada de um objeto
+  comum, no máximo 1x por roteiro, não é obrigatório. Campos: "supplyLabel" (opcional),
+  "supplySteps" (lista de 3 {"label": string} em ordem), "supplyNote"
+- "crowd" é uma grade de silhuetas de pessoas surgindo (ou desaparecendo) rapidamente até
+  preencher a tela (em vez de foto) — use pra impérios antigos, extinções, migrações ou
+  crescimento demográfico, no máximo 1x por roteiro, não é obrigatório. Campos:
+  "crowdLabel" (opcional), "crowdCount" (opcional, padrão 60), "crowdGrowing" (opcional,
+  booleano, padrão true = surgindo; false = desaparecendo), "crowdNote"
+- "balancebeam" é uma gangorra longa com vários pesos pequenos de um lado tentando
+  equilibrar um bloco único do outro (em vez de foto) — diferente de "scale" (balança
+  tradicional de dois pratos iguais): use "balancebeam" pra comparações de EXTREMOS (ex:
+  "o peso de todas as formigas do mundo vs. todos os humanos"), no máximo 1x por roteiro,
+  não é obrigatório. Campos: "beamLabel" (opcional), "beamManyLabel"/"beamManyValue"
+  (lado dos muitos pesos pequenos), "beamOneLabel"/"beamOneValue" (lado do bloco único),
+  "beamNote"
+- "glitch" é um texto normal que sofre interferência digital (RGB split, ruído) antes de
+  revelar uma mensagem oculta (em vez de foto) — use pra crimes cibernéticos, bugs
+  históricos (ex: Bug do Milênio), simulações ou mistérios da internet, no máximo 1x por
+  roteiro, não é obrigatório. Campos: "glitchLabel" (texto inicial), "glitchReveal"
+  (texto revelado após o glitch), "glitchNote"
+- "radar" é uma tela de radar circular com linha de varredura girando que detecta pontos
+  piscando (em vez de foto) — use pra aviação, submarinos, objetos perdidos ou
+  astronomia, no máximo 1x por roteiro, não é obrigatório. Campos: "radarLabel"
+  (opcional), "radarBlips" (lista de 1-3 {"label": string}, pontos detectados),
+  "radarNote"
+- "evolution" é uma linha horizontal com 4 estágios acendendo em sequência mostrando uma
+  evolução passo a passo (em vez de foto) — use pra evolução tecnológica, biológica ou
+  histórica (ex: "do tijolão ao smartphone", "do ancestral ao animal atual"), no máximo
+  1x por roteiro, não é obrigatório. Campos: "evoLabel" (opcional), "evoStages" (lista de
+  4 {"label": string} em ordem), "evoNote"
+- "microscope" é um zoom óptico em múltiplos níveis (10x -> 100x -> 1000x) dentro de uma
+  lente circular com grade e foco ajustando (em vez de foto) — use pra revelar um detalhe
+  microscópico escondido num fato, no máximo 1x por roteiro, não é obrigatório. Campos:
+  "microscopeLabel" (opcional), "microscopeLevels" (lista de 3 {"label": string}, ex:
+  "10x", "100x", "1000x"), "microscopeNote"
+- "telescope" é uma luneta vasculhando um céu estrelado até travar num astro distante (em
+  vez de foto) — use pra astronomia, distâncias cósmicas ou descobertas espaciais, no
+  máximo 1x por roteiro, não é obrigatório. Campos: "telescopeLabel" (opcional),
+  "telescopeTargetLabel" (nome do astro encontrado), "telescopeNote"
+- "blueprint" é um fundo quadriculado azul técnico com o contorno de um objeto desenhado
+  em linhas brancas animadas com cotas (em vez de foto) — use pra anatomia/especificação
+  técnica de algo, no máximo 1x por roteiro, não é obrigatório. Campos: "blueprintLabel"
+  (opcional), "blueprintTitle" (nome do objeto desenhado), "blueprintNote"
+- "vortex" é uma espiral central puxando itens das bordas da tela até o núcleo (em vez de
+  foto) — use pra algo que "suga" recursos/atenção/tempo (dívida, vício), no máximo 1x
+  por roteiro, não é obrigatório. Campos: "vortexLabel" (opcional), "vortexItems" (lista
+  de itens/palavras sugados), "vortexNote"
+- "chess" é um tabuleiro minimalista onde uma peça avança e derruba outra (em vez de
+  foto) — use pra estratégia, planejamento ou decisões calculadas, no máximo 1x por
+  roteiro, não é obrigatório. Campos: "chessLabel" (opcional), "chessMoveLabel"
+  (descreve a jogada/estratégia), "chessNote"
+- "morse" é um ponto luminoso piscando ritmadamente traduzido pra letras abaixo (em vez
+  de foto) — use pra códigos, comunicação secreta ou SOS/emergência, no máximo 1x por
+  roteiro, não é obrigatório. Campos: "morseLabel" (opcional), "morseCode" (ex: "... ---
+  ..."), "morseWord" (palavra traduzida, tem que bater com a narração), "morseNote"
+- "hourglass" é uma ampulheta minimalista com grãos caindo que, ao zerar, gira 180° (em
+  vez de foto) — use pra tempo se esgotando, prazos ou urgência, no máximo 1x por
+  roteiro, não é obrigatório. Campos: "hourglassLabel" (opcional), "hourglassNote"
+- "satellite" é um satélite disparando feixe cônico que varre uma superfície e destaca
+  pontos ocultos em verde (em vez de foto) — use pra vigilância, descoberta ou
+  monitoramento à distância, no máximo 1x por roteiro, não é obrigatório. Campos:
+  "satelliteLabel" (opcional), "satelliteTargetLabel" (o que foi encontrado),
+  "satelliteNote"
+- "barcode" são linhas verticais de código de barras atravessadas por um laser vermelho
+  revelando um valor (em vez de foto) — use pra preço, identificação ou escaneamento de
+  dados, no máximo 1x por roteiro, não é obrigatório. Campos: "barcodeLabel" (opcional),
+  "barcodeValue" (valor revelado), "barcodeNote"
+- "stamp" é um documento que recebe o impacto de um carimbo com tremor de câmera (em vez
+  de foto) — use pra aprovação, veto ou decisão oficial/burocrática, no máximo 1x por
+  roteiro, não é obrigatório. Campos: "stampLabel" (opcional), "stampWord" (ex:
+  "APROVADO", "BANIDO", "SECRETO"), "stampNote"
+- "metronome" é uma haste invertida oscilando em ritmo constante que acelera (em vez de
+  foto) — use pra ritmo, consistência ou hábito regular, no máximo 1x por roteiro, não é
+  obrigatório. Campos: "metronomeLabel" (opcional), "metronomeNote"
+- "compass" é uma rosa dos ventos onde a agulha gira desorientada até travar numa direção
+  (em vez de foto) — use pra orientação, propósito ou decisão de rumo, no máximo 1x por
+  roteiro, não é obrigatório. Campos: "compassLabel" (opcional), "compassDirection"
+  (direção final, ex: "NORTE"), "compassNote"
+- "liquidfill" é um recipiente transparente sendo preenchido de baixo pra cima até 100%
+  (em vez de foto) — use pra acúmulo gradual de algo líquido/fluido, no máximo 1x por
+  roteiro, não é obrigatório. Campos: "liquidLabel" (opcional), "liquidPct" (0-100, valor
+  final), "liquidNote"
+- "radiotuner" é um mostrador de frequências onde um ponteiro desliza com ruído até
+  sintonizar um ponto limpo (em vez de foto) — use pra encontrar o ponto certo depois de
+  tentativa e erro, no máximo 1x por roteiro, não é obrigatório. Campos: "radioLabel"
+  (opcional), "radioFreq" (ex: "97.5 MHz"), "radioNote"
+- "spotlight" é uma tela escura com dois holofotes que se cruzam no centro iluminando o
+  elemento principal (em vez de foto) — use pra destaque ou revelação dramática, no
+  máximo 1x por roteiro, não é obrigatório. Campos: "spotlightLabel" (opcional),
+  "spotlightTitle" (o que é revelado), "spotlightNote"
+- "shredder" é uma folha que desce por uma fenda e sai fatiada em tiras (em vez de foto) —
+  use pra destruição de informação, descarte ou eliminação de algo, no máximo 1x por
+  roteiro, não é obrigatório. Campos: "shredderLabel" (opcional), "shredderTitle" (o que
+  é destruído), "shredderNote"
+- "magnetic" são dois blocos que se repelem elasticamente até um girar 180° e colarem (em
+  vez de foto) — use pra repulsão que se torna atração, ou opostos que se atraem, no
+  máximo 1x por roteiro, não é obrigatório. Campos: "magneticLabel" (opcional),
+  "magneticLeftLabel"/"magneticRightLabel", "magneticNote"
+- "circuit" são trilhas com pulsos de luz viajando de chips periféricos até um processador
+  central (em vez de foto) — use pra tecnologia, processamento ou sistemas conectados, no
+  máximo 1x por roteiro, não é obrigatório. Campos: "circuitLabel" (opcional),
+  "circuitCenterLabel" (texto no processador central), "circuitNote"
+- "shatter" é um painel/ícone que racha a partir do centro e se divide em fragmentos (em
+  vez de foto) — use pra quebra de expectativa, mito desfeito ou colapso de algo frágil,
+  no máximo 1x por roteiro, não é obrigatório. Campos: "shatterLabel" (opcional),
+  "shatterTitle" (o que se quebra), "shatterNote"
+- "curtain" são duas metades de tecido que se abrem do centro revelando o conteúdo (em vez
+  de foto) — use pra revelação teatral de algo importante, no máximo 1x por roteiro, não
+  é obrigatório. Campos: "curtainLabel" (opcional), "curtainTitle" (o que é revelado),
+  "curtainNote"
+- "bombfuse" é um pavio com faísca percorrendo o caminho até gerar uma expansão de
+  círculos concêntricos (em vez de foto) — use pra contagem regressiva, tensão crescente
+  ou algo que vai "explodir", no máximo 1x por roteiro, não é obrigatório. Campos:
+  "fuseLabel" (opcional), "fuseTitle" (o que explode/é revelado), "fuseNote"
+- "kaleidoscope" são formas geométricas simétricas girando e se multiplicando a partir do
+  centro (em vez de foto) — use como transição/respiro visual hipnótico, sem ligação
+  direta a um fato específico, no máximo 1x por roteiro, não é obrigatório. Campos:
+  "kaleidoscopeLabel" (opcional), "kaleidoscopeNote"
+- "abacus" são contas deslizando em hastes somando unidades/dezenas/centenas (em vez de
+  foto) — use pra cálculo, soma visual ou matemática antiga vs. moderna, no máximo 1x por
+  roteiro, não é obrigatório. Campos: "abacusLabel" (opcional), "abacusValue" (número
+  final somado), "abacusNote"
+- "lever" é uma alavanca longa sobre um pequeno fulcro, onde pouca força levanta um bloco
+  gigante (em vez de foto) — use pra eficiência, pequeno esforço gerando grande resultado
+  (juro composto, alavancagem), no máximo 1x por roteiro, não é obrigatório. Campos:
+  "leverLabel" (opcional), "leverNote"
+- "cardhouse" é uma estrutura de cartas que sobe andar por andar e desmonta com um sopro
+  (em vez de foto) — use pra algo construído sobre base frágil (esquema, bolha), no
+  máximo 1x por roteiro, não é obrigatório. Campos: "cardhouseLabel" (opcional),
+  "cardhouseFloors" (opcional, padrão 4), "cardhouseNote"
+- "centrifuge" é um tambor girando em alta velocidade separando elementos pesados pras
+  bordas (em vez de foto) — use pra separação/filtragem do que importa vs. o que não
+  importa, no máximo 1x por roteiro, não é obrigatório. Campos: "centrifugeLabel"
+  (opcional), "centrifugeNote"
+- "chromatography" é uma gota de tinta preta que se expande radialmente em anéis de cores
+  diferentes (em vez de foto) — use pra decomposição de algo complexo em partes, química
+  ou ciência forense, no máximo 1x por roteiro, não é obrigatório. Campos:
+  "chromatographyLabel" (opcional), "chromatographyNote"
+- "cointoss" é uma moeda lançada que gira no ar e cai revelando cara ou coroa (em vez de
+  foto) — use pra sorte, acaso ou uma decisão de 50/50, no máximo 1x por roteiro, não é
+  obrigatório. Campos: "coinLabel" (opcional), "coinResult" ("cara" ou "coroa", opcional,
+  padrão "cara"), "coinNote"
+- "conveyor" é uma esteira trazendo itens em fila onde um braço separa defeituosos
+  (vermelho) dos aprovados (verde) (em vez de foto) — use pra seleção, triagem ou
+  controle de qualidade, no máximo 1x por roteiro, não é obrigatório. Campos:
+  "conveyorLabel" (opcional), "conveyorNote"
+- "cubeunfold" é um cubo isométrico que se abre desmontando as 6 faces numa cruz plana
+  (em vez de foto) — use pra múltiplas facetas de um mesmo assunto (ex: "6 formas de
+  economizar"), no máximo 1x por roteiro, não é obrigatório. Campos: "cubeLabel"
+  (opcional), "cubeFaces" (lista de até 6 {"label": string}), "cubeNote"
+- "cuckoo" é um relógio estilizado que bate na hora exata e dispara uma porta de onde
+  salta um ícone (em vez de foto) — use pra evento pontual que se repete (rotina, data
+  marcada), no máximo 1x por roteiro, não é obrigatório. Campos: "cuckooLabel"
+  (opcional), "cuckooTime" (ex: "12:00"), "cuckooRevealLabel" (o que salta da porta),
+  "cuckooNote"
+- "decibel" é uma barra vertical segmentada acendendo de baixo pra cima com pico marcado
+  no topo (em vez de foto) — use pra intensidade crescente de som, risco ou impacto, no
+  máximo 1x por roteiro, não é obrigatório. Campos: "decibelLabel" (opcional),
+  "decibelPct" (0-100, intensidade final), "decibelNote"
+- "safedial" é um disco numerado de cofre girando até destravar uma tranca pesada (em vez
+  de foto) — use pra segredo, código de acesso ou algo que exige a combinação certa, no
+  máximo 1x por roteiro, não é obrigatório. Campos: "safeLabel" (opcional), "safeCombo"
+  (lista de números, ex: [42, 15, 88]), "safeNote"
+- "droplet" é uma gota que cai e gera ondas circulares que se expandem perdendo opacidade
+  (em vez de foto) — use pra efeito cascata de uma ação pequena (decisão que se propaga,
+  notícia se espalhando), no máximo 1x por roteiro, não é obrigatório. Campos:
+  "dropletLabel" (opcional), "dropletNote"
+- "elevator" é um painel de andares com seta subindo enquanto o fundo passa rápido pra
+  baixo (em vez de foto) — use pra progressão de nível ou ascensão (carreira, patrimônio
+  subindo de faixa), no máximo 1x por roteiro, não é obrigatório. Campos:
+  "elevatorLabel" (opcional), "elevatorFloor" (andar final, ex: "100"), "elevatorNote"
+- "filmstrip" é um rolo de película de 35mm deslizando frame a frame até parar num quadro
+  iluminado (em vez de foto) — use pra memória, flashback ou um momento específico em
+  destaque, no máximo 1x por roteiro, não é obrigatório. Campos: "filmstripLabel"
+  (opcional), "filmstripTitle" (texto no quadro em destaque), "filmstripNote"
+- "hydraulicpress" é um pistão que desce esmagando um elemento elástico até ele saltar ou
+  se moldar numa nova forma (em vez de foto) — use pra pressão/esforço que força uma
+  transformação, no máximo 1x por roteiro, não é obrigatório. Campos: "pressLabel"
+  (opcional), "pressTitle" (o que está sendo pressionado/moldado), "pressNote"
+- "lasermaze" é um feixe de luz que reflete em espelhos até atingir um alvo no lado
+  oposto (em vez de foto) — use pra caminho indireto até um objetivo (estratégia com
+  obstáculos), no máximo 1x por roteiro, não é obrigatório. Campos: "laserLabel"
+  (opcional), "laserTargetLabel" (o alvo final atingido), "laserNote"
+- "origami" é uma folha quadrada cujas pontas se dobram sequencialmente até formar a
+  silhueta de um objeto (em vez de foto) — use pra transformação progressiva de algo
+  simples em algo elaborado, no máximo 1x por roteiro, não é obrigatório. Campos:
+  "origamiLabel" (opcional), "origamiTitle" (forma final dobrada), "origamiNote"
+- "parachute" é um objeto que cai rápido e abre um paraquedas que desacelera
+  instantaneamente (em vez de foto) — use pra freada de emergência, um amortecedor que
+  evita o pior cenário (reserva de emergência, seguro), no máximo 1x por roteiro, não é
+  obrigatório. Campos: "parachuteLabel" (opcional), "parachuteTitle" (o que é salvo),
+  "parachuteNote"
+- "periscope" é um visor circular que emerge de baixo, gira procurando um alvo e trava
+  com zoom (em vez de foto) — use pra observação discreta ou buscar algo escondido, no
+  máximo 1x por roteiro, não é obrigatório. Campos: "periscopeLabel" (opcional),
+  "periscopeTargetLabel" (o que é encontrado), "periscopeNote"
+- "pinball" é uma bola caindo entre bumpers que piscam e crescem a cada colisão somando
+  pontos (em vez de foto) — use pra acúmulo rápido e caótico de pontos/ganhos (juros
+  compostos acelerando), no máximo 1x por roteiro, não é obrigatório. Campos:
+  "pinballLabel" (opcional), "pinballScore" (pontuação final, tem que bater com a
+  narração), "pinballNote"
+- "rubiks" é uma grade 3x3 desalinhada onde linha/coluna deslizam até encaixar as cores
+  no centro (em vez de foto) — use pra organização, resolver um problema complexo ou
+  colocar ordem no caos, no máximo 1x por roteiro, não é obrigatório. Campos:
+  "rubiksLabel" (opcional), "rubiksNote"
+- "sieve" é uma malha que treme lateralmente: partículas grandes ficam retidas em cima,
+  pequenas atravessam (em vez de foto) — use pra filtragem, seleção do que é relevante vs.
+  descartável, no máximo 1x por roteiro, não é obrigatório. Campos: "sieveLabel"
+  (opcional), "sieveNote"
+- "stethoscope" é uma campânula que pousa sobre um ponto emitindo pulsos sincronizados
+  com batida dupla (em vez de foto) — use pra diagnóstico, saúde financeira/física ou
+  checagem de "sinais vitais", no máximo 1x por roteiro, não é obrigatório. Campos:
+  "stethoscopeLabel" (opcional), "stethoscopeNote"
+- "tuningfork" são dois diapasões em "U"; o da esquerda vibra e faz o da direita vibrar
+  por simpatia, sem contato (em vez de foto) — use pra contágio/influência invisível (um
+  hábito, uma ideia se propagando), no máximo 1x por roteiro, não é obrigatório. Campos:
+  "tuningforkLabel" (opcional), "tuningforkNote"
+- "windvane" são linhas de vento varrendo a tela enquanto um cata-vento gira contra a
+  corrente com velocidade medida (em vez de foto) — use pra resistência a uma força
+  externa ou se adaptar contra uma tendência (mercado, maré), no máximo 1x por roteiro,
+  não é obrigatório. Campos: "windvaneLabel" (opcional), "windvaneSpeed" (ex: "42 km/h"),
+  "windvaneNote"
 - De 10 a 12 cenas (nunca menos de 10), sempre inclua intro e outro
 - Textos visuais em MAIÚSCULAS
 
@@ -379,7 +707,7 @@ REGRAS DE NARRAÇÃO:
 - Evite frases genéricas como "isso vai mudar sua vida", "você precisa saber disso" ou
   "a maioria das pessoas não sabe". Substitua por fatos ou exemplos que provem o ponto
 
-REGRAS DE IMAGENS (para geração via IA / busca no Pixabay):
+REGRAS DE IMAGENS (para geração via IA no ComfyUI/Stable Diffusion):
 - Gere também um campo "imagePrompts": uma lista com EXATAMENTE um item para cada cena de
   "scenes", NA MESMA ORDEM — imagePrompts[0] ilustra a cena 0, imagePrompts[1] a cena 1, etc.
   Antes de responder, CONTE o número de cenas em "scenes" e confirme que "imagePrompts" tem
@@ -387,10 +715,10 @@ REGRAS DE IMAGENS (para geração via IA / busca no Pixabay):
 - Cada prompt deve ilustrar especificamente o CONTEÚDO DAQUELA CENA (o que a narration/title/
   text dela diz), não o tema genérico do vídeo inteiro
 - NÃO inclua texto, palavras, números ou letras nos prompts (Stable Diffusion não renderiza texto bem)
-- Escreva os prompts em INGLÊS (bancos de imagem como Pixabay indexam tags em inglês)
+- Escreva os prompts em INGLÊS (o checkpoint SD 1.5 é treinado majoritariamente com tags/captions em inglês)
 - Descreva uma cena LITERAL e concreta (objeto/pessoa/ação visível), nunca uma metáfora ou
-  símbolo ("fading banknotes to symbolize loss", "door symbolizing a solution") — busca de banco
-  de imagens casa por palavra-chave, não entende metáfora
+  símbolo ("fading banknotes to symbolize loss", "door symbolizing a solution") — prompts
+  mais diretos geram imagens mais fiéis no SD 1.5
 - Estilo sugerido ao final de cada prompt: "cinematic photography, warm natural lighting, shallow depth of field, realistic, instagram aesthetic, vertical composition"
 
 FORMATO JSON (retorne APENAS o JSON, sem markdown — o exemplo abaixo tem só 4 cenas pra caber
@@ -435,16 +763,30 @@ aqui; a saída real tem que ter de 9 a 12 cenas, intercalando os tipos acima con
 }"""
 
 # ── Gemini (endpoint nativo) ──────────────────────────────────────────────────
-def gerar_roteiro(tema: str) -> dict:
-    print(f"\n🤖 Gerando roteiro via Gemini ({GEMINI_MODEL}): '{tema}'...")
+def gerar_roteiro(tema: str, roteiro_bruto: str = None) -> dict:
+    if roteiro_bruto:
+        print(f"\n🤖 Adaptando roteiro fornecido via Gemini ({GEMINI_MODEL})...")
+    else:
+        print(f"\n🤖 Gerando roteiro via Gemini ({GEMINI_MODEL}): '{tema}'...")
 
     if not GEMINI_API_KEY:
         print("❌ GEMINI_API_KEY não encontrada no .env")
         sys.exit(1)
 
+    if roteiro_bruto:
+        user_text = (
+            "Adapte o roteiro abaixo para o formato exigido (JSON com scenes/imagePrompts). "
+            "Preserve o conteúdo e a locução originais ao máximo — só ajuste pra caber na "
+            "estrutura técnica (dividir em cenas, escolher os tipos, preencher duration etc). "
+            "O roteiro pode vir em qualquer formato (texto livre, com timestamps, markdown...).\n\n"
+            f"Roteiro original:\n{roteiro_bruto}"
+        )
+    else:
+        user_text = f"Crie um roteiro sobre: {tema}"
+
     payload = {
         "contents": [
-            {"role": "user", "parts": [{"text": f"Crie um roteiro sobre: {tema}"}]},
+            {"role": "user", "parts": [{"text": user_text}]},
         ],
         "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
         # 9-12 cenas + narração mais profunda + 1 imagePrompt/cena passam fácil de 2000
@@ -458,8 +800,11 @@ def gerar_roteiro(tema: str) -> dict:
     }
     url = GEMINI_URL.format(model=GEMINI_MODEL)
 
-    # Retry automático em 503 e timeout
+    # Retry automático em 503, timeout e JSON truncado/malformado (maxOutputTokens
+    # já cortou roteiro no meio antes — ver comentário acima; refazer a chamada é a
+    # única saída, não dá pra "reparar" um JSON cortado no meio de uma string)
     r = None
+    script = None
     for tentativa in range(1, 4):
         try:
             r = requests.post(url, headers=headers, json=payload, timeout=90)
@@ -473,28 +818,60 @@ def gerar_roteiro(tema: str) -> dict:
             print(f"   ⏳ Servidor ocupado ({tentativa}/3), tentando novamente em {espera}s...")
             time.sleep(espera)
             continue
-        break
+        if not r.ok:
+            print(f"❌ Gemini API erro {r.status_code}: {r.text[:400]}")
+            r.raise_for_status()
+
+        raw = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        raw = re.sub(r",(\s*[}\]])", r"\1", raw)  # Gemini às vezes deixa vírgula sobrando antes de } ou ]
+
+        try:
+            script = json.loads(raw)
+            break
+        except json.JSONDecodeError as e:
+            print(f"   ⏳ JSON inválido/truncado ({tentativa}/3): {e}, tentando novamente...")
+            time.sleep(tentativa * 5)
+            continue
+
     if r is None:
         print("❌ Gemini API: sem resposta após 3 tentativas")
         sys.exit(1)
+    if script is None:
+        print("❌ Gemini API: JSON inválido/truncado em todas as 3 tentativas")
+        sys.exit(1)
 
-    if not r.ok:
-        print(f"❌ Gemini API erro {r.status_code}: {r.text[:400]}")
-        r.raise_for_status()
+    script = _finalizar_roteiro(script, tema)
+    print(f"✅ Roteiro: {len(script['scenes'])} cenas")
+    return script
 
-    raw = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
-    if raw.startswith("```"):
-        raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
 
-    script = json.loads(raw)
+def _finalizar_roteiro(script: dict, tema: str) -> dict:
+    """Limpa markdown fora de escopo e preenche paleta/canal — usado tanto no roteiro
+    vindo do Gemini quanto num roteiro próprio carregado via --roteiro."""
     script = _limpar_markdown_fora_de_escopo(script)
-    script["accentColor"] = ACCENT_COLOR
+    if not script.get("theme"):
+        script["theme"] = _escolher_tema_visual()
+
+    # hue do fundo sempre vem da paleta escolhida (determinística por tema+theme) —
+    # independente de quem definiu accentColor (Gemini já manda o seu próprio, sempre;
+    # ACCENT_COLOR do .env; ou o fallback daqui), senão bgHueFrom/bgHueTo ficam sem
+    # valor e Background cai nos defaults (azul-roxo) de qualquer jeito.
+    paleta = _escolher_paleta(tema, script["theme"])
+    script["bgHueFrom"] = paleta["hueFrom"]
+    script["bgHueTo"] = paleta["hueTo"]
+    if os.environ.get("ACCENT_COLOR"):
+        script["accentColor"] = os.environ["ACCENT_COLOR"]
+    elif not script.get("accentColor"):
+        script["accentColor"] = paleta["accent"]
 
     for scene in script.get("scenes", []):
+        _normalizar_tipo_cena(scene)
         if scene.get("type") in ("intro", "outro") and not scene.get("channel"):
             scene["channel"] = CHANNEL_NAME
+        scene.setdefault("duration", 3)  # Gemini ocasionalmente omite duration
 
-    print(f"✅ Roteiro: {len(script['scenes'])} cenas")
     return script
 
 
@@ -752,7 +1129,7 @@ def gerar_audios(script: dict, audio_dir: Path) -> tuple:
     return script, qa
 
 
-# ── ComfyUI (SD 1.5) + fallback Pixabay ──────────────────────────────────────
+# ── ComfyUI (SD 1.5) ──────────────────────────────────────────────────────────
 def _comfyui_disponivel() -> bool:
     try:
         r = requests.get(f"{COMFYUI_URL}/system_stats", timeout=3)
@@ -764,15 +1141,15 @@ def _comfyui_disponivel() -> bool:
 def _iniciar_comfyui() -> "subprocess.Popen | None":
     """Sobe o ComfyUI em background se ainda não estiver rodando em COMFYUI_URL.
     Retorna o processo (para ser encerrado depois) ou None se já estava rodando
-    (não é nosso para derrubar) ou se não deu para subir — nesses casos o fluxo
-    segue e cai no fallback Pixabay."""
+    (não é nosso para derrubar) ou se não deu para subir — nesses casos o vídeo
+    sai sem imagem de fundo."""
     if _comfyui_disponivel():
         print(f"\n🖼️  ComfyUI já está rodando em {COMFYUI_URL}")
         return None
 
     main_py = COMFYUI_DIR / "main.py"
     if not main_py.exists():
-        print(f"\n🖼️  ComfyUI não encontrado em {COMFYUI_DIR} — usando Pixabay")
+        print(f"\n🖼️  ComfyUI não encontrado em {COMFYUI_DIR} — sem imagem de fundo")
         return None
 
     print(f"\n🚀 Iniciando ComfyUI em background ({COMFYUI_DIR})...")
@@ -787,11 +1164,11 @@ def _iniciar_comfyui() -> "subprocess.Popen | None":
             print("   ✅ ComfyUI pronto")
             return proc
         if proc.poll() is not None:
-            print("   ❌ ComfyUI encerrou antes de ficar pronto — usando Pixabay")
+            print("   ❌ ComfyUI encerrou antes de ficar pronto — sem imagem de fundo")
             return None
         time.sleep(2)
 
-    print(f"   ⚠️  ComfyUI não respondeu em {COMFYUI_AUTOSTART_TIMEOUT}s — usando Pixabay e encerrando-o")
+    print(f"   ⚠️  ComfyUI não respondeu em {COMFYUI_AUTOSTART_TIMEOUT}s — sem imagem de fundo, encerrando-o")
     proc.terminate()
     return None
 
@@ -878,84 +1255,14 @@ def _comfyui_gerar_uma(prompt: str, dest: Path, client_id: str) -> bool:
     return False
 
 
-def _pixabay_buscar(endpoint: str, query: str, extra_params: dict) -> list:
-    try:
-        r = requests.get(f"https://pixabay.com/api/{endpoint}", params={
-            "key": PIXABAY_KEY, "q": query, "order": "relevance", "safesearch": "true",
-            "per_page": 20, **extra_params,
-        }, timeout=15)
-        return r.json().get("hits", []) if r.ok else []
-    except Exception:
-        return []
-
-
-def _pixabay_fallback(prompts: list, tema: str, dest_dir: Path) -> list:
-    print("   ↪️  ComfyUI indisponível — usando Pixabay como fallback de imagens/vídeos")
-    if not PIXABAY_KEY:
-        print("   ❌ PIXABAY_API_KEY não configurada — sem fallback de imagens")
-        return []
-
-    caminhos = []
-    vistos = set()
-    termos = prompts if prompts else [tema]
-
-    for i, termo in enumerate(termos):
-        query = termo.split(",")[0][:100] or tema
-        # Busca com palavras-chave curtas (não a frase inteira) — a API do Pixabay casa
-        # por keyword, e uma frase de 10+ palavras dilui o match e traz resultado genérico.
-        # Pipeline é só pra conteúdo de finanças pessoais (ver CLAUDE.md) — "finance money"
-        # no fim ancora a busca no tema mesmo quando as palavras-chave da cena são fracas
-        # (verificado manualmente: sem a âncora, prompts como "coins stacking wooden table"
-        # retornam maçã/livro/gato no topo; com ela, voltam moedas/dinheiro/gráfico).
-        search_q = (_pixabay_keywords(query) or query) + " finance money"
-
-        fotos = _pixabay_buscar("", search_q, {"image_type": "photo", "orientation": "vertical"})
-        videos = _pixabay_buscar("videos/", search_q, {})
-
-        # Foto e vídeo competem pelo mesmo score de relevância (_pixabay_relevancia) —
-        # usa o que combinar melhor com o termo buscado, não importa o tipo.
-        candidatos = (
-            [("foto", h, _pixabay_relevancia(query, h.get("tags", ""))) for h in fotos if ("foto", h["id"]) not in vistos]
-            + [("video", h, _pixabay_relevancia(query, h.get("tags", ""))) for h in videos if ("video", h["id"]) not in vistos]
-        )
-        if not candidatos:
-            continue
-        tipo, hit, score = max(candidatos, key=lambda c: c[2])
-        vistos.add((tipo, hit["id"]))
-        _ULTIMA_RELEVANCIA_PIXABAY.append(score)
-
-        try:
-            if tipo == "video":
-                arquivos_video = hit.get("videos", {})
-                video = arquivos_video.get("small") or arquivos_video.get("tiny") or arquivos_video.get("medium")
-                if not video:
-                    continue
-                media_r = requests.get(video["url"], timeout=60)
-                sufixo = ".mp4"
-            else:
-                media_r = requests.get(hit["largeImageURL"], timeout=30)
-                sufixo = ".jpg"
-        except Exception:
-            continue
-        if media_r.ok:
-            caminho = dest_dir / f"img_{i:02d}{sufixo}"
-            caminho.write_bytes(media_r.content)
-            caminhos.append(caminho)
-
-    return caminhos
-
-
-def gerar_imagens(prompts: list, tema: str, dest_dir: Path, usar_ia: bool = False) -> list:
-    """Gera imagens de fundo. Sem --ai-image (usar_ia=False): busca direto no Pixabay (padrão).
-    Com --ai-image: tenta ComfyUI (SD 1.5 local) primeiro e cai para o Pixabay se indisponível/falhar."""
+def gerar_imagens(prompts: list, tema: str, dest_dir: Path) -> list:
+    """Gera imagens de fundo via ComfyUI (SD 1.5 local). Sem ComfyUI disponível,
+    retorna lista vazia — o vídeo sai sem imagem de fundo nessas cenas."""
     dest_dir.mkdir(parents=True, exist_ok=True)
 
-    if not usar_ia:
-        return _pixabay_fallback(prompts, tema, dest_dir)
-
     if not _comfyui_disponivel():
-        print(f"\n🖼️  ComfyUI não detectado em {COMFYUI_URL}")
-        return _pixabay_fallback(prompts, tema, dest_dir)
+        print(f"\n🖼️  ComfyUI não detectado em {COMFYUI_URL} — sem imagem de fundo")
+        return []
 
     print(f"\n🖼️  Gerando {len(prompts)} imagens via ComfyUI (SD 1.5, {COMFYUI_WIDTH}x{COMFYUI_HEIGHT})...")
     client_id = str(uuid.uuid4())
@@ -969,8 +1276,7 @@ def gerar_imagens(prompts: list, tema: str, dest_dir: Path, usar_ia: bool = Fals
             print(f"      ⚠️  Falhou — pulando imagem {i+1}")
 
     if not caminhos:
-        print("   ⚠️  Nenhuma imagem gerada pelo ComfyUI — tentando Pixabay")
-        return _pixabay_fallback(prompts, tema, dest_dir)
+        print("   ⚠️  Nenhuma imagem gerada pelo ComfyUI")
 
     return caminhos
 
@@ -978,7 +1284,54 @@ def gerar_imagens(prompts: list, tema: str, dest_dir: Path, usar_ia: bool = Fals
 # Cenas de card/dado/branding (proof, card, intro, outro) ficam sem foto de propósito —
 # renderizam sobre o gradiente limpo do Remotion, estilo editorial (motionmaxxing). Módulo
 # usa o mesmo set em main() pra nem buscar/baixar imagem pras cenas que nunca vão exibi-la.
-SCENE_TYPES_SEM_FOTO = {"proof", "growth", "card", "intro", "outro", "notification", "calendar", "clock", "moneystack", "checklist", "progress", "timer", "rating", "scale", "map", "weather", "achievement", "battery", "book", "thermometer", "piggybank", "receipt", "roadmap", "quote", "alert", "split", "counter", "sizecompare", "xray", "proportiongrid", "speedrace", "timelineera", "orbit", "dna", "mythfact", "redacted", "magnify", "censored", "domino", "treebranch", "vsbattle"}
+SCENE_TYPES_SEM_FOTO = {"proof", "growth", "card", "intro", "outro", "notification", "calendar", "clock", "moneystack", "checklist", "progress", "timer", "rating", "scale", "map", "weather", "achievement", "battery", "book", "thermometer", "piggybank", "receipt", "roadmap", "quote", "alert", "split", "counter", "sizecompare", "xray", "proportiongrid", "speedrace", "timelineera", "orbit", "dna", "mythfact", "redacted", "magnify", "censored", "domino", "treebranch", "vsbattle", "brain", "ecg", "illusion", "soundwave", "depthdive", "pressure", "chainreaction", "pendulum", "slotmachine", "labmix", "pyramid", "supplychain", "crowd", "balancebeam", "glitch", "radar", "evolution", "microscope", "telescope", "blueprint", "vortex", "chess", "morse", "hourglass", "satellite", "barcode", "stamp", "metronome", "compass", "liquidfill", "radiotuner", "spotlight", "shredder", "magnetic", "circuit", "shatter", "curtain", "bombfuse", "kaleidoscope", "abacus", "lever", "cardhouse", "centrifuge", "chromatography", "cointoss", "conveyor", "cubeunfold", "cuckoo", "decibel", "safedial", "droplet", "elevator", "filmstrip", "hydraulicpress", "lasermaze", "origami", "parachute", "periscope", "pinball", "rubiks", "sieve", "stethoscope", "tuningfork", "windvane"}
+
+# "text"/"highlight"/"list"/"chapter"/"code" são os únicos 5 tipos que pedem foto ao
+# ComfyUI (ver aplicar_imagens_de_fundo) — junto com SCENE_TYPES_SEM_FOTO formam os 110
+# tipos reais que o SceneRouter do Remotion sabe renderizar (fonte: case labels de
+# MotionReel.tsx). Usado só pra validar/corrigir scene["type"] (ver _normalizar_tipo_cena).
+VALID_SCENE_TYPES = SCENE_TYPES_SEM_FOTO | {"text", "highlight", "list", "chapter", "code"}
+
+# Campos cujo prefixo camelCase não repete o nome do tipo (ex. moneystack usa "moneyValue",
+# não "moneystackValue") — só pra recuperar o tipo certo de uma cena com tipo inválido.
+_PREFIXO_TIPO_ALIAS = {
+    "money": "moneystack", "thermo": "thermometer", "piggy": "piggybank",
+    "size": "sizecompare", "grid": "proportiongrid", "race": "speedrace",
+    "era": "timelineera", "myth": "mythfact", "fact": "mythfact",
+    "lock": "notification", "wallpaper": "notification", "notif": "notification",
+}
+
+_CAMPOS_GENERICOS_CENA = {
+    "type", "duration", "audio", "caption", "captionFrames", "words",
+    "backgroundImage", "title", "subtitle", "channel", "cta", "text", "items",
+    "code", "language", "_audio_path", "_audio_duration", "_caption", "_words",
+}
+
+
+def _normalizar_tipo_cena(scene: dict) -> None:
+    """O Gemini às vezes inventa um nome de tipo mais 'temático' (ex. 'water', 'food')
+    em vez do tipo real, mas já preenche os campos certos desse tipo real (ex.
+    weatherType/weatherLabel, cardTitle/cardValue) — sem essa correção a cena cai no
+    fallback TextScene do SceneRouter, que espera scene.text (ausente aqui) e renderiza
+    completamente vazia/em branco."""
+    tipo = scene.get("type")
+    if tipo in VALID_SCENE_TYPES:
+        return
+    candidatos: dict = {}
+    for chave in scene:
+        if chave in _CAMPOS_GENERICOS_CENA:
+            continue
+        m = re.match(r"^[a-z]+", chave)
+        if not m:
+            continue
+        alvo = _PREFIXO_TIPO_ALIAS.get(m.group(0), m.group(0))
+        if alvo in VALID_SCENE_TYPES:
+            candidatos[alvo] = candidatos.get(alvo, 0) + 1
+    novo_tipo = max(candidatos, key=candidatos.get) if candidatos else "card"
+    if novo_tipo == "card" and not scene.get("cardTitle") and not scene.get("cardNote"):
+        scene["cardNote"] = (scene.get("_caption") or scene.get("title") or "")[:80]
+    print(f"[aviso] tipo de cena inválido '{tipo}' remapeado para '{novo_tipo}'")
+    scene["type"] = novo_tipo
 
 
 def aplicar_imagens_de_fundo(script: dict, imagens: list) -> None:
@@ -1113,16 +1466,43 @@ def mixar_audio(script: dict, video_sem_audio: Path, output_path: Path,
 
     inputs_musica = []
     if musica_ok:
-        # shortcut: volume fixo (sem sidechain/ducking dinâmico) — suficiente pra dar
-        # presença de trilha sem abafar a narração, já normalizada a -16 LUFS. Se a voz
-        # ficar difícil de ouvir em cenas longas, trocar por ffmpeg sidechaincompress.
         musica_idx = audio_idx + 1
         inputs_musica = ["-stream_loop", "-1", "-i", str(musica_path)]
         fade_start = max(0.0, t - 1.0)
-        filters.append(
-            f"[{musica_idx}:a]volume=0.18,atrim=0:{t:.3f},afade=t=out:st={fade_start:.3f}:d=1[music]"
+        if maps:
+            # Volume fixo deixava o refrão (trecho mais alto da faixa) abafar a
+            # narração — duck dinâmico via sidechaincompress: a música abaixa
+            # sozinha enquanto a voz está falando, independente do trecho da música.
+            filters.append(f"{''.join(maps)}amix=inputs={len(maps)}:normalize=0[narrmix]")
+            filters.append("[narrmix]asplit=2[narr1][narr2]")  # [narr1] só controla o duck, [narr2] vai pro mix final
+            filters.append(
+                f"[{musica_idx}:a]volume=0.28,atrim=0:{t:.3f},afade=t=out:st={fade_start:.3f}:d=1[musicraw]"
+            )
+            filters.append(
+                "[musicraw][narr1]sidechaincompress=threshold=0.05:ratio=8:attack=20:release=400[music]"
+            )
+            maps = ["[narr2]", "[music]"]
+        else:
+            filters.append(
+                f"[{musica_idx}:a]volume=0.18,atrim=0:{t:.3f},afade=t=out:st={fade_start:.3f}:d=1[music]"
+            )
+            maps.append("[music]")
+
+    # O Remotion já embute os SFX (soundSynth) direto na faixa de áudio do vídeo
+    # mudo via <Audio> nas cenas — sem isso, "-map 0:v" abaixo descartaria esse
+    # áudio e nenhum SFX sairia no vídeo final, apesar de estar todo renderizado.
+    tem_sfx_embutido = False
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=index",
+             "-of", "csv=p=0", str(video_sem_audio)],
+            capture_output=True, text=True, timeout=10,
         )
-        maps.append("[music]")
+        tem_sfx_embutido = bool(r.stdout.strip())
+    except Exception:
+        pass
+    if tem_sfx_embutido:
+        maps.append("[0:a]")
 
     # Mixar todos os áudios e combinar com vídeo
     # O vídeo mudo já tem a duração correta (ajustada via scene.duration no main)
@@ -1143,7 +1523,11 @@ def mixar_audio(script: dict, video_sem_audio: Path, output_path: Path,
         ]
     )
     print(f"\n🔊 Mixando {len(maps)} faixa(s) de áudio com ffmpeg...")
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+    except subprocess.TimeoutExpired:
+        print("❌ ffmpeg travou mixando o áudio (timeout de 180s)")
+        return False
     if result.returncode != 0:
         print(f"❌ ffmpeg erro:\n{result.stderr[-500:]}")
         return False
@@ -1177,7 +1561,14 @@ def renderizar(script: dict, output_path: Path, total_frames: int = 0) -> bool:
     # continuam renderizando "órfãos" em background, terminando sozinhos
     # depois do Python já ter desistido — foi o que causava vídeos mudos
     # (sem a mixagem de áudio, que só roda se renderizar() retornar True).
-    proc = subprocess.Popen(cmd, cwd=SCRIPT_DIR, start_new_session=True)
+    # /tmp nesta máquina é um tmpfs de ~772M só — Chrome/Remotion estouram ENOSPC
+    # nele em renders longos. TMPDIR aponta pro disco real (mesmo fix validado
+    # manualmente nos renders de QA que travaram em /tmp).
+    render_env = os.environ.copy()
+    tmp_render_dir = SCRIPT_DIR.parent / "tmp_render"
+    tmp_render_dir.mkdir(parents=True, exist_ok=True)
+    render_env["TMPDIR"] = str(tmp_render_dir)
+    proc = subprocess.Popen(cmd, cwd=SCRIPT_DIR, start_new_session=True, env=render_env)
     try:
         returncode = proc.wait(timeout=REMOTION_RENDER_TIMEOUT)
     except subprocess.TimeoutExpired:
@@ -1259,51 +1650,6 @@ def _qa_caption_tem_asterisco(script: dict) -> bool:
     return False
 
 
-_TOKEN_RE = re.compile(r"[a-zà-úA-ZÀ-Ú0-9]+")
-_ULTIMA_RELEVANCIA_PIXABAY: list = []
-_STOPWORDS_EN = {
-    "the", "and", "with", "for", "from", "into", "onto", "while", "her", "his", "their",
-    "she", "him", "them", "this", "that", "these", "those", "being", "over", "under",
-    "person", "someone", "wearing", "sitting", "standing", "looking", "holding",
-}
-
-
-def _relevance_tokens(texto: str) -> set:
-    return {w.lower() for w in _TOKEN_RE.findall(texto or "") if len(w) > 2}
-
-
-def _pixabay_keywords(texto: str, n: int = 4) -> str:
-    """Reduz uma frase descritiva longa (ex: imagePrompt do Gemini) a ~5 palavras-chave
-    concretas, na ordem original, sem repetir. A busca do Pixabay é por palavra-chave —
-    mandar a frase inteira (10+ palavras, com stopwords em inglês tipo "with"/"while")
-    dilui o match e costuma trazer resultado genérico sem relação com a cena."""
-    vistos, out = set(), []
-    for w in _TOKEN_RE.findall((texto or "").lower()):
-        if len(w) <= 2 or w in _STOPWORDS_EN or w in vistos:
-            continue
-        vistos.add(w)
-        out.append(w)
-        if len(out) >= n:
-            break
-    return " ".join(out)
-
-
-def _pixabay_relevancia(query: str, tags: str) -> float:
-    """Sobreposição de tokens busca x tags do Pixabay — usado em _pixabay_fallback
-    pra escolher o hit mais relevante entre os retornados, e também fica no
-    histórico (.historico_geracoes.json) como métrica de QA."""
-    q, t = _relevance_tokens(query), _relevance_tokens(tags)
-    if not q or not t:
-        return 0.0
-    score = len(q & t) / len(q)
-    # Empate é comum (overlap é uma fração discreta de poucos valores possíveis) e, sem
-    # desempate, max() fica com o primeiro candidato da lista — que costuma ser uma foto
-    # genérica de "celular/tela" (tags amplas tipo "smartphone, screen, wallpaper"), não a
-    # foto de finanças de verdade que empatou no mesmo score. Bônus pequeno (não muda a
-    # ordem entre scores diferentes, só desempata) pra quem tem as palavras-âncora do tema.
-    score += 0.001 * len(t & {"finance", "money"})
-    return score
-
 
 _XTTS_GRADES = {
     "temperature":        [0.75, 0.80, 0.85, 0.90, 0.95],
@@ -1354,16 +1700,36 @@ def _selecionar_parametros_xtts() -> tuple:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    dry_run  = "--dry-run" in sys.argv
-    ai_image = "--ai-image" in sys.argv
+    argv = sys.argv[1:]
+    dry_run = "--dry-run" in argv
+    ai_image = "--ai-image" in argv
+
+    roteiro_bruto = None
+    if "--roteiro" in argv:
+        i = argv.index("--roteiro")
+        if i + 1 >= len(argv):
+            print("❌ --roteiro precisa de um valor: um caminho de arquivo ou o próprio texto do roteiro")
+            sys.exit(1)
+        valor = argv[i + 1]
+        argv = argv[:i] + argv[i + 2:]  # remove flag + valor antes de extrair o tema do resto
+        # Se for um caminho de arquivo existente, lê o conteúdo; senão, trata o próprio
+        # valor como o texto do roteiro (qualquer formato — o Gemini adapta pra scenes/imagePrompts).
+        p = Path(valor)
+        roteiro_bruto = p.read_text() if p.is_file() else valor
+
+    args = [a for a in argv if not a.startswith("--")]
 
     global XTTS_TEMPERATURE, XTTS_SPEED, XTTS_REPETITION_PENALTY
     if XTTS_AUTOTUNE:
         XTTS_TEMPERATURE, XTTS_SPEED, XTTS_REPETITION_PENALTY = _selecionar_parametros_xtts()
         print(f"🎛️  XTTS_AUTOTUNE: temperature={XTTS_TEMPERATURE} speed={XTTS_SPEED} repetition_penalty={XTTS_REPETITION_PENALTY}")
 
-    tema = " ".join(args) if args else random.choice(TEMAS_FINANCAS)
+    if args:
+        tema = " ".join(args)
+    elif roteiro_bruto and (m := re.search(r"^\s*tema:\s*(.+)$", roteiro_bruto, re.IGNORECASE | re.MULTILINE)):
+        tema = m.group(1).strip()
+    else:
+        tema = random.choice(TEMAS_FINANCAS)
 
     ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir = SCRIPT_DIR.parent / "videos_gerados" / f"motion_{ts}"
@@ -1388,10 +1754,10 @@ def main():
     }
     try:
         # 1. Roteiro
-        script = gerar_roteiro(tema)
+        script = gerar_roteiro(tema, roteiro_bruto)
 
         # imagePrompts precisa ter 1 item por cena, na mesma ordem (ver SYSTEM_PROMPT) —
-        # é isso que garante que a busca no Pixabay seja sobre o conteúdo daquela cena
+        # é isso que garante que a geração via ComfyUI seja sobre o conteúdo daquela cena
         # específica, não um pool genérico do tema cicládo por aplicar_imagens_de_fundo.
         n_scenes = len(script["scenes"])
         image_prompts = script.pop("imagePrompts", None) or []
@@ -1401,15 +1767,15 @@ def main():
             image_prompts = image_prompts + [image_prompts[-1] if image_prompts else tema] * (n_scenes - len(image_prompts))
         image_prompts = image_prompts[:n_scenes]
 
-        # Só busca imagem pra cena que vai de fato exibir uma (aplicar_imagens_de_fundo
-        # pula os tipos em SCENE_TYPES_SEM_FOTO) — evita Pixabay/ComfyUI gastar tempo e
-        # banda buscando foto pra cena de card/intro/outro que nunca vai usá-la.
+        # Só gera imagem pra cena que vai de fato exibir uma (aplicar_imagens_de_fundo
+        # pula os tipos em SCENE_TYPES_SEM_FOTO) — evita o ComfyUI gastar tempo e GPU
+        # gerando imagem pra cena de card/intro/outro que nunca vai usá-la.
         image_prompts_fetch = [
             p for p, scene in zip(image_prompts, script["scenes"])
             if scene.get("type") not in SCENE_TYPES_SEM_FOTO
         ]
 
-        print("\n🔎 Prompts de imagem (busca Pixabay):")
+        print("\n🔎 Prompts de imagem (geração ComfyUI):")
         for i, p in enumerate(image_prompts_fetch):
             print(f"   [{i+1}] {p}")
 
@@ -1429,30 +1795,29 @@ def main():
         geracao["qa"].update(qa_audio)
         _descarregar_xtts_model()
 
-        # 2b. Imagens de fundo com Ken Burns (Pixabay por padrão; --ai-image sobe o ComfyUI
-        # automaticamente, usa, e derruba de novo ao final — só se fomos nós que subimos)
+        # 2b. Imagens de fundo com Ken Burns via ComfyUI (sobe automaticamente, usa, e
+        # derruba de novo ao final — só se fomos nós que subimos); sem ComfyUI disponível,
+        # o vídeo sai sem imagem de fundo nessas cenas. Só tenta se --ai-image foi passado —
+        # senão nem tenta subir o ComfyUI (evita esperar o timeout de autostart à toa).
         comfyui_proc = _iniciar_comfyui() if ai_image else None
         try:
-            imagens = gerar_imagens(image_prompts_fetch, tema, output_dir / "images", usar_ia=ai_image)
-            if imagens:
-                aplicar_imagens_de_fundo(script, imagens)
+            if not ai_image:
+                print("\n🖼️  --ai-image não passado — pulando ComfyUI, usando fundo padrão")
             else:
-                print("⚠️  Nenhuma imagem disponível (Pixabay/ComfyUI falharam) — usando fundo padrão")
+                imagens = gerar_imagens(image_prompts_fetch, tema, output_dir / "images")
+                if imagens:
+                    aplicar_imagens_de_fundo(script, imagens)
+                else:
+                    print("⚠️  Nenhuma imagem disponível (ComfyUI indisponível/falhou) — usando fundo padrão")
 
-            # Relevância Pixabay: só log/estatística (ver _pixabay_relevancia) — vazio
-            # quando --ai-image usou o ComfyUI e não chamou o Pixabay.
-            if _ULTIMA_RELEVANCIA_PIXABAY:
-                geracao["qa"]["pixabay_relevance_avg"] = sum(_ULTIMA_RELEVANCIA_PIXABAY) / len(_ULTIMA_RELEVANCIA_PIXABAY)
-                geracao["qa"]["pixabay_relevance_min"] = min(_ULTIMA_RELEVANCIA_PIXABAY)
-                geracao["qa"]["pixabay_relevance_low_count"] = sum(1 for s in _ULTIMA_RELEVANCIA_PIXABAY if s < 0.2)
-            else:
-                geracao["qa"]["pixabay_relevance_avg"] = None
-                geracao["qa"]["pixabay_relevance_min"] = None
-                geracao["qa"]["pixabay_relevance_low_count"] = None
-
-            # Salva JSON para inspeção (inclui _audio_path para debug)
+            # Salva JSON para inspeção (inclui _audio_path para debug). Também salva uma
+            # cópia por execução em output_dir — "ultimo_roteiro.json" é sobrescrito a cada
+            # rodada, então é a única forma de auditar tipos de cena/paleta/tema depois de
+            # um lote com várias execuções.
             json_out = SCRIPT_DIR / "ultimo_roteiro.json"
             json_out.write_text(json.dumps(script, ensure_ascii=False, indent=2))
+            output_dir.mkdir(parents=True, exist_ok=True)
+            (output_dir / "roteiro.json").write_text(json.dumps(script, ensure_ascii=False, indent=2))
             print(f"\n💾 JSON: {json_out}")
 
             if dry_run:
@@ -1463,8 +1828,8 @@ def main():
         finally:
             _parar_comfyui(comfyui_proc)
 
-        # 2c. Trilha sonora de fundo (freetouse.com, best-effort — ver gerar_musica_de_fundo)
-        musica_path = gerar_musica_de_fundo(script, output_dir)
+        # 2c. Música de fundo desativada — narração + SFX procedural soaram melhor sem ela
+        musica_path = None
 
         # 3. Monta script limpo para o Remotion:
         #    - remove _audio_path (campo privado Python)

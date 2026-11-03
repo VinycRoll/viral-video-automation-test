@@ -1,6 +1,7 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
+import { sfxTick, sfxSuccess } from "../utils/soundSynth";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
 
 // Número gigante contando até um valor-alvo, sem foto de fundo e sem ícone — estatística
@@ -10,7 +11,10 @@ import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
 export const CounterScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const target = scene.counterTo ?? 0;
+  // Number(...) porque o Gemini às vezes manda o valor como string ("87") — interpolate()
+  // exige outputRange numérico de verdade (mesmo bug já corrigido na TimelineEraScene).
+  const targetNum = Number(scene.counterTo);
+  const target = Number.isFinite(targetNum) ? targetNum : 0;
 
   const p = spring({ fps, frame: frame - 6, config: { damping: 16, stiffness: 60 }, durationInFrames: 50 });
   const shown = Math.round(interpolate(p, [0, 1], [0, target]));
@@ -23,8 +27,16 @@ export const CounterScene: React.FC<{ scene: Scene; accent: string }> = ({ scene
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 24, padding: "0 60px", boxSizing: "border-box" }}>
+      {[10, 24, 38].map((t) => (
+        <Sequence key={t} from={t} durationInFrames={4} layout="none">
+          <Audio src={sfxTick()} volume={0.1} />
+        </Sequence>
+      ))}
+      <Sequence from={56} durationInFrames={11} layout="none">
+        <Audio src={sfxSuccess()} volume={0.18} />
+      </Sequence>
       {scene.counterLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW }}>
           {scene.counterLabel}
         </div>
@@ -37,7 +49,7 @@ export const CounterScene: React.FC<{ scene: Scene; accent: string }> = ({ scene
       </div>
 
       {scene.counterNote && (
-        <div style={{ opacity: noteOp, fontSize: 34, fontWeight: 800, color: "#fff",
+        <div style={{ opacity: noteOp, fontSize: 34, fontWeight: 800, color: "var(--ink)",
                       textAlign: "center", textTransform: "uppercase", letterSpacing: 1,
                       textShadow: SOFT_TEXT_SHADOW }}>
           {scene.counterNote}

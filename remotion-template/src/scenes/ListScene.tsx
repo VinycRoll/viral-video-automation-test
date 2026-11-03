@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { parseText, TEXT_OUTLINE } from "../utils/text";
+import { sfxWhoosh } from "../utils/soundSynth";
 
 export const ListScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
   const frame = useCurrentFrame();
@@ -24,6 +25,9 @@ export const ListScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, a
             <div style={{ fontSize: 48, fontWeight: 700, color: "rgba(255,255,255,0.9)", lineHeight: 1.2, textShadow: TEXT_OUTLINE }}>
               {parseText(item, accent)}
             </div>
+            <Sequence from={delay} durationInFrames={10} layout="none">
+              <Audio src={sfxWhoosh(0.18)} volume={0.12} />
+            </Sequence>
           </div>
         );
       })}

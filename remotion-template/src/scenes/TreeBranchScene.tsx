@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { useCurrentFrame, interpolate, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { sfxWhoosh } from "../utils/soundSynth";
 
 const VB = 400;
 const CENTER_X = 200;
@@ -29,8 +30,11 @@ export const TreeBranchScene: React.FC<{ scene: Scene; accent: string }> = ({ sc
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 20, padding: "0 60px", boxSizing: "border-box" }}>
+      <Sequence from={0} durationInFrames={10} layout="none">
+        <Audio src={sfxWhoosh(0.3)} volume={0.13} />
+      </Sequence>
       {scene.treeLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW }}>
           {scene.treeLabel}
         </div>
@@ -38,7 +42,7 @@ export const TreeBranchScene: React.FC<{ scene: Scene; accent: string }> = ({ sc
 
       <svg width={VB} height={VB} viewBox={`0 0 ${VB} ${VB}`}>
         <line x1={CENTER_X} y1={BASE_Y} x2={CENTER_X} y2={TRUNK_TOP_Y}
-              stroke="rgba(255,255,255,0.6)" strokeWidth={6} strokeLinecap="round"
+              stroke="var(--ink-6)" strokeWidth={6} strokeLinecap="round"
               strokeDasharray={TRUNK_LEN} strokeDashoffset={trunkOffset} />
 
         {branches.map((b, i) => {
@@ -57,12 +61,15 @@ export const TreeBranchScene: React.FC<{ scene: Scene; accent: string }> = ({ sc
           });
           return (
             <g key={i}>
+              <Sequence from={start} durationInFrames={10} layout="none">
+                <Audio src={sfxWhoosh(0.15)} volume={0.12} />
+              </Sequence>
               <line x1={CENTER_X} y1={TRUNK_TOP_Y} x2={endX} y2={endY}
                     stroke={accent} strokeWidth={5} strokeLinecap="round"
                     strokeDasharray={BRANCH_LEN} strokeDashoffset={off} />
               <circle cx={endX} cy={endY} r={7} fill={accent} opacity={dotOp} />
               <text x={endX + (dx / BRANCH_LEN) * 26} y={endY + (dy / BRANCH_LEN) * 26}
-                    fill="#fff" fontSize={16} fontWeight={800} textAnchor="middle" opacity={dotOp}>
+                    fill="var(--ink)" fontSize={16} fontWeight={800} textAnchor="middle" opacity={dotOp}>
                 {b.label}
               </text>
             </g>
@@ -71,7 +78,7 @@ export const TreeBranchScene: React.FC<{ scene: Scene; accent: string }> = ({ sc
       </svg>
 
       {scene.treeRootLabel && (
-        <div style={{ opacity: rootOp, fontSize: 24, fontWeight: 800, color: "#fff",
+        <div style={{ opacity: rootOp, fontSize: 24, fontWeight: 800, color: "var(--ink)",
                       textTransform: "uppercase", letterSpacing: 1, textShadow: SOFT_TEXT_SHADOW, marginTop: -16 }}>
           {scene.treeRootLabel}
         </div>

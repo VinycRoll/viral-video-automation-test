@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { UiCard } from "../utils/uiCard";
+import { sfxTick, sfxSuccess } from "../utils/soundSynth";
 import { SOFT_TEXT_SHADOW, SERIF_FONT, BlurReveal } from "../utils/text";
 
 const ITEM_GAP = 20; // frames entre cada item marcando check
@@ -28,7 +29,7 @@ const CheckItem: React.FC<{ text: string; index: number; accent: string }> = ({ 
                   transform: `translateX(${rowX}px)`, marginBottom: 26 }}>
       <div style={{
         width: 44, height: 44, borderRadius: 10, flexShrink: 0,
-        border: `2.5px solid ${checked ? accent : "rgba(255,255,255,0.35)"}`,
+        border: `2.5px solid ${checked ? accent : "var(--ink-35)"}`,
         background: checked ? accent : "transparent",
         display: "flex", alignItems: "center", justifyContent: "center",
         transition: "none",
@@ -44,9 +45,7 @@ const CheckItem: React.FC<{ text: string; index: number; accent: string }> = ({ 
         </svg>
       </div>
       <div style={{
-        fontSize: 32, fontWeight: 700, color: checked ? "rgba(255,255,255,0.55)" : "#fff",
-        textDecoration: checked ? "line-through" : "none",
-        textDecorationColor: "rgba(255,255,255,0.4)",
+        fontSize: 32, fontWeight: 700, color: checked ? "var(--ink-55)" : "var(--ink)",
       }}>
         {text}
       </div>
@@ -62,6 +61,14 @@ export const ChecklistScene: React.FC<{ scene: Scene; accent: string; variant?: 
   const items = scene.checklistItems || [];
   const list = (
     <div style={{ marginTop: scene.checklistTitle ? 8 : 0 }}>
+      {items.map((_, i) => (
+        <Sequence key={`tick-${i}`} from={i * ITEM_GAP + 8} durationInFrames={4} layout="none">
+          <Audio src={sfxTick()} volume={0.1} />
+        </Sequence>
+      ))}
+      <Sequence from={items.length * ITEM_GAP + 8} durationInFrames={11} layout="none">
+        <Audio src={sfxSuccess()} volume={0.18} />
+      </Sequence>
       {items.map((text, i) => (
         <CheckItem key={i} text={text} index={i} accent={accent} />
       ))}
@@ -72,7 +79,7 @@ export const ChecklistScene: React.FC<{ scene: Scene; accent: string; variant?: 
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                     alignItems: "center", justifyContent: "center", padding: "60px 90px", boxSizing: "border-box" }}>
         {scene.checklistTitle && (
-          <div style={{ fontSize: 38, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff", marginBottom: 24,
+          <div style={{ fontSize: 38, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)", marginBottom: 24,
                         textAlign: "center", letterSpacing: -0.5, textShadow: SOFT_TEXT_SHADOW }}>
             <BlurReveal text={scene.checklistTitle} startFrame={0} />
           </div>

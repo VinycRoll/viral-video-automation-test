@@ -1,6 +1,7 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring, Easing } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Easing, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
+import { sfxTick } from "../utils/soundSynth";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
 import { VariantFrame } from "../utils/variant";
 
@@ -16,7 +17,7 @@ const DigitalClock: React.FC<{ time: string; accent: string; frame: number }> = 
   return (
     <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center",
                   fontVariantNumeric: "tabular-nums", fontWeight: 900, fontSize: 150,
-                  letterSpacing: -4, color: "#fff", textShadow: `0 0 40px ${accent}60, ${SOFT_TEXT_SHADOW}` }}>
+                  letterSpacing: -4, color: "var(--ink)", textShadow: `0 0 40px ${accent}60, ${SOFT_TEXT_SHADOW}` }}>
       <span>{hh}</span>
       <span style={{ color: accent, opacity: glow, margin: "0 6px" }}>:</span>
       <span>{mm}</span>
@@ -35,18 +36,18 @@ const AnalogClock: React.FC<{ h: number; m: number; accent: string; frame: numbe
 
   return (
     <div style={{ position: "relative", width: size, height: size, borderRadius: "50%",
-                  background: "rgba(255,255,255,0.045)", boxShadow: "0 24px 60px rgba(0,0,0,0.4), inset 0 0 0 2px rgba(255,255,255,0.08)" }}>
+                  background: "var(--ink-045)", boxShadow: "0 24px 60px rgba(0,0,0,0.4), inset 0 0 0 2px var(--ink-08)" }}>
       {ticks.map((i) => (
         <div key={i} style={{
           position: "absolute", left: "50%", top: "50%", width: i % 3 === 0 ? 6 : 3, height: i % 3 === 0 ? 26 : 16,
-          background: i % 3 === 0 ? accent : "rgba(255,255,255,0.4)", borderRadius: 3,
+          background: i % 3 === 0 ? accent : "var(--ink-4)", borderRadius: 3,
           transform: `rotate(${i * 30}deg) translateY(-${size / 2 - 22}px)`, transformOrigin: "50% 0",
           marginLeft: i % 3 === 0 ? -3 : -1.5,
         }} />
       ))}
       {/* ponteiro das horas */}
       <div style={{ position: "absolute", left: "50%", top: "50%", width: 10, height: size * 0.26,
-                    background: "#fff", borderRadius: 6, transformOrigin: "50% 100%",
+                    background: "var(--ink)", borderRadius: 6, transformOrigin: "50% 100%",
                     transform: `translate(-50%, -100%) rotate(${hourDeg}deg)` }} />
       {/* ponteiro dos minutos */}
       <div style={{ position: "absolute", left: "50%", top: "50%", width: 7, height: size * 0.37,
@@ -76,6 +77,9 @@ export const ClockScene: React.FC<{ scene: Scene; accent: string; variant?: numb
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 40 }}>
+      <Sequence from={6} durationInFrames={4} layout="none">
+        <Audio src={sfxTick()} volume={0.1} />
+      </Sequence>
       <div style={{ opacity: wrapOp, transform: `scale(${wrapScale})` }}>
         <VariantFrame variant={variant} accent={accent}>
           {digital
@@ -84,7 +88,7 @@ export const ClockScene: React.FC<{ scene: Scene; accent: string; variant?: numb
         </VariantFrame>
       </div>
       {scene.clockNote && (
-        <div style={{ opacity: noteOp, fontSize: 36, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: noteOp, fontSize: 36, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW, padding: "0 60px" }}>
           {scene.clockNote}
         </div>

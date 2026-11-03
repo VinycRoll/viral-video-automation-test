@@ -5,14 +5,13 @@ culinária, produtividade, saúde, história, motivação etc.).
 
 Fluxo:
   1. Escolhe um tema viral (qualquer nicho)
-  2. Gera o vídeo (Remotion + XTTS v2 + imagens de fundo via Pixabay, por padrão)
+  2. Gera o vídeo (Remotion + XTTS v2 + imagens de fundo via ComfyUI)
   3. Tenta postar via Publora (limite: 15 posts/mês)
   4. Fallback automático: upload Catbox.moe → Make.com → Instagram
 
 Uso:
-  python3 post_reel.py                          # tema aleatório (Remotion + XTTS v2 + Pixabay)
+  python3 post_reel.py                          # tema aleatório (Remotion + XTTS v2 + ComfyUI)
   python3 post_reel.py 'renda extra'            # tema específico
-  python3 post_reel.py --ai-image               # fundo com imagens de IA (ComfyUI, fallback Pixabay)
   python3 post_reel.py --purffle                # usa o pipeline legado purffle-shorts + edge-tts
   python3 post_reel.py --dry-run                # só gera o vídeo, não posta
   python3 post_reel.py --video caminho.mp4      # posta um vídeo já gerado
@@ -151,22 +150,32 @@ def escolher_tema(hint: str | None = None) -> str:
     return random.choice(disponiveis)
 
 
-def gerar_video_motion(tema: str, ai_image: bool = False) -> "tuple[Path | None, str]":
+def gerar_video_motion(tema: str, roteiro: str = None, ai_image: bool = False) -> "tuple[Path | None, str]":
     """Chama gerar_motion.py para gerar o vídeo com Remotion + XTTS v2.
-    Fundo: Pixabay por padrão; com ai_image=True, tenta ComfyUI primeiro (fallback Pixabay).
+    Fundo: ComfyUI (SD 1.5 local) só se ai_image=True; senão, sai direto com o
+    fundo padrão (gradiente), sem tentar subir o ComfyUI.
+    Se roteiro for passado (caminho de arquivo ou o próprio texto, em qualquer
+    formato), o Gemini o adapta pra estrutura exigida em vez de criar um do zero.
     Retorna (caminho_mp4, caption_instagram) ou (None, "")."""
-    print(f"\n🎬 Gerando vídeo motion sobre: '{tema}'")
-    print("   (Gemini → roteiro | XTTS v2 → narração | %s → fundo | Remotion → render)"
-          % ("ComfyUI/Pixabay" if ai_image else "Pixabay"))
+    if roteiro:
+        resumo = roteiro if len(roteiro) < 60 else roteiro[:60] + "..."
+        print(f"\n🎬 Gerando vídeo motion a partir do roteiro fornecido: '{resumo}'")
+    else:
+        print(f"\n🎬 Gerando vídeo motion sobre: '{tema}'")
+    print("   (Gemini → roteiro | XTTS v2 → narração | ComfyUI → fundo | Remotion → render)")
 
     script_py = MOTION_DIR / "gerar_motion.py"
     if not script_py.exists():
         print(f"❌ gerar_motion.py não encontrado em {MOTION_DIR}")
         return None, ""
 
-    cmd = [sys.executable, str(script_py), tema]
+    cmd = [sys.executable, str(script_py)]
     if ai_image:
-        cmd.append("--ai-image")
+        cmd += ["--ai-image"]
+    if roteiro:
+        cmd += ["--roteiro", roteiro]
+    else:
+        cmd += [tema]
 
     inicio = time.time()
     try:
@@ -627,10 +636,15 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="Só gera o vídeo, não posta")
     parser.add_argument("--video", metavar="CAMINHO", help="Posta um vídeo já gerado sem regerar")
     parser.add_argument("--make", action="store_true", help="Força o uso do Make.com (ignora Publora)")
-    parser.add_argument("--ai-image", action="store_true",
-                         help="Fundo com imagens geradas por IA (ComfyUI); cai para Pixabay se falhar")
     parser.add_argument("--purffle", action="store_true",
                          help="Usa o pipeline legado purffle-shorts + edge-tts em vez de Remotion + XTTS v2")
+    parser.add_argument("--roteiro", metavar="TEXTO_OU_CAMINHO",
+                         help="Roteiro próprio (texto livre ou arquivo) em qualquer formato — "
+                              "o Gemini adapta pra estrutura de cenas exigida, preservando o conteúdo")
+    parser.add_argument("--ai-image", action="store_true",
+                         help="Tenta subir o ComfyUI e gerar imagens de fundo via SD 1.5. "
+                              "Sem essa flag, o vídeo sai direto com o fundo padrão (gradiente), "
+                              "sem tentar o ComfyUI — evita esperar o timeout de autostart à toa.")
     args = parser.parse_args()
 
     # Validação de chaves
@@ -642,7 +656,7 @@ def main():
         if not MAKE_WEBHOOK: faltando.append("MAKE_WEBHOOK_URL")
 
     if not args.video:
-        if not PIXABAY_KEY: faltando.append("PIXABAY_API_KEY")
+        if args.purffle and not PIXABAY_KEY: faltando.append("PIXABAY_API_KEY")
         if not GEMINI_KEY:  faltando.append("GEMINI_API_KEY")
 
     if faltando and not args.dry_run:
@@ -699,7 +713,7 @@ def main():
     if args.purffle:
         video_path = gerar_video_purffle(tema, VIDEOS_DIR)
     else:
-        video_path, caption_motion = gerar_video_motion(tema, ai_image=args.ai_image)
+        video_path, caption_motion = gerar_video_motion(tema, args.roteiro, args.ai_image)
         if caption_motion:
             caption = caption_motion
 

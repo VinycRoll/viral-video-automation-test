@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { useCurrentFrame, interpolate, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { sfxWhoosh, sfxBeep } from "../utils/soundSynth";
 
 const W = 560;
 const H = 260;
@@ -33,8 +34,14 @@ export const MagnifyingGlassScene: React.FC<{ scene: Scene; accent: string }> = 
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 32, padding: "0 60px", boxSizing: "border-box" }}>
+      <Sequence from={0} durationInFrames={10} layout="none">
+        <Audio src={sfxWhoosh(0.3)} volume={0.14} />
+      </Sequence>
+      <Sequence from={ARRIVE_FRAME} durationInFrames={6} layout="none">
+        <Audio src={sfxBeep(1000, 0.1)} volume={0.18} />
+      </Sequence>
       {scene.magnifyLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW }}>
           {scene.magnifyLabel}
         </div>
@@ -43,7 +50,7 @@ export const MagnifyingGlassScene: React.FC<{ scene: Scene; accent: string }> = 
       <div style={{ position: "relative", width: W, height: H }}>
         <div style={{
           position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 30, fontWeight: 700, color: "rgba(255,255,255,0.3)", textAlign: "center",
+          fontSize: 30, fontWeight: 700, color: "var(--ink-3)", textAlign: "center",
         }}>
           {scene.magnifyTitle}
         </div>

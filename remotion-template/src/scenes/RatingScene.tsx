@@ -1,8 +1,9 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
 import { VariantFrame } from "../utils/variant";
+import { sfxBeep, sfxSuccess } from "../utils/soundSynth";
 
 const STAR_PATH =
   "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.27 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z";
@@ -21,7 +22,7 @@ const Star: React.FC<{ index: number; fillFrac: number; accent: string }> = ({ i
   return (
     <div style={{ position: "relative", width: STAR_SIZE, height: STAR_SIZE, transform: `scale(${scale})` }}>
       <svg width={STAR_SIZE} height={STAR_SIZE} viewBox="0 0 24 24" style={{ position: "absolute", inset: 0 }}>
-        <path d={STAR_PATH} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth={1.4} />
+        <path d={STAR_PATH} fill="none" stroke="var(--ink-3)" strokeWidth={1.4} />
       </svg>
       <div style={{ position: "absolute", inset: 0, clipPath: `inset(0 ${(1 - fillFrac) * 100}% 0 0)` }}>
         <svg width={STAR_SIZE} height={STAR_SIZE} viewBox="0 0 24 24"
@@ -48,7 +49,7 @@ export const RatingScene: React.FC<{ scene: Scene; accent: string; variant?: num
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 28 }}>
       {scene.ratingLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW, padding: "0 60px" }}>
           {scene.ratingLabel}
         </div>
@@ -57,12 +58,26 @@ export const RatingScene: React.FC<{ scene: Scene; accent: string; variant?: num
       <VariantFrame variant={variant} accent={accent}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
           <div style={{ display: "flex", gap: STAR_GAP }}>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star key={i} index={i} fillFrac={Math.max(0, Math.min(1, value - i))} accent={accent} />
-            ))}
+            {Array.from({ length: 5 }).map((_, i) => {
+              return (
+                <React.Fragment key={i}>
+                  {Math.max(0, Math.min(1, value - i)) > 0 && (
+                    <Sequence from={i * STAR_STAGGER} durationInFrames={6} layout="none">
+                      <Audio src={sfxBeep(700 + i * 120, 0.1)} volume={0.18} />
+                    </Sequence>
+                  )}
+                  {i === Math.ceil(value) - 1 && (
+                    <Sequence from={i * STAR_STAGGER + 8} durationInFrames={11} layout="none">
+                      <Audio src={sfxSuccess()} volume={0.2} />
+                    </Sequence>
+                  )}
+                  <Star index={i} fillFrac={Math.max(0, Math.min(1, value - i))} accent={accent} />
+                </React.Fragment>
+              );
+            })}
           </div>
 
-          <div style={{ opacity: valueOp, fontSize: 56, fontWeight: 900, color: "#fff",
+          <div style={{ opacity: valueOp, fontSize: 56, fontWeight: 900, color: "var(--ink)",
                         fontVariantNumeric: "tabular-nums", textShadow: SOFT_TEXT_SHADOW }}>
             {value.toFixed(1).replace(".", ",")}
             <span style={{ fontSize: 30, color: accent }}>/5</span>

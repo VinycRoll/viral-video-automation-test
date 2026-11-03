@@ -1,6 +1,7 @@
 import React from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { useCurrentFrame, interpolate, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
+import { sfxTick } from "../utils/soundSynth";
 
 interface Props {
   scene: Scene;
@@ -83,6 +84,9 @@ export const CodeScene: React.FC<Props> = ({ scene, accentColor }) => {
         boxSizing: "border-box",
       }}
     >
+      <Sequence from={0} durationInFrames={4} layout="none">
+        <Audio src={sfxTick()} volume={0.1} />
+      </Sequence>
       {/* Header do bloco de código */}
       <div
         style={{

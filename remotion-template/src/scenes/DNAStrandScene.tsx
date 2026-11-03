@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { useCurrentFrame, interpolate, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { sfxResonance, sfxTick } from "../utils/soundSynth";
 
 const H = 360;
 const STEP = 18;
@@ -30,8 +31,12 @@ export const DNAStrandScene: React.FC<{ scene: Scene; accent: string }> = ({ sce
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 28, padding: "0 60px", boxSizing: "border-box" }}>
+      <Sequence from={0} durationInFrames={23} layout="none">
+        <Audio src={sfxResonance(300)} volume={0.13} />
+      </Sequence>
+
       {scene.dnaLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW }}>
           {scene.dnaLabel}
         </div>
@@ -42,19 +47,24 @@ export const DNAStrandScene: React.FC<{ scene: Scene; accent: string }> = ({ sce
           {points.map((p, i) => (
             i % 2 === 0 ? (
               <line key={`r${i}`} x1={p.xa} y1={p.y} x2={p.xb} y2={p.y}
-                    stroke="rgba(255,255,255,0.2)" strokeWidth={2} />
+                    stroke="var(--ink-2)" strokeWidth={2} />
             ) : null
+          ))}
+          {points.filter((_, i) => i % 2 === 0).map((_, idx, arr) => (
+            <Sequence key={`tick${idx}`} from={Math.round((idx / arr.length) * 16)} durationInFrames={4} layout="none">
+              <Audio src={sfxTick(1800)} volume={0.08} />
+            </Sequence>
           ))}
           <polyline points={points.map((p) => `${p.xa},${p.y}`).join(" ")}
                      fill="none" stroke={accent} strokeWidth={4} strokeLinecap="round"
                      style={{ filter: `drop-shadow(0 0 8px ${accent}90)` }} />
           <polyline points={points.map((p) => `${p.xb},${p.y}`).join(" ")}
-                     fill="none" stroke="#fff" strokeWidth={4} strokeLinecap="round"
-                     style={{ filter: "drop-shadow(0 0 6px rgba(255,255,255,0.5))" }} />
+                     fill="none" stroke="var(--ink)" strokeWidth={4} strokeLinecap="round"
+                     style={{ filter: "drop-shadow(0 0 6px var(--ink-5))" }} />
           {points.map((p, i) => (
             <React.Fragment key={`d${i}`}>
               <circle cx={p.xa} cy={p.y} r={5} fill={accent} />
-              <circle cx={p.xb} cy={p.y} r={5} fill="#fff" />
+              <circle cx={p.xb} cy={p.y} r={5} fill="var(--ink)" />
             </React.Fragment>
           ))}
         </g>

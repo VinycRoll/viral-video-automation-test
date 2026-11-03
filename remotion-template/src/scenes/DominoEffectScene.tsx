@@ -1,6 +1,7 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
+import { sfxTick, sfxImpact } from "../utils/soundSynth";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
 
 const BLOCK_W = 22;
@@ -29,8 +30,13 @@ export const DominoEffectScene: React.FC<{ scene: Scene; accent: string }> = ({ 
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 40, padding: "0 60px", boxSizing: "border-box" }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <Sequence key={i} from={START_FRAME + i * STAGGER} durationInFrames={i === count - 1 ? 13 : 4} layout="none">
+          <Audio src={i === count - 1 ? sfxImpact() : sfxTick()} volume={i === count - 1 ? 0.18 : 0.1} />
+        </Sequence>
+      ))}
       {scene.dominoLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW }}>
           {scene.dominoLabel}
         </div>
@@ -42,7 +48,7 @@ export const DominoEffectScene: React.FC<{ scene: Scene; accent: string }> = ({ 
           const rotate = interpolate(tipP, [0, 1], [0, TIP_DEG]);
           return (
             <div key={i} style={{
-              width: BLOCK_W, height: BLOCK_H, background: i % 2 === 0 ? accent : "rgba(255,255,255,0.75)",
+              width: BLOCK_W, height: BLOCK_H, background: i % 2 === 0 ? accent : "var(--ink-75)",
               borderRadius: 4, transformOrigin: "0% 100%", transform: `rotate(${rotate}deg)`,
               boxShadow: "0 8px 20px rgba(0,0,0,0.3)",
             }} />

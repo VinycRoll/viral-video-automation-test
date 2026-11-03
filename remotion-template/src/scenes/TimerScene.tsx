@@ -1,8 +1,9 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
 import { VariantFrame } from "../utils/variant";
+import { sfxTick, sfxAlert } from "../utils/soundSynth";
 
 const SIZE = 320;
 const STROKE = 16;
@@ -46,11 +47,25 @@ export const TimerScene: React.FC<{ scene: Scene; accent: string; variant?: numb
   const labelOp = interpolate(frame, [0, 12], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const noteOp = interpolate(frame, [36, 48], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
+  const totalSecs = Math.max(0, fromSec - toSec);
+  const tickFrames = Array.from({ length: totalSecs }, (_, i) =>
+    Math.round(HOLD_FRAMES + ((i + 1) / totalSecs) * (countFrames - HOLD_FRAMES)));
+
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 36 }}>
+      {tickFrames.map((t, i) => (
+        <Sequence key={i} from={t} durationInFrames={4} layout="none">
+          <Audio src={sfxTick()} volume={0.1} />
+        </Sequence>
+      ))}
+      {toSec === 0 && (
+        <Sequence from={Math.max(0, countFrames - 10)} durationInFrames={10} layout="none">
+          <Audio src={sfxAlert()} volume={0.2} />
+        </Sequence>
+      )}
       {scene.timerLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW, padding: "0 60px" }}>
           {scene.timerLabel}
         </div>
@@ -60,14 +75,14 @@ export const TimerScene: React.FC<{ scene: Scene; accent: string; variant?: numb
         <div style={{ position: "relative", width: SIZE, height: SIZE, opacity: ringOp }}>
           <svg width={SIZE} height={SIZE} style={{ transform: "rotate(-90deg)" }}>
             <circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none"
-              stroke="rgba(255,255,255,0.1)" strokeWidth={STROKE} />
+              stroke="var(--ink-1)" strokeWidth={STROKE} />
             <circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none"
               stroke={accent} strokeWidth={STROKE} strokeLinecap="round"
               strokeDasharray={CIRC} strokeDashoffset={dashoffset}
               style={{ filter: `drop-shadow(0 0 14px ${accent}90)` }} />
           </svg>
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ fontSize: 78, fontWeight: 900, color: "#fff", letterSpacing: -2,
+            <div style={{ fontSize: 78, fontWeight: 900, color: "var(--ink)", letterSpacing: -2,
                           fontVariantNumeric: "tabular-nums", textShadow: SOFT_TEXT_SHADOW }}>
               {formatMMSS(current)}
             </div>

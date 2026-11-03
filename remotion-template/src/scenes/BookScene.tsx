@@ -1,8 +1,9 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring, Easing } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Easing, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
 import { VariantFrame } from "../utils/variant";
+import { sfxWhoosh } from "../utils/soundSynth";
 
 const BOOK_W = 280;
 const BOOK_H = 360;
@@ -35,7 +36,7 @@ export const BookScene: React.FC<{ scene: Scene; accent: string; variant?: numbe
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 34 }}>
       {scene.bookLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW, padding: "0 60px" }}>
           {scene.bookLabel}
         </div>
@@ -77,6 +78,10 @@ export const BookScene: React.FC<{ scene: Scene; accent: string; variant?: numbe
           {scene.bookNote}
         </div>
       )}
+
+      <Sequence from={openStart} durationInFrames={openFrames} layout="none">
+        <Audio src={sfxWhoosh(openFrames / 30)} volume={0.14} />
+      </Sequence>
     </div>
   );
 };

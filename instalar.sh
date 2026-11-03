@@ -62,7 +62,7 @@ else
     echo "   ⚠️  Pasta remotion-template não encontrada. Pulando."
 fi
 
-# ── 6. ComfyUI (opcional — geração de imagens local para --ai-image) ─────────
+# ── 6. ComfyUI (geração local das imagens de fundo do Remotion) ──────────────
 echo ""
 if [ -t 0 ]; then
     read -r -p "🖼️  Deseja instalar o ComfyUI para geração de imagens local? (s/n) " RESPOSTA_COMFYUI
@@ -112,7 +112,7 @@ if [[ "$RESPOSTA_COMFYUI" =~ ^[sS]$ ]]; then
 else
     echo "   ⏭️  Pulando instalação do ComfyUI."
     echo "      Para instalar depois: https://github.com/comfyanonymous/ComfyUI"
-    echo "      Sem o ComfyUI rodando em localhost:8188, 'reel --ai-image' usa o Pixabay automaticamente."
+    echo "      Sem o ComfyUI rodando em localhost:8188, o 'reel' gera o vídeo sem imagem de fundo."
 fi
 
 # ── 7. Alias 'reel' no .bashrc/.zshrc ─────────────────────────────────────────
@@ -138,10 +138,9 @@ echo ""
 echo "✅ Instalação concluída!"
 echo ""
 echo "🚀 Como usar:"
-echo "   reel                          # Remotion + XTTS v2 + Pixabay, e posta (tema aleatório)"
+echo "   reel                          # Remotion + XTTS v2 + ComfyUI, e posta (tema aleatório)"
 echo "   reel 'renda extra'            # tema específico"
 echo "   reel --dry-run                # só gera o vídeo (sem postar)"
 echo "   reel --make --video f.mp4    # força Make.com (fallback manual)"
-echo "   reel --ai-image               # fundo com imagens de IA (sobe/derruba o ComfyUI sozinho; fallback Pixabay)"
 echo "   reel --purffle                # pipeline legado purffle-shorts + edge-tts"
 echo ""

@@ -18,11 +18,11 @@ export const UiCard: React.FC<{
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", padding: "60px 70px", boxSizing: "border-box" }}>
-      <div style={{ opacity: cardOp, background: "rgba(255,255,255,0.045)", borderRadius: 28,
+      <div style={{ opacity: cardOp, background: "var(--card-fill)", borderRadius: 28,
                     boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
                     padding: "44px 48px", width, boxSizing: "border-box" }}>
         {title && (
-          <div style={{ fontSize: 38, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff", marginBottom: 32,
+          <div style={{ fontSize: 38, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)", marginBottom: 32,
                         textAlign: "center", letterSpacing: -0.5, textShadow: SOFT_TEXT_SHADOW }}>
             <BlurReveal text={title} startFrame={startFrame} />
           </div>

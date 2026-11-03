@@ -10,6 +10,7 @@ batch_log.txt
 client_secret.json
 remotion-template/node_modules/
 remotion-template/.cache/
+tmp_render/
 # POC Motion Canvas/Revideo — vive só na branch experimento-motion-canvas
 motion-canvas-experimento/
 ComfyUI/

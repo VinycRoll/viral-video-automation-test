@@ -48,6 +48,70 @@ import { CensoredRevealScene } from "./scenes/CensoredRevealScene";
 import { DominoEffectScene }   from "./scenes/DominoEffectScene";
 import { TreeBranchScene }     from "./scenes/TreeBranchScene";
 import { VsBattleScene }       from "./scenes/VsBattleScene";
+import { BrainSynapseScene }   from "./scenes/BrainSynapseScene";
+import { HeartbeatECGScene }   from "./scenes/HeartbeatECGScene";
+import { OpticalIllusionScene } from "./scenes/OpticalIllusionScene";
+import { SoundWaveScene }      from "./scenes/SoundWaveScene";
+import { DepthOceanScene }     from "./scenes/DepthOceanScene";
+import { PressureCrushScene }  from "./scenes/PressureCrushScene";
+import { ChainReactionScene }  from "./scenes/ChainReactionScene";
+import { PendulumWaveScene }   from "./scenes/PendulumWaveScene";
+import { SlotMachineScene }    from "./scenes/SlotMachineScene";
+import { LabFlaskMixScene }    from "./scenes/LabFlaskMixScene";
+import { PyramidHierarchyScene } from "./scenes/PyramidHierarchyScene";
+import { SupplyChainScene }    from "./scenes/SupplyChainScene";
+import { PopulationCrowdScene } from "./scenes/PopulationCrowdScene";
+import { BalanceBeamScene }    from "./scenes/BalanceBeamScene";
+import { GlitchSystemScene }   from "./scenes/GlitchSystemScene";
+import { RadarSonarScene }     from "./scenes/RadarSonarScene";
+import { EvolutionMorphScene } from "./scenes/EvolutionMorphScene";
+import { MicroscopeZoomScene } from "./scenes/MicroscopeZoomScene";
+import { TelescopeStarScene }  from "./scenes/TelescopeStarScene";
+import { BlueprintDraftScene } from "./scenes/BlueprintDraftScene";
+import { VortexBlackHoleScene } from "./scenes/VortexBlackHoleScene";
+import { ChessStrategyScene }  from "./scenes/ChessStrategyScene";
+import { MorseSignalScene }    from "./scenes/MorseSignalScene";
+import { HourglassSandScene }  from "./scenes/HourglassSandScene";
+import { SatelliteScanScene }  from "./scenes/SatelliteScanScene";
+import { BarcodePriceScene }   from "./scenes/BarcodePriceScene";
+import { StampApprovalScene }  from "./scenes/StampApprovalScene";
+import { MetronomeSwingScene } from "./scenes/MetronomeSwingScene";
+import { CompassNeedleScene }  from "./scenes/CompassNeedleScene";
+import { LiquidFillScene }     from "./scenes/LiquidFillScene";
+import { RadioTunerScene }     from "./scenes/RadioTunerScene";
+import { SpotlightStageScene } from "./scenes/SpotlightStageScene";
+import { PaperShredderScene }  from "./scenes/PaperShredderScene";
+import { MagneticPolesScene }  from "./scenes/MagneticPolesScene";
+import { CircuitBoardScene }   from "./scenes/CircuitBoardScene";
+import { ShatterGlassScene }   from "./scenes/ShatterGlassScene";
+import { CurtainRevealScene }  from "./scenes/CurtainRevealScene";
+import { BombFuseScene }       from "./scenes/BombFuseScene";
+import { KaleidoscopeMorphScene } from "./scenes/KaleidoscopeMorphScene";
+import { AbacusBeadsScene }    from "./scenes/AbacusBeadsScene";
+import { ArchimedesLeverScene } from "./scenes/ArchimedesLeverScene";
+import { CardHouseCollapseScene } from "./scenes/CardHouseCollapseScene";
+import { CentrifugeSpinScene }  from "./scenes/CentrifugeSpinScene";
+import { ChromatographySpreadScene } from "./scenes/ChromatographySpreadScene";
+import { CoinTossFlipScene }    from "./scenes/CoinTossFlipScene";
+import { ConveyorBeltSortScene } from "./scenes/ConveyorBeltSortScene";
+import { CubeUnfoldScene }      from "./scenes/CubeUnfoldScene";
+import { CuckooPendulumScene }  from "./scenes/CuckooPendulumScene";
+import { DecibelMeterScene }    from "./scenes/DecibelMeterScene";
+import { DialSafeCombinationScene } from "./scenes/DialSafeCombinationScene";
+import { DropletRippleScene }   from "./scenes/DropletRippleScene";
+import { ElevatorFloorScene }   from "./scenes/ElevatorFloorScene";
+import { FilmStripRollScene }   from "./scenes/FilmStripRollScene";
+import { HydraulicPressScene }  from "./scenes/HydraulicPressScene";
+import { LaserMazeBounceScene } from "./scenes/LaserMazeBounceScene";
+import { OrigamiFoldScene }     from "./scenes/OrigamiFoldScene";
+import { ParachuteDropScene }   from "./scenes/ParachuteDropScene";
+import { PeriscopeViewScene }   from "./scenes/PeriscopeViewScene";
+import { PinballBumperScene }   from "./scenes/PinballBumperScene";
+import { RubiksRowTwistScene }  from "./scenes/RubiksRowTwistScene";
+import { SieveFilterScene }     from "./scenes/SieveFilterScene";
+import { StethoscopePulseScene } from "./scenes/StethoscopePulseScene";
+import { TuningForkResonanceScene } from "./scenes/TuningForkResonanceScene";
+import { WindVaneDirectionScene } from "./scenes/WindVaneDirectionScene";
 
 const TRANSITION_FRAMES = 10; // ~0.33s @ 30fps — duração do crossfade entre cenas
 const KEN_BURNS_HALF_CYCLE = 90; // 3s @ 30fps — tempo até atingir o zoom/pan máximo
@@ -144,14 +208,18 @@ const KaraokeCaption: React.FC<{ words: Scene["words"]; accent: string; captionF
   );
 };
 
-// Fundo animado — gradiente roxo/azul escuro com glow suave
-const Background: React.FC<{ accent: string }> = ({ accent }) => {
+// Fundo animado — gradiente com glow suave, tom claro ou escuro conforme o tema.
+// Os dois stops do gradiente usam o MESMO hue interpolado (nunca um literal fixo) —
+// é essa variação ponta-a-ponta que faz a paleta aparecer de fato na tela, já que
+// 105 dos 110 tipos de cena caem neste gradiente (não têm foto de fundo).
+const Background: React.FC<{ accent: string; hueFrom?: number; hueTo?: number; theme?: "dark" | "light" }> = ({ accent, hueFrom = 255, hueTo = 275, theme = "dark" }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const hue = interpolate(frame, [0, fps * 60], [255, 275], { extrapolateRight: "clamp" });
+  const hue = interpolate(frame, [0, fps * 60], [hueFrom, hueTo], { extrapolateRight: "clamp" });
+  const [innerL, outerL, sat] = theme === "light" ? [88, 97, 45] : [11, 4, 35];
 
   return (
-    <AbsoluteFill style={{ background: `radial-gradient(ellipse at 30% 40%, hsl(${hue},55%,11%) 0%, #07070f 70%)` }}>
+    <AbsoluteFill style={{ background: `radial-gradient(ellipse at 30% 40%, hsl(${hue},${sat}%,${innerL}%) 0%, hsl(${hue},${sat}%,${outerL}%) 70%)` }}>
       {[
         { x: 15, y: 20, s: 200 }, { x: 75, y: 15, s: 150 },
         { x: 45, y: 70, s: 180 }, { x: 85, y: 55, s: 120 },
@@ -243,29 +311,39 @@ const KenBurnsImage: React.FC<{ src: string; index: number }> = ({ src, index })
 };
 
 // Fundo de cada cena: imagem com Ken Burns (quando houver) ou gradiente animado,
-// sempre com partículas sutis e gradiente escuro na base para a legenda respirar
-const SceneBackdrop: React.FC<{ scene: Scene; accent: string; index: number }> = ({ scene, accent, index }) => {
+// sempre com partículas sutis e gradiente escuro na base para a legenda respirar.
+// O overlay de base fica sempre escuro-tingido-pelo-hue (não inverte com o tema) —
+// existe só pra dar contraste pra legenda branca, que é theme-independent.
+const SceneBackdrop: React.FC<{ scene: Scene; accent: string; index: number; hueFrom?: number; hueTo?: number; theme?: "dark" | "light" }> = ({ scene, accent, index, hueFrom, hueTo, theme = "dark" }) => {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const hue = interpolate(frame, [0, fps * 60], [hueFrom ?? 255, hueTo ?? 275], { extrapolateRight: "clamp" });
   // Rack focus — só nos cards de "abertura de capítulo": o fundo sai de
   // desfocado pra nítido junto com o reveal letra-por-letra do título.
   const rackFocus = scene.type === "chapter";
   const blur = rackFocus
     ? interpolate(frame, [0, CHAPTER_REVEAL_FRAMES], [18, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
     : 0;
+  const base = (a: number) => `hsla(${hue}, 30%, 4%, ${a})`;
   return (
     <>
       {scene.backgroundImage
         ? (
-          <AbsoluteFill style={{ filter: rackFocus ? `blur(${blur}px)` : undefined }}>
-            <KenBurnsImage src={scene.backgroundImage} index={index} />
-          </AbsoluteFill>
+          <>
+            <AbsoluteFill style={{ filter: rackFocus ? `blur(${blur}px)` : undefined }}>
+              <KenBurnsImage src={scene.backgroundImage} index={index} />
+            </AbsoluteFill>
+            {/* Tint sutil da paleta sobre a foto — sem isso, cenas com foto (5 dos 110
+                tipos) nunca mostravam o hue, só o tom fixo das próprias fotos. */}
+            <AbsoluteFill style={{ background: `hsl(${hue}, 60%, 45%)`, mixBlendMode: "color", opacity: 0.2 }} />
+          </>
         )
-        : <Background accent={accent} />}
+        : <Background accent={accent} hueFrom={hueFrom} hueTo={hueTo} theme={theme} />}
       <Particles accent={accent} />
       <AbsoluteFill style={{
         background: scene.backgroundImage
-          ? "linear-gradient(180deg, rgba(5,5,12,0.55) 0%, rgba(5,5,12,0.3) 40%, rgba(5,5,12,0.85) 100%)"
-          : "linear-gradient(180deg, rgba(5,5,12,0) 0%, rgba(5,5,12,0) 55%, rgba(5,5,12,0.8) 100%)",
+          ? `linear-gradient(180deg, ${base(0.55)} 0%, ${base(0.3)} 40%, ${base(0.85)} 100%)`
+          : `linear-gradient(180deg, ${base(0)} 0%, ${base(0)} 55%, ${base(0.8)} 100%)`,
       }} />
     </>
   );
@@ -368,9 +446,95 @@ const SceneRouter: React.FC<{ scene: Scene; accent: string; variant: number }> =
     case "domino":         return <DominoEffectScene   scene={scene} accent={accent} />;
     case "treebranch":     return <TreeBranchScene     scene={scene} accent={accent} />;
     case "vsbattle":       return <VsBattleScene       scene={scene} accent={accent} />;
+    case "brain":          return <BrainSynapseScene   scene={scene} accent={accent} />;
+    case "ecg":            return <HeartbeatECGScene   scene={scene} accent={accent} />;
+    case "illusion":       return <OpticalIllusionScene scene={scene} accent={accent} />;
+    case "soundwave":      return <SoundWaveScene      scene={scene} accent={accent} />;
+    case "depthdive":      return <DepthOceanScene     scene={scene} accent={accent} />;
+    case "pressure":       return <PressureCrushScene  scene={scene} accent={accent} />;
+    case "chainreaction":  return <ChainReactionScene  scene={scene} accent={accent} />;
+    case "pendulum":       return <PendulumWaveScene   scene={scene} accent={accent} />;
+    case "slotmachine":    return <SlotMachineScene    scene={scene} accent={accent} />;
+    case "labmix":         return <LabFlaskMixScene    scene={scene} accent={accent} />;
+    case "pyramid":        return <PyramidHierarchyScene scene={scene} accent={accent} />;
+    case "supplychain":    return <SupplyChainScene    scene={scene} accent={accent} />;
+    case "crowd":          return <PopulationCrowdScene scene={scene} accent={accent} />;
+    case "balancebeam":    return <BalanceBeamScene    scene={scene} accent={accent} />;
+    case "glitch":         return <GlitchSystemScene   scene={scene} accent={accent} />;
+    case "radar":          return <RadarSonarScene     scene={scene} accent={accent} />;
+    case "evolution":      return <EvolutionMorphScene scene={scene} accent={accent} />;
+    case "microscope":     return <MicroscopeZoomScene scene={scene} accent={accent} />;
+    case "telescope":      return <TelescopeStarScene  scene={scene} accent={accent} />;
+    case "blueprint":      return <BlueprintDraftScene scene={scene} accent={accent} />;
+    case "vortex":         return <VortexBlackHoleScene scene={scene} accent={accent} />;
+    case "chess":          return <ChessStrategyScene  scene={scene} accent={accent} />;
+    case "morse":          return <MorseSignalScene    scene={scene} accent={accent} />;
+    case "hourglass":      return <HourglassSandScene  scene={scene} accent={accent} />;
+    case "satellite":      return <SatelliteScanScene  scene={scene} accent={accent} />;
+    case "barcode":        return <BarcodePriceScene   scene={scene} accent={accent} />;
+    case "stamp":          return <StampApprovalScene  scene={scene} accent={accent} />;
+    case "metronome":      return <MetronomeSwingScene scene={scene} accent={accent} />;
+    case "compass":        return <CompassNeedleScene  scene={scene} accent={accent} />;
+    case "liquidfill":     return <LiquidFillScene     scene={scene} accent={accent} />;
+    case "radiotuner":     return <RadioTunerScene     scene={scene} accent={accent} />;
+    case "spotlight":      return <SpotlightStageScene scene={scene} accent={accent} />;
+    case "shredder":       return <PaperShredderScene  scene={scene} accent={accent} />;
+    case "magnetic":       return <MagneticPolesScene  scene={scene} accent={accent} />;
+    case "circuit":        return <CircuitBoardScene   scene={scene} accent={accent} />;
+    case "shatter":        return <ShatterGlassScene   scene={scene} accent={accent} />;
+    case "curtain":        return <CurtainRevealScene  scene={scene} accent={accent} />;
+    case "bombfuse":       return <BombFuseScene       scene={scene} accent={accent} />;
+    case "kaleidoscope":   return <KaleidoscopeMorphScene scene={scene} accent={accent} />;
+    case "abacus":         return <AbacusBeadsScene    scene={scene} accent={accent} />;
+    case "lever":          return <ArchimedesLeverScene scene={scene} accent={accent} />;
+    case "cardhouse":      return <CardHouseCollapseScene scene={scene} accent={accent} />;
+    case "centrifuge":     return <CentrifugeSpinScene scene={scene} accent={accent} />;
+    case "chromatography": return <ChromatographySpreadScene scene={scene} accent={accent} />;
+    case "cointoss":       return <CoinTossFlipScene   scene={scene} accent={accent} />;
+    case "conveyor":       return <ConveyorBeltSortScene scene={scene} accent={accent} />;
+    case "cubeunfold":     return <CubeUnfoldScene     scene={scene} accent={accent} />;
+    case "cuckoo":         return <CuckooPendulumScene scene={scene} accent={accent} />;
+    case "decibel":        return <DecibelMeterScene   scene={scene} accent={accent} />;
+    case "safedial":       return <DialSafeCombinationScene scene={scene} accent={accent} />;
+    case "droplet":        return <DropletRippleScene  scene={scene} accent={accent} />;
+    case "elevator":       return <ElevatorFloorScene  scene={scene} accent={accent} />;
+    case "filmstrip":      return <FilmStripRollScene  scene={scene} accent={accent} />;
+    case "hydraulicpress": return <HydraulicPressScene scene={scene} accent={accent} />;
+    case "lasermaze":      return <LaserMazeBounceScene scene={scene} accent={accent} />;
+    case "origami":        return <OrigamiFoldScene    scene={scene} accent={accent} />;
+    case "parachute":      return <ParachuteDropScene  scene={scene} accent={accent} />;
+    case "periscope":      return <PeriscopeViewScene  scene={scene} accent={accent} />;
+    case "pinball":        return <PinballBumperScene  scene={scene} accent={accent} />;
+    case "rubiks":         return <RubiksRowTwistScene scene={scene} accent={accent} />;
+    case "sieve":          return <SieveFilterScene    scene={scene} accent={accent} />;
+    case "stethoscope":    return <StethoscopePulseScene scene={scene} accent={accent} />;
+    case "tuningfork":     return <TuningForkResonanceScene scene={scene} accent={accent} />;
+    case "windvane":       return <WindVaneDirectionScene scene={scene} accent={accent} />;
     case "outro":     return <OutroScene     scene={scene} accent={accent} />;
     default:          return <TextScene      scene={scene} accent={accent} />;
   }
+};
+
+// Chaves exatas geradas pelo codemod que converteu "#fff"/"rgba(255,255,255,X)" em
+// var(--ink)/var(--ink-NN) nos 105 arquivos de cena sem foto (ver SCENE_TYPES_SEM_FOTO
+// em gerar_motion.py) — qualquer var(--ink-NN) usado num arquivo de cena precisa de uma
+// definição aqui com a mesma chave, senão resolve pra transparente silenciosamente.
+const INK_ALPHA_KEYS = [
+  "01", "1", "2", "03", "3", "04", "4", "05", "5", "6", "06", "07", "8", "08", "9",
+  "12", "14", "15", "18", "22", "25", "35", "045", "55", "65", "75", "85",
+];
+
+const themeVars = (theme: "dark" | "light" = "dark"): React.CSSProperties => {
+  const dark = theme !== "light";
+  const vars: Record<string, string> = {
+    "--ink": dark ? "#fff" : "#14141c",
+    "--card-fill": dark ? "rgba(255,255,255,0.045)" : "rgba(10,10,20,0.05)",
+  };
+  const rgb = dark ? "255,255,255" : "20,20,28";
+  for (const key of INK_ALPHA_KEYS) {
+    vars[`--ink-${key}`] = `rgba(${rgb},${Number(`0.${key}`)})`;
+  }
+  return vars as React.CSSProperties;
 };
 
 export const MotionReel: React.FC<{ script: VideoScript }> = ({ script }) => {
@@ -405,7 +569,7 @@ export const MotionReel: React.FC<{ script: VideoScript }> = ({ script }) => {
       <Sequence key={`v${i}`} from={from} durationInFrames={extend ? dur + TRANSITION_FRAMES : dur}>
         <SceneCrossfade nominalDur={dur} isLast={isLast} variant={crossfadeVariant}>
           <AbsoluteFill>
-            <SceneBackdrop scene={scene} accent={accent} index={i} />
+            <SceneBackdrop scene={scene} accent={accent} index={i} hueFrom={script.bgHueFrom} hueTo={script.bgHueTo} theme={script.theme} />
             <AmbientDrift index={i}>
               <SceneRouter scene={scene} accent={accent} variant={sceneVariant} />
             </AmbientDrift>
@@ -434,7 +598,7 @@ export const MotionReel: React.FC<{ script: VideoScript }> = ({ script }) => {
   });
 
   return (
-    <AbsoluteFill style={{ fontFamily: "'Inter', 'Arial Black', sans-serif" }}>
+    <AbsoluteFill style={{ ...themeVars(script.theme), fontFamily: "'Inter', 'Arial Black', sans-serif" }}>
       {visualElements}
       {captionElements}
     </AbsoluteFill>

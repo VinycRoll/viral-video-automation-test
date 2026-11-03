@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { useCurrentFrame, interpolate, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { sfxWhoosh } from "../utils/soundSynth";
 
 const LANE_W = 560;
 
@@ -16,16 +17,19 @@ const Lane: React.FC<{ label: string; value?: string; speed: number; accent: str
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, width: LANE_W }}>
+      <Sequence from={6} durationInFrames={10} layout="none">
+        <Audio src={sfxWhoosh(Math.max(0.12, Math.min(0.35, 0.3 / Math.max(0.1, speed))))} volume={0.14} />
+      </Sequence>
       <div style={{ opacity: labelOp, display: "flex", justifyContent: "space-between",
-                    fontSize: 20, fontWeight: 800, color: "#fff", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    fontSize: 20, fontWeight: 800, color: "var(--ink)", textTransform: "uppercase", letterSpacing: 0.5 }}>
         <span>{label}</span>
-        {value && <span style={{ color: highlight ? accent : "#fff" }}>{value}</span>}
+        {value && <span style={{ color: highlight ? accent : "var(--ink)" }}>{value}</span>}
       </div>
       <div style={{ position: "relative", width: "100%", height: 10, borderRadius: 5,
-                    background: "rgba(255,255,255,0.1)" }}>
+                    background: "var(--ink-1)" }}>
         <div style={{ position: "absolute", left: x, top: -6, width: 22, height: 22, borderRadius: "50%",
-                      background: highlight ? accent : "#fff",
-                      boxShadow: highlight ? `0 0 14px ${accent}90` : "0 0 8px rgba(255,255,255,0.5)" }} />
+                      background: highlight ? accent : "var(--ink)",
+                      boxShadow: highlight ? `0 0 14px ${accent}90` : "0 0 8px var(--ink-5)" }} />
       </div>
     </div>
   );
@@ -47,7 +51,7 @@ export const SpeedRaceScene: React.FC<{ scene: Scene; accent: string }> = ({ sce
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 30, padding: "0 40px", boxSizing: "border-box" }}>
       {scene.raceLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW }}>
           {scene.raceLabel}
         </div>

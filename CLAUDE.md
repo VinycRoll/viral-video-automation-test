@@ -2,7 +2,7 @@
 
 This project uses **Opensquad**, a multi-agent orchestration framework, to orchestrate the
 existing **instagram-reels** pipeline (personal-finance Reels: Gemini script → XTTS narration →
-Pixabay/ComfyUI backgrounds → `post_reel.py` → Publora).
+ComfyUI backgrounds → `post_reel.py` → Publora).
 
 ## Quick Start
 
@@ -25,7 +25,7 @@ Type `/opensquad` to open the main menu, or use any of these commands:
 This repo already has working automation that predates Opensquad — squads must wrap and call it,
 never duplicate it:
 - `post_reel.py` — CLI that generates and posts personal-finance Reels (Gemini script, XTTS v2
-  narration, Pixabay/ComfyUI backgrounds, Publora publishing)
+  narration, ComfyUI backgrounds, Publora publishing)
 - `viral-video-automation/purffle_shorts/` — vendored clipping engine (`ffmpeg.py`, `clipper.py`,
   `overlays.py`, `pipeline.py`, `crosspost.py`, `youtube.py`, `tts.py`, `llm.py`) with its own
   `mcp_server.py`

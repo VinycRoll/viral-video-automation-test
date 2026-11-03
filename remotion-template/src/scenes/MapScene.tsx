@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { sfxWhoosh, sfxImpact } from "../utils/soundSynth";
 
 const CARD_SIZE = 300;
 const PIN_LAND_FRAME = 10;
@@ -18,16 +19,16 @@ const GlobeGrid: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => 
     <svg width={CARD_SIZE} height={CARD_SIZE} viewBox="0 0 200 200" style={{ position: "absolute", inset: 0 }}>
       <defs>
         <radialGradient id="globeShade" cx="35%" cy="30%" r="75%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.10)" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0.01)" />
+          <stop offset="0%" stopColor="var(--ink-1)" />
+          <stop offset="100%" stopColor="var(--ink-01)" />
         </radialGradient>
       </defs>
-      <circle cx="100" cy="100" r="98" fill="url(#globeShade)" stroke="rgba(255,255,255,0.22)" strokeWidth={2} />
+      <circle cx="100" cy="100" r="98" fill="url(#globeShade)" stroke="var(--ink-22)" strokeWidth={2} />
       {[-60, -30, 0, 30, 60].map((lat) => {
         const r = Math.sqrt(Math.max(0, 98 * 98 - (lat * 0.95) ** 2));
         return (
           <ellipse key={lat} cx="100" cy={100 - lat * 0.95} rx={r} ry={6}
-                   fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth={1} />
+                   fill="none" stroke="var(--ink-14)" strokeWidth={1} />
         );
       })}
       {lons.map((lon) => {
@@ -35,7 +36,7 @@ const GlobeGrid: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => 
         const rx = Math.abs(Math.cos((angle * Math.PI) / 180)) * 98;
         return (
           <ellipse key={lon} cx="100" cy="100" rx={rx} ry="98"
-                   fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth={1} />
+                   fill="none" stroke="var(--ink-14)" strokeWidth={1} />
         );
       })}
     </svg>
@@ -64,8 +65,14 @@ export const MapScene: React.FC<{ scene: Scene; accent: string; variant?: number
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 32 }}>
+      <Sequence from={0} durationInFrames={10} layout="none">
+        <Audio src={sfxWhoosh(0.3)} volume={0.13} />
+      </Sequence>
+      <Sequence from={PIN_LAND_FRAME} durationInFrames={13} layout="none">
+        <Audio src={sfxImpact(0.25)} volume={0.2} />
+      </Sequence>
       {scene.mapLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW, padding: "0 60px" }}>
           {scene.mapLabel}
         </div>
@@ -73,11 +80,11 @@ export const MapScene: React.FC<{ scene: Scene; accent: string; variant?: number
 
       <div style={{
         position: "relative", width: CARD_SIZE, height: CARD_SIZE, borderRadius: variant % 2 === 1 ? "50%" : 28,
-        border: "1px solid rgba(255,255,255,0.15)", overflow: "hidden", opacity: cardOp,
-        backgroundColor: "rgba(255,255,255,0.03)",
+        border: "1px solid var(--ink-15)", overflow: "hidden", opacity: cardOp,
+        backgroundColor: "var(--ink-03)",
         backgroundImage: variant % 2 === 1 ? undefined :
-          "repeating-linear-gradient(0deg, rgba(255,255,255,0.07) 0px, rgba(255,255,255,0.07) 1px, transparent 1px, transparent 38px)," +
-          "repeating-linear-gradient(90deg, rgba(255,255,255,0.07) 0px, rgba(255,255,255,0.07) 1px, transparent 1px, transparent 38px)",
+          "repeating-linear-gradient(0deg, var(--ink-07) 0px, var(--ink-07) 1px, transparent 1px, transparent 38px)," +
+          "repeating-linear-gradient(90deg, var(--ink-07) 0px, var(--ink-07) 1px, transparent 1px, transparent 38px)",
       }}>
         {variant % 2 === 1 && <GlobeGrid frame={frame} fps={fps} />}
         {pingVisible && (
@@ -101,7 +108,7 @@ export const MapScene: React.FC<{ scene: Scene; accent: string; variant?: number
         {scene.mapPinLabel && (
           <div style={{
             position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, 14px)",
-            fontSize: 20, fontWeight: 800, color: "#fff", textTransform: "uppercase",
+            fontSize: 20, fontWeight: 800, color: "var(--ink)", textTransform: "uppercase",
             letterSpacing: 0.5, textShadow: SOFT_TEXT_SHADOW, whiteSpace: "nowrap",
             opacity: labelOp,
           }}>

@@ -1,6 +1,7 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
+import { sfxTick } from "../utils/soundSynth";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
 
 const JAR_W = 220;
@@ -36,8 +37,13 @@ export const PiggyBankScene: React.FC<{ scene: Scene; accent: string }> = ({ sce
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 36 }}>
+      {Array.from({ length: coins }, (_, i) => (
+        <Sequence key={i} from={i * COIN_GAP} durationInFrames={4} layout="none">
+          <Audio src={sfxTick(1800)} volume={0.1} />
+        </Sequence>
+      ))}
       {scene.piggyLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW, padding: "0 60px" }}>
           {scene.piggyLabel}
         </div>
@@ -45,8 +51,8 @@ export const PiggyBankScene: React.FC<{ scene: Scene; accent: string }> = ({ sce
 
       <div style={{ position: "relative", width: JAR_W, height: JAR_H, opacity: jarOp }}>
         <div style={{ position: "absolute", left: 0, right: 0, top: 24, bottom: 0, borderRadius: "0 0 36px 36px",
-                      border: "5px solid rgba(255,255,255,0.4)", borderTop: "none",
-                      background: "rgba(255,255,255,0.05)", overflow: "hidden" }}>
+                      border: "5px solid var(--ink-4)", borderTop: "none",
+                      background: "var(--ink-05)", overflow: "hidden" }}>
           {Array.from({ length: coins }, (_, i) => {
             const coinStart = i * COIN_GAP;
             const p = spring({ fps, frame: frame - coinStart, config: { damping: 11, stiffness: 150 } });
@@ -57,7 +63,7 @@ export const PiggyBankScene: React.FC<{ scene: Scene; accent: string }> = ({ sce
               <div key={i} style={{
                 position: "absolute", left: "50%", top: 0, width: 56, height: 56, marginLeft: -28,
                 borderRadius: "50%", opacity: op, transform: `translateY(${y}px) rotate(${rot}deg)`,
-                background: accent, boxShadow: `0 6px 14px rgba(0,0,0,0.4), inset 0 0 0 3px rgba(255,255,255,0.3)`,
+                background: accent, boxShadow: `0 6px 14px rgba(0,0,0,0.4), inset 0 0 0 3px var(--ink-3)`,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 22, fontWeight: 900, color: "#0b0b10",
               }}>$</div>
@@ -65,7 +71,7 @@ export const PiggyBankScene: React.FC<{ scene: Scene; accent: string }> = ({ sce
           })}
         </div>
         <div style={{ position: "absolute", left: "10%", right: "10%", top: 0, height: 24, borderRadius: 8,
-                      border: "5px solid rgba(255,255,255,0.4)", background: "transparent" }} />
+                      border: "5px solid var(--ink-4)", background: "transparent" }} />
       </div>
 
       <div style={{ textAlign: "center" }}>
@@ -78,7 +84,7 @@ export const PiggyBankScene: React.FC<{ scene: Scene; accent: string }> = ({ sce
       </div>
 
       {scene.piggyNote && (
-        <div style={{ opacity: noteOp, fontSize: 34, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: noteOp, fontSize: 34, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW, padding: "0 60px" }}>
           {scene.piggyNote}
         </div>

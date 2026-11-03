@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring, Easing } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Easing, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT, BlurReveal } from "../utils/text";
+import { sfxWhoosh, sfxResonance } from "../utils/soundSynth";
 
 export const IntroScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
   const frame = useCurrentFrame();
@@ -29,17 +30,24 @@ export const IntroScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, 
         </div>
       )}
 
+      <Sequence from={0} durationInFrames={10} layout="none">
+        <Audio src={sfxWhoosh(0.3)} volume={0.14} />
+      </Sequence>
+      <Sequence from={0} durationInFrames={23} layout="none">
+        <Audio src={sfxResonance(300, 0.7)} volume={0.12} />
+      </Sequence>
+
       <div style={{ width: `${lineW}%`, height: 3, background: `linear-gradient(90deg, ${accent}, transparent)`, marginBottom: 28 }} />
 
       <div style={{ opacity: titleOp, transform: `translateY(${titleY}px)`, fontSize: 76, fontWeight: 700,
-                    fontFamily: SERIF_FONT, color: "#fff", lineHeight: 1.15, letterSpacing: -0.5, maxWidth: "90%",
+                    fontFamily: SERIF_FONT, color: "var(--ink)", lineHeight: 1.15, letterSpacing: -0.5, maxWidth: "90%",
                     marginBottom: 20, textShadow: SOFT_TEXT_SHADOW }}>
         <BlurReveal text={scene.title || ""} startFrame={10} />
       </div>
 
       {scene.subtitle && (
         <div style={{ opacity: subOp, transform: `translateY(${subY}px)`, fontSize: 32,
-                      fontWeight: 500, color: "rgba(255,255,255,0.65)", maxWidth: "85%" }}>
+                      fontWeight: 500, color: "var(--ink-65)", maxWidth: "85%" }}>
           {scene.subtitle}
         </div>
       )}

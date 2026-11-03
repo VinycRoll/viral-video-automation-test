@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { useCurrentFrame, interpolate, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { sfxWhoosh } from "../utils/soundSynth";
 
 const REVEAL_START = 30;
 
@@ -20,19 +21,22 @@ export const RedactedDocScene: React.FC<{ scene: Scene; accent: string }> = ({ s
   });
 
   const DecoLine: React.FC<{ w: number }> = ({ w }) => (
-    <div style={{ width: `${w}%`, height: 14, borderRadius: 7, background: "rgba(255,255,255,0.12)" }} />
+    <div style={{ width: `${w}%`, height: 14, borderRadius: 7, background: "var(--ink-12)" }} />
   );
 
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 36, padding: "0 60px", boxSizing: "border-box" }}>
+      <Sequence from={REVEAL_START} durationInFrames={10} layout="none">
+        <Audio src={sfxWhoosh(0.22)} volume={0.14} />
+      </Sequence>
       <div style={{
-        width: "100%", maxWidth: 760, opacity: cardOp, background: "rgba(255,255,255,0.08)",
+        width: "100%", maxWidth: 760, opacity: cardOp, background: "var(--ink-08)",
         borderRadius: 24, padding: "48px 48px", display: "flex", flexDirection: "column", gap: 22,
         boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
       }}>
         {scene.redactedTitle && (
-          <div style={{ opacity: titleOp, fontSize: 26, fontWeight: 900, color: "#fff",
+          <div style={{ opacity: titleOp, fontSize: 26, fontWeight: 900, color: "var(--ink)",
                         letterSpacing: 2, textTransform: "uppercase", textShadow: SOFT_TEXT_SHADOW }}>
             {scene.redactedTitle}
           </div>

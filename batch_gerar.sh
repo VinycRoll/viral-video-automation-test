@@ -6,7 +6,7 @@
 # em loop de erro sem parar.
 cd "/home/vinycius/Área de trabalho/PROJETOS/instagram-reels" || exit 1
 LOG="batch_log.txt"
-MAX_RUNS=100
+MAX_RUNS=10
 MAX_FAILS=3
 fails=0
 

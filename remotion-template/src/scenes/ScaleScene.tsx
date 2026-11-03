@@ -1,6 +1,7 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
+import { sfxImpact } from "../utils/soundSynth";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
 
 const BEAM_HALF = 220;
@@ -14,21 +15,21 @@ const Pan: React.FC<{ x: number; y: number; label?: string; value?: string; acce
   <div style={{ position: "absolute", left: x, top: y, transform: "translate(-50%, 0)", textAlign: "center" }}>
     <div style={{
       minWidth: 170, minHeight: 70, padding: "10px 18px 14px", borderRadius: "0 0 60px 60px",
-      border: `3px solid ${lit ? accent : "rgba(255,255,255,0.35)"}`,
+      border: `3px solid ${lit ? accent : "var(--ink-35)"}`,
       borderTop: "none",
-      background: lit ? `${accent}22` : "rgba(255,255,255,0.05)",
+      background: lit ? `${accent}22` : "var(--ink-05)",
       display: "flex", alignItems: "center", justifyContent: "center",
       boxShadow: lit ? `0 0 20px ${accent}70` : "none",
       whiteSpace: "nowrap",
     }}>
       {value && (
-        <span style={{ fontSize: 28, fontWeight: 900, color: lit ? accent : "#fff", textShadow: SOFT_TEXT_SHADOW }}>
+        <span style={{ fontSize: 28, fontWeight: 900, color: lit ? accent : "var(--ink)", textShadow: SOFT_TEXT_SHADOW }}>
           {value}
         </span>
       )}
     </div>
     {label && (
-      <div style={{ marginTop: 16, fontSize: 24, fontWeight: 700, color: "rgba(255,255,255,0.85)",
+      <div style={{ marginTop: 16, fontSize: 24, fontWeight: 700, color: "var(--ink-85)",
                     textTransform: "uppercase", letterSpacing: 0.5, textShadow: SOFT_TEXT_SHADOW }}>
         {label}
       </div>
@@ -59,8 +60,14 @@ export const ScaleScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, 
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 36 }}>
+      <Sequence from={TILT_START} durationInFrames={13} layout="none">
+        <Audio src={sfxImpact()} volume={0.2} />
+      </Sequence>
+      <Sequence from={48} durationInFrames={13} layout="none">
+        <Audio src={sfxImpact()} volume={0.18} />
+      </Sequence>
       {scene.scaleLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW, padding: "0 60px" }}>
           {scene.scaleLabel}
         </div>
@@ -71,23 +78,23 @@ export const ScaleScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, 
         <div style={{
           position: "absolute", left: "50%", top: 70, transform: "translateX(-50%)",
           width: 0, height: 0, borderLeft: "26px solid transparent", borderRight: "26px solid transparent",
-          borderBottom: "46px solid rgba(255,255,255,0.25)",
+          borderBottom: "46px solid var(--ink-25)",
         }} />
-        <div style={{ position: "absolute", left: "50%", top: 24, width: 6, height: 46, background: "rgba(255,255,255,0.25)", transform: "translateX(-50%)" }} />
+        <div style={{ position: "absolute", left: "50%", top: 24, width: 6, height: 46, background: "var(--ink-25)", transform: "translateX(-50%)" }} />
 
         {/* viga */}
         <div style={{
           position: "absolute", left: "50%", top: 70, width: BEAM_HALF * 2, height: 6,
-          background: "rgba(255,255,255,0.5)", transformOrigin: "50% 50%",
+          background: "var(--ink-5)", transformOrigin: "50% 50%",
           transform: `translate(-50%, -50%) rotate(${(theta * 180) / Math.PI}deg)`,
         }} />
 
         {/* cordas + pratos */}
         <svg width={560} height={280} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
           <line x1={280 + leftX} y1={70 + leftY} x2={280 + leftX} y2={70 + leftY + STRING_LEN}
-                stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
+                stroke="var(--ink-4)" strokeWidth={2} />
           <line x1={280 + rightX} y1={70 + rightY} x2={280 + rightX} y2={70 + rightY + STRING_LEN}
-                stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
+                stroke="var(--ink-4)" strokeWidth={2} />
         </svg>
 
         <Pan x={280 + leftX} y={70 + leftY + STRING_LEN} label={scene.scaleLeftLabel} value={scene.scaleLeftValue}

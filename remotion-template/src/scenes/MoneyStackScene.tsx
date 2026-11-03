@@ -1,6 +1,7 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
+import { sfxTick, sfxSuccess } from "../utils/soundSynth";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
 import { VariantFrame } from "../utils/variant";
 
@@ -39,6 +40,14 @@ export const MoneyStackScene: React.FC<{ scene: Scene; accent: string; variant?:
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 44 }}>
+      {Array.from({ length: bills }, (_, i) => (
+        <Sequence key={i} from={i * STACK_GAP} durationInFrames={4} layout="none">
+          <Audio src={sfxTick()} volume={0.1} />
+        </Sequence>
+      ))}
+      <Sequence from={counterStart} durationInFrames={11} layout="none">
+        <Audio src={sfxSuccess()} volume={0.18} />
+      </Sequence>
       <VariantFrame variant={variant} accent={accent}>
       <div style={{ position: "relative", width: BILL_W + 60, height: bills * (BILL_H * 0.46) + BILL_H }}>
         {Array.from({ length: bills }, (_, i) => {
@@ -55,12 +64,12 @@ export const MoneyStackScene: React.FC<{ scene: Scene; accent: string; variant?:
               transform: `translateY(${-y}px) rotate(${rot}deg)`,
               borderRadius: 10, background: i % 2 === 0 ? "#2e7d32" : "#388e3c",
               boxShadow: "0 10px 22px rgba(0,0,0,0.45)",
-              border: "2px solid rgba(255,255,255,0.18)",
+              border: "2px solid var(--ink-18)",
               display: "flex", alignItems: "center", justifyContent: "space-between",
               padding: "0 18px", boxSizing: "border-box",
             }}>
-              <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.5)" }} />
-              <div style={{ fontSize: 20, fontWeight: 900, color: "rgba(255,255,255,0.85)" }}>R$</div>
+              <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid var(--ink-5)" }} />
+              <div style={{ fontSize: 20, fontWeight: 900, color: "var(--ink-85)" }}>R$</div>
             </div>
           );
         })}
@@ -77,7 +86,7 @@ export const MoneyStackScene: React.FC<{ scene: Scene; accent: string; variant?:
       </div>
 
       {scene.moneyNote && (
-        <div style={{ opacity: noteOp, fontSize: 34, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: noteOp, fontSize: 34, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW, padding: "0 60px" }}>
           {scene.moneyNote}
         </div>

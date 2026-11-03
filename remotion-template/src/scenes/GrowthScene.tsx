@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, Easing, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, Easing, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT, BlurReveal } from "../utils/text";
+import { sfxWhoosh, sfxSuccess } from "../utils/soundSynth";
 
 // y do roteiro: 0 = base do gráfico, 100 = topo — SVG inverte (0 = topo da viewBox)
 const toSvgY = (y: number) => 100 - y;
@@ -63,7 +64,7 @@ export const GrowthScene: React.FC<{ scene: Scene; accent: string }> = ({ scene,
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", padding: "60px 70px", boxSizing: "border-box", gap: 28 }}>
       {scene.growthTitle && (
-        <div style={{ opacity: titleOp, fontSize: 40, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: titleOp, fontSize: 40, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.5, textShadow: SOFT_TEXT_SHADOW }}>
           <BlurReveal text={scene.growthTitle} startFrame={0} />
         </div>
@@ -77,11 +78,11 @@ export const GrowthScene: React.FC<{ scene: Scene; accent: string }> = ({ scene,
             return (
               <div key={i} style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 60, fontWeight: 900, letterSpacing: -0.5,
-                              fontVariantNumeric: "tabular-nums", color: c.accent ? accent : "rgba(255,255,255,0.85)",
+                              fontVariantNumeric: "tabular-nums", color: c.accent ? accent : "var(--ink-85)",
                               textShadow: SOFT_TEXT_SHADOW }}>
                   {(c.prefix || "") + value.toLocaleString("pt-BR") + (c.suffix || "")}
                 </div>
-                {c.label && <div style={{ fontSize: 24, color: "rgba(255,255,255,0.6)", marginTop: 4 }}>{c.label}</div>}
+                {c.label && <div style={{ fontSize: 24, color: "var(--ink-6)", marginTop: 4 }}>{c.label}</div>}
               </div>
             );
           })}
@@ -91,7 +92,7 @@ export const GrowthScene: React.FC<{ scene: Scene; accent: string }> = ({ scene,
       {points.length > 1 && (
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: "100%", height: 420 }}>
           {hasCold && (
-            <path d={pathD(coldPoints)} fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth={2.4}
+            <path d={pathD(coldPoints)} fill="none" stroke="var(--ink-35)" strokeWidth={2.4}
                   strokeLinecap="round" strokeLinejoin="round"
                   strokeDasharray={pathLen(coldPoints)} strokeDashoffset={drawOffset(frame, 0, coldEnd, pathLen(coldPoints))} />
           )}
@@ -110,6 +111,13 @@ export const GrowthScene: React.FC<{ scene: Scene; accent: string }> = ({ scene,
           )}
         </svg>
       )}
+
+      <Sequence from={0} durationInFrames={Math.min(accentEnd, 36)} layout="none">
+        <Audio src={sfxWhoosh(Math.min(accentEnd, 36) / 30)} volume={0.13} />
+      </Sequence>
+      <Sequence from={accentEnd} durationInFrames={11} layout="none">
+        <Audio src={sfxSuccess()} volume={0.2} />
+      </Sequence>
     </div>
   );
 };

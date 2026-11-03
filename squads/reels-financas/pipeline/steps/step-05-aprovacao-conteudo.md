@@ -13,7 +13,7 @@ on_reject: "4"
 Este é o Content Approval Gate obrigatório antes de qualquer geração de vídeo. Apresentar ao
 usuário o tema, hook, legenda e tom definidos por Ângela Ângulo em
 `squads/reels-financas/output/tema-definido.md`, e aguardar aprovação explícita antes de disparar a
-geração do vídeo (que consome tempo e recursos de Gemini/XTTS/Pixabay).
+geração do vídeo (que consome tempo e recursos de Gemini/XTTS/ComfyUI).
 
 ## Pergunta ao usuário (via AskUserQuestion)
 

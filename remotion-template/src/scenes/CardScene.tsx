@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT, parseText, BlurReveal } from "../utils/text";
+import { sfxWhoosh } from "../utils/soundSynth";
 
 export const CardScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
   const frame = useCurrentFrame();
@@ -24,11 +25,11 @@ export const CardScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, a
                   boxSizing: "border-box", gap: 32 }}>
 
       <div style={{ opacity: cardOp, transform: `scale(${cardScale})`,
-                    background: "rgba(255,255,255,0.045)", borderRadius: 28,
+                    background: "var(--ink-045)", borderRadius: 28,
                     boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
                     padding: "40px 60px", textAlign: "center", width: "88%" }}>
         {scene.cardTitle && (
-          <div style={{ fontSize: 48, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff", marginBottom: 16 }}>
+          <div style={{ fontSize: 48, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)", marginBottom: 16 }}>
             <BlurReveal text={scene.cardTitle} startFrame={5} />
           </div>
         )}
@@ -49,6 +50,10 @@ export const CardScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, a
           {parseText(scene.cardNote, accent)}
         </div>
       )}
+
+      <Sequence from={5} durationInFrames={10} layout="none">
+        <Audio src={sfxWhoosh()} volume={0.15} />
+      </Sequence>
     </div>
   );
 };

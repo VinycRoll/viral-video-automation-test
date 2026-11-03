@@ -1,6 +1,7 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring, Easing } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Easing, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
+import { sfxTick, sfxSuccess } from "../utils/soundSynth";
 import { SOFT_TEXT_SHADOW } from "../utils/text";
 import { VariantFrame } from "../utils/variant";
 
@@ -37,9 +38,15 @@ export const CalendarScene: React.FC<{ scene: Scene; accent: string; variant?: n
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 36 }}>
+      <Sequence from={flipStart} durationInFrames={4} layout="none">
+        <Audio src={sfxTick()} volume={0.14} />
+      </Sequence>
+      <Sequence from={flipStart + flipFrames} durationInFrames={11} layout="none">
+        <Audio src={sfxSuccess()} volume={0.18} />
+      </Sequence>
       <VariantFrame variant={variant} accent={accent}>
       <div style={{ opacity: cardOp, transform: `scale(${cardScale})`, width: 360, borderRadius: 28,
-                    overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.4)", background: "#fff" }}>
+                    overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.4)", background: "var(--ink)" }}>
         <div style={{ background: accent, padding: "18px 0", textAlign: "center" }}>
           <div style={{ fontSize: 30, fontWeight: 900, letterSpacing: 2, color: "#0b0b10" }}>
             {scene.calendarMonth || "MARÇO"}

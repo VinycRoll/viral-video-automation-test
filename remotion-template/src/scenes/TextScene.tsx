@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { splitHighlightWords, colorForWord, TEXT_OUTLINE } from "../utils/text";
+import { sfxWhoosh } from "../utils/soundSynth";
 
 export const TextScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
   const frame = useCurrentFrame();
@@ -17,13 +18,18 @@ export const TextScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, a
           const delay = i * 4;
           const p = spring({ fps, frame: frame - delay, config: { damping: 12, stiffness: 200 } });
           return (
-            <span key={i} style={{
-              display: "inline-block", marginRight: "0.25em", color: colorForWord(word.color, accent, "rgba(255,255,255,0.95)"),
-              opacity: interpolate(p, [0, 1], [0, 1]),
-              transform: `translateY(${interpolate(p, [0, 1], [40, 0])}px) scale(${interpolate(p, [0, 1], [0.4, 1])})`,
-            }}>
-              {word.text}
-            </span>
+            <React.Fragment key={i}>
+              <Sequence from={delay} durationInFrames={10} layout="none">
+                <Audio src={sfxWhoosh(0.15)} volume={0.1} />
+              </Sequence>
+              <span style={{
+                display: "inline-block", marginRight: "0.25em", color: colorForWord(word.color, accent, "rgba(255,255,255,0.95)"),
+                opacity: interpolate(p, [0, 1], [0, 1]),
+                transform: `translateY(${interpolate(p, [0, 1], [40, 0])}px) scale(${interpolate(p, [0, 1], [0.4, 1])})`,
+              }}>
+                {word.text}
+              </span>
+            </React.Fragment>
           );
         })}
       </div>

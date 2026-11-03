@@ -1,6 +1,7 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, Easing } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, Easing, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
+import { sfxBeep } from "../utils/soundSynth";
 import "./native-ui.css";
 
 const PHONE_S = 1.42; // altura do phone ~0.63 da tela (1210px de 1920), igual à referência motionmaxxing
@@ -34,6 +35,12 @@ export const NotificationScene: React.FC<{ scene: Scene; accent: string }> = ({ 
 
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <Sequence from={arriveStart} durationInFrames={6} layout="none">
+        <Audio src={sfxBeep(1100, 0.08)} volume={0.18} />
+      </Sequence>
+      <Sequence from={arriveStart + 7} durationInFrames={6} layout="none">
+        <Audio src={sfxBeep(1400, 0.08)} volume={0.18} />
+      </Sequence>
       <div
         className="nu"
         style={{

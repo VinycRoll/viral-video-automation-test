@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { useCurrentFrame, interpolate, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { TEXT_OUTLINE } from "../utils/text";
+import { sfxWhoosh } from "../utils/soundSynth";
 
 // Duração do reveal letra-por-letra — usada também pelo rack focus do fundo
 // (SceneBackdrop em MotionReel.tsx), os dois precisam terminar juntos.
@@ -29,6 +30,10 @@ export const ChapterScene: React.FC<{ scene: Scene; accent: string }> = ({ scene
                     maxWidth: "90%", textShadow: TEXT_OUTLINE }}>
         {title.slice(0, revealCount)}
       </div>
+
+      <Sequence from={0} durationInFrames={CHAPTER_REVEAL_FRAMES} layout="none">
+        <Audio src={sfxWhoosh(CHAPTER_REVEAL_FRAMES / 30)} volume={0.15} />
+      </Sequence>
     </div>
   );
 };

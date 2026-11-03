@@ -21,7 +21,7 @@ categories: [automation, video, social-media]
 
 Use this skill any time a squad step needs to generate or publish a personal-finance
 Instagram Reel through the repo's existing `post_reel.py` pipeline (Gemini script →
-XTTS v2 narration → Pixabay/ComfyUI background → Remotion render → Publora/Make.com
+XTTS v2 narration → ComfyUI background → Remotion render → Publora/Make.com
 publishing). This skill never duplicates that logic — it only documents how to invoke it.
 
 ## Instructions
@@ -61,7 +61,7 @@ python3 post_reel.py --video "{caminho-absoluto-do-mp4}"
 
 ## Error handling
 
-- Missing `.env` keys (Gemini/Pixabay/Publora) → post_reel.py prints exactly which keys are
+- Missing `.env` keys (Gemini/Publora) → post_reel.py prints exactly which keys are
   missing and exits non-zero; surface that message to the user, don't guess at defaults.
 - `--video` with a path that doesn't exist → post_reel.py exits non-zero immediately; verify
   the path exists before invoking.

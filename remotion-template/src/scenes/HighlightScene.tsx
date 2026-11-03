@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { splitHighlightWords, colorForWord, TEXT_OUTLINE } from "../utils/text";
+import { sfxWhoosh } from "../utils/soundSynth";
 
 export const HighlightScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, accent }) => {
   const frame = useCurrentFrame();
@@ -31,13 +32,18 @@ export const HighlightScene: React.FC<{ scene: Scene; accent: string }> = ({ sce
           const delay = 4 + i * 4;
           const p = spring({ fps, frame: frame - delay, config: { damping: 11, stiffness: 220 } });
           return (
-            <span key={i} style={{
-              display: "inline-block", marginRight: "0.28em", color: colorForWord(word.color, accent, "#fff"),
-              opacity: interpolate(p, [0, 1], [0, 1]),
-              transform: `translateY(${interpolate(p, [0, 1], [45, 0])}px) scale(${interpolate(p, [0, 1], [0.35, 1])})`,
-            }}>
-              {word.text}
-            </span>
+            <React.Fragment key={i}>
+              <span style={{
+                display: "inline-block", marginRight: "0.28em", color: colorForWord(word.color, accent, "#fff"),
+                opacity: interpolate(p, [0, 1], [0, 1]),
+                transform: `translateY(${interpolate(p, [0, 1], [45, 0])}px) scale(${interpolate(p, [0, 1], [0.35, 1])})`,
+              }}>
+                {word.text}
+              </span>
+              <Sequence from={delay} durationInFrames={10} layout="none">
+                <Audio src={sfxWhoosh(0.15)} volume={0.1} />
+              </Sequence>
+            </React.Fragment>
           );
         })}
       </div>

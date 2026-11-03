@@ -1,6 +1,7 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
+import { sfxWhoosh, sfxImpact } from "../utils/soundSynth";
 import { SOFT_TEXT_SHADOW } from "../utils/text";
 
 const SETTLE_FRAME = 22;
@@ -30,18 +31,18 @@ export const VsBattleScene: React.FC<{ scene: Scene; accent: string }> = ({ scen
       position: "absolute", top: "15%", height: "70%", width: "44%",
       ...(side === "left" ? { left: "4%" } : { right: "4%" }),
       transform: `translateX(${x}px) rotate(${side === "left" ? -4 : 4}deg)`,
-      borderRadius: 28, background: "rgba(255,255,255,0.06)",
+      borderRadius: 28, background: "var(--ink-06)",
       border: `2px solid ${accent}55`, boxShadow: "0 24px 50px rgba(0,0,0,0.35)",
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14,
       padding: "0 18px",
     }}>
       {label && (
-        <div style={{ fontSize: 22, fontWeight: 800, color: "rgba(255,255,255,0.65)", textTransform: "uppercase",
+        <div style={{ fontSize: 22, fontWeight: 800, color: "var(--ink-65)", textTransform: "uppercase",
                       letterSpacing: 1, textAlign: "center" }}>
           {label}
         </div>
       )}
-      <div style={{ fontSize: 44, fontWeight: 900, color: "#fff", textAlign: "center",
+      <div style={{ fontSize: 44, fontWeight: 900, color: "var(--ink)", textAlign: "center",
                     letterSpacing: -1, textShadow: SOFT_TEXT_SHADOW }}>
         {value}
       </div>
@@ -50,6 +51,12 @@ export const VsBattleScene: React.FC<{ scene: Scene; accent: string }> = ({ scen
 
   return (
     <div style={{ width: "100%", height: "100%", position: "relative" }}>
+      <Sequence from={0} durationInFrames={10} layout="none">
+        <Audio src={sfxWhoosh()} volume={0.14} />
+      </Sequence>
+      <Sequence from={SETTLE_FRAME} durationInFrames={13} layout="none">
+        <Audio src={sfxImpact()} volume={0.2} />
+      </Sequence>
       <Half side="left" x={leftX} label={scene.vsLeftLabel} value={scene.vsLeftValue} />
       <Half side="right" x={rightX} label={scene.vsRightLabel} value={scene.vsRightValue} />
 

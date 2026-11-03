@@ -1,6 +1,7 @@
 import React from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { useCurrentFrame, interpolate, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
+import { sfxTick, sfxImpact } from "../utils/soundSynth";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
 
 const ROW_GAP = 14; // frames entre cada item aparecendo
@@ -43,6 +44,14 @@ export const ReceiptScene: React.FC<{ scene: Scene; accent: string }> = ({ scene
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", padding: "60px 70px", boxSizing: "border-box", gap: 32 }}>
+      {items.map((_, i) => (
+        <Sequence key={i} from={i * ROW_GAP} durationInFrames={4} layout="none">
+          <Audio src={sfxTick()} volume={0.1} />
+        </Sequence>
+      ))}
+      <Sequence from={totalStart} durationInFrames={13} layout="none">
+        <Audio src={sfxImpact()} volume={0.18} />
+      </Sequence>
       <div style={{ opacity: cardP, transform: `scale(${cardScale})`, width: "88%", background: "#f4f1e8",
                     borderRadius: 18, boxShadow: "0 24px 60px rgba(0,0,0,0.4)", padding: "36px 36px 28px" }}>
         {scene.receiptTitle && (

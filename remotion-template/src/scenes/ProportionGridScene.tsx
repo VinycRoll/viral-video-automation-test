@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { sfxTick, sfxBeep } from "../utils/soundSynth";
 
 const DOT = 18;
 const GAP = 8;
@@ -15,7 +16,7 @@ const Dot: React.FC<{ lit: boolean; index: number; accent: string }> = ({ lit, i
   return (
     <div style={{
       width: DOT, height: DOT, borderRadius: "50%", transform: `scale(${lit ? Math.max(scale, 0.6) : 1})`,
-      background: lit ? accent : "rgba(255,255,255,0.14)",
+      background: lit ? accent : "var(--ink-14)",
       boxShadow: lit ? `0 0 10px ${accent}90` : "none",
     }} />
   );
@@ -39,12 +40,20 @@ export const ProportionGridScene: React.FC<{ scene: Scene; accent: string }> = (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 28, padding: "0 60px", boxSizing: "border-box" }}>
       {scene.gridLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW }}>
           {scene.gridLabel}
         </div>
       )}
 
+      {Array.from({ length: highlight }).map((_, i) => (
+        <Sequence key={i} from={Math.round(10 + i * 1.5)} durationInFrames={4} layout="none">
+          <Audio src={sfxTick()} volume={0.1} />
+        </Sequence>
+      ))}
+      <Sequence from={Math.round(10 + highlight * 1.5)} durationInFrames={6} layout="none">
+        <Audio src={sfxBeep(900, 0.1)} volume={0.18} />
+      </Sequence>
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${DOT}px)`, gap: GAP,
                     justifyContent: "center" }}>
         {Array.from({ length: total }).map((_, i) => (

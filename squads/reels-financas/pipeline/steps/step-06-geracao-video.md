@@ -22,7 +22,7 @@ outputFile: "squads/reels-financas/output/video-gerado.md"
 1. Invocar a skill `post-reel-cli` chamando o script existente **`post_reel.py --dry-run`**,
    passando o tema definido para orientar a geração do roteiro — nunca escrever ou reimplementar o
    roteiro, narração ou fundo por conta própria; isso é feito internamente pelo `post_reel.py`
-   (Gemini, XTTS v2, Pixabay/ComfyUI).
+   (Gemini, XTTS v2, ComfyUI).
 2. Capturar da saída do CLI o caminho do vídeo gerado (`videos_gerados/<arquivo>.mp4`, conforme
    `VIDEOS_DIR` do script).
 3. Ler o roteiro real que foi efetivamente gerado em `remotion-template/ultimo_roteiro.json` (o

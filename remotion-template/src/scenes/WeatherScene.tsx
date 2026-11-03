@@ -1,11 +1,12 @@
 import React from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { useCurrentFrame, interpolate, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { sfxWhoosh, sfxBubble } from "../utils/soundSynth";
 
 const ICON = 160;
 
-const Cloud: React.FC<{ color?: string }> = ({ color = "rgba(255,255,255,0.9)" }) => (
+const Cloud: React.FC<{ color?: string }> = ({ color = "var(--ink-9)" }) => (
   <div style={{ position: "absolute", left: 10, top: 62, width: 140, height: 56 }}>
     <div style={{ position: "absolute", left: 0, top: 20, width: 140, height: 36, borderRadius: 20, background: color }} />
     <div style={{ position: "absolute", left: 14, top: 0, width: 50, height: 50, borderRadius: "50%", background: color }} />
@@ -39,9 +40,17 @@ const RainDrop: React.FC<{ x: number; delay: number; frame: number; accent: stri
   const loop = (frame - delay + 600) % 24;
   const y = interpolate(loop, [0, 24], [0, 46]);
   const op = interpolate(loop, [0, 6, 20, 24], [0, 1, 1, 0]);
+  const splashBase = (((20 - delay + 600) % 24) + 24) % 24;
   return (
-    <div style={{ position: "absolute", left: x, top: 118 + y, width: 4, height: 14, borderRadius: 2,
-                  background: accent, opacity: op }} />
+    <>
+      {Array.from({ length: 6 }).map((_, c) => (
+        <Sequence key={c} from={splashBase + c * 24} durationInFrames={6} layout="none">
+          <Audio src={sfxBubble(0.08)} volume={0.09} />
+        </Sequence>
+      ))}
+      <div style={{ position: "absolute", left: x, top: 118 + y, width: 4, height: 14, borderRadius: 2,
+                    background: accent, opacity: op }} />
+    </>
   );
 };
 
@@ -61,8 +70,12 @@ export const WeatherScene: React.FC<{ scene: Scene; accent: string }> = ({ scene
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 28 }}>
+      <Sequence from={0} durationInFrames={10} layout="none">
+        <Audio src={sfxWhoosh()} volume={0.13} />
+      </Sequence>
+
       {scene.weatherLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW, padding: "0 60px" }}>
           {scene.weatherLabel}
         </div>
@@ -82,7 +95,7 @@ export const WeatherScene: React.FC<{ scene: Scene; accent: string }> = ({ scene
       </div>
 
       {scene.weatherTemp && (
-        <div style={{ opacity: tempOp, fontSize: 64, fontWeight: 900, color: "#fff",
+        <div style={{ opacity: tempOp, fontSize: 64, fontWeight: 900, color: "var(--ink)",
                       fontVariantNumeric: "tabular-nums", textShadow: SOFT_TEXT_SHADOW }}>
           {scene.weatherTemp}
         </div>

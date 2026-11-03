@@ -1,8 +1,9 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
 import { VariantFrame } from "../utils/variant";
+import { sfxWhoosh, sfxSuccess } from "../utils/soundSynth";
 
 const SIZE = 340;
 const STROKE = 22;
@@ -28,8 +29,14 @@ export const ProgressScene: React.FC<{ scene: Scene; accent: string; variant?: n
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 36 }}>
+      <Sequence from={6} durationInFrames={10} layout="none">
+        <Audio src={sfxWhoosh(0.3)} volume={0.13} />
+      </Sequence>
+      <Sequence from={56} durationInFrames={11} layout="none">
+        <Audio src={sfxSuccess()} volume={0.2} />
+      </Sequence>
       {scene.progressLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW, padding: "0 60px" }}>
           {scene.progressLabel}
         </div>
@@ -39,14 +46,14 @@ export const ProgressScene: React.FC<{ scene: Scene; accent: string; variant?: n
         <div style={{ position: "relative", width: SIZE, height: SIZE, opacity: ringOp }}>
           <svg width={SIZE} height={SIZE} style={{ transform: "rotate(-90deg)" }}>
             <circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none"
-              stroke="rgba(255,255,255,0.1)" strokeWidth={STROKE} />
+              stroke="var(--ink-1)" strokeWidth={STROKE} />
             <circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none"
               stroke={accent} strokeWidth={STROKE} strokeLinecap="round"
               strokeDasharray={CIRC} strokeDashoffset={dashoffset}
               style={{ filter: `drop-shadow(0 0 14px ${accent}90)` }} />
           </svg>
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ fontSize: 86, fontWeight: 900, color: "#fff", letterSpacing: -2,
+            <div style={{ fontSize: 86, fontWeight: 900, color: "var(--ink)", letterSpacing: -2,
                           fontVariantNumeric: "tabular-nums", textShadow: SOFT_TEXT_SHADOW }}>
               {Math.round(pct)}<span style={{ fontSize: 44, color: accent }}>%</span>
             </div>

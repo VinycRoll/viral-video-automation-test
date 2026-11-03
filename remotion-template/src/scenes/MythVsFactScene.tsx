@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, spring, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { sfxAlert, sfxWhoosh, sfxSuccess } from "../utils/soundSynth";
 
 const CARD_W = 860;
 const CARD_H = 480;
@@ -34,13 +35,22 @@ export const MythVsFactScene: React.FC<{ scene: Scene; accent: string }> = ({ sc
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 36, padding: "0 60px", boxSizing: "border-box" }}>
+      <Sequence from={STAMP_START} durationInFrames={10} layout="none">
+        <Audio src={sfxAlert()} volume={0.2} />
+      </Sequence>
+      <Sequence from={FLIP_START} durationInFrames={10} layout="none">
+        <Audio src={sfxWhoosh(0.3)} volume={0.14} />
+      </Sequence>
+      <Sequence from={FLIP_START + 18} durationInFrames={11} layout="none">
+        <Audio src={sfxSuccess()} volume={0.2} />
+      </Sequence>
       <div style={{ width: "100%", maxWidth: CARD_W, height: CARD_H, position: "relative",
                     perspective: 1400, transform: `translateX(${shakeX}px)` }}>
         <div style={{ width: "100%", height: "100%", position: "relative",
                       transformStyle: "preserve-3d", transform: `rotateY(${rotateY}deg)` }}>
           <div style={{
             position: "absolute", inset: 0, borderRadius: 32, backfaceVisibility: "hidden",
-            background: "rgba(255,255,255,0.045)", boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
+            background: "var(--ink-045)", boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             gap: 24, padding: "0 56px",
           }}>
@@ -48,7 +58,7 @@ export const MythVsFactScene: React.FC<{ scene: Scene; accent: string }> = ({ sc
                           textTransform: "uppercase", textShadow: SOFT_TEXT_SHADOW }}>
               MITO
             </div>
-            <div style={{ fontSize: 42, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+            <div style={{ fontSize: 42, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                           textAlign: "center", lineHeight: 1.25, letterSpacing: -0.5, textShadow: SOFT_TEXT_SHADOW }}>
               {scene.mythLabel}
             </div>
@@ -66,7 +76,7 @@ export const MythVsFactScene: React.FC<{ scene: Scene; accent: string }> = ({ sc
 
           <div style={{
             position: "absolute", inset: 0, borderRadius: 32, backfaceVisibility: "hidden",
-            background: "rgba(255,255,255,0.045)", boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
+            background: "var(--ink-045)", boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             gap: 24, padding: "0 56px", transform: "rotateY(180deg)",
           }}>
@@ -74,7 +84,7 @@ export const MythVsFactScene: React.FC<{ scene: Scene; accent: string }> = ({ sc
                           textTransform: "uppercase", textShadow: SOFT_TEXT_SHADOW }}>
               VERDADE
             </div>
-            <div style={{ fontSize: 42, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+            <div style={{ fontSize: 42, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                           textAlign: "center", lineHeight: 1.25, letterSpacing: -0.5, textShadow: SOFT_TEXT_SHADOW }}>
               {scene.factLabel}
             </div>

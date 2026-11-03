@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, interpolate, spring, useVideoConfig } from "remotion";
+import { useCurrentFrame, interpolate, spring, useVideoConfig, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { sfxBeep } from "../utils/soundSynth";
 
 const STEP_GAP = 16; // frames entre cada marco acendendo
 
@@ -15,9 +16,12 @@ const Dot: React.FC<{ label: string; index: number; accent: string }> = ({ label
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, flex: 1 }}>
+      <Sequence from={start} durationInFrames={6} layout="none">
+        <Audio src={sfxBeep(950, 0.08)} volume={0.18} />
+      </Sequence>
       <div style={{ width: 28, height: 28, borderRadius: "50%", transform: `scale(${scale})`,
                     background: accent, boxShadow: `0 0 16px ${accent}90` }} />
-      <div style={{ opacity: labelOp, fontSize: 22, fontWeight: 700, color: "#fff", textAlign: "center",
+      <div style={{ opacity: labelOp, fontSize: 22, fontWeight: 700, color: "var(--ink)", textAlign: "center",
                     letterSpacing: 0.2, textShadow: SOFT_TEXT_SHADOW, padding: "0 6px" }}>
         {label}
       </div>
@@ -41,7 +45,7 @@ export const RoadmapScene: React.FC<{ scene: Scene; accent: string }> = ({ scene
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 48, padding: "0 70px", boxSizing: "border-box" }}>
       {scene.roadmapTitle && (
-        <div style={{ opacity: titleOp, fontSize: 32, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: titleOp, fontSize: 32, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW }}>
           {scene.roadmapTitle}
         </div>
@@ -49,7 +53,7 @@ export const RoadmapScene: React.FC<{ scene: Scene; accent: string }> = ({ scene
 
       <div style={{ position: "relative", width: "100%", display: "flex", alignItems: "flex-start" }}>
         <div style={{ position: "absolute", left: "10%", right: "10%", top: 13, height: 4,
-                      background: "rgba(255,255,255,0.15)", borderRadius: 2 }} />
+                      background: "var(--ink-15)", borderRadius: 2 }} />
         <div style={{ position: "absolute", left: "10%", top: 13, height: 4, width: `${lineP * 0.8}%`,
                       background: accent, borderRadius: 2, boxShadow: `0 0 10px ${accent}80` }} />
         {steps.map((s, i) => (

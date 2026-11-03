@@ -1,7 +1,8 @@
 import React from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { useCurrentFrame, interpolate, Sequence, Audio } from "remotion";
 import { Scene } from "../types";
 import { SOFT_TEXT_SHADOW, SERIF_FONT } from "../utils/text";
+import { sfxWhoosh } from "../utils/soundSynth";
 
 const Half: React.FC<{ label?: string; value?: string; accent: string; from: "left" | "right"; highlight?: boolean }> = ({
   label, value, accent, from, highlight,
@@ -15,12 +16,12 @@ const Half: React.FC<{ label?: string; value?: string; accent: string; from: "le
     <div style={{ flex: 1, opacity: op, transform: `translateX(${x}px)`, display: "flex",
                   flexDirection: "column", alignItems: "center", gap: 14, padding: "0 20px" }}>
       {label && (
-        <div style={{ fontSize: 24, fontWeight: 800, color: "rgba(255,255,255,0.65)", textTransform: "uppercase",
+        <div style={{ fontSize: 24, fontWeight: 800, color: "var(--ink-65)", textTransform: "uppercase",
                       letterSpacing: 1, textAlign: "center" }}>
           {label}
         </div>
       )}
-      <div style={{ fontSize: 56, fontWeight: 900, color: highlight ? accent : "#fff", textAlign: "center",
+      <div style={{ fontSize: 56, fontWeight: 900, color: highlight ? accent : "var(--ink)", textAlign: "center",
                     letterSpacing: -1.5, textShadow: highlight ? `0 0 28px ${accent}50, ${SOFT_TEXT_SHADOW}` : SOFT_TEXT_SHADOW }}>
         {value}
       </div>
@@ -42,8 +43,14 @@ export const SplitScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, 
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 40 }}>
+      <Sequence from={6} durationInFrames={10} layout="none">
+        <Audio src={sfxWhoosh(0.2)} volume={0.13} />
+      </Sequence>
+      <Sequence from={8} durationInFrames={10} layout="none">
+        <Audio src={sfxWhoosh(0.2)} volume={0.13} />
+      </Sequence>
       {scene.splitLabel && (
-        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "#fff",
+        <div style={{ opacity: labelOp, fontSize: 30, fontWeight: 700, fontFamily: SERIF_FONT, color: "var(--ink)",
                       textAlign: "center", letterSpacing: -0.3, textShadow: SOFT_TEXT_SHADOW, padding: "0 60px" }}>
           {scene.splitLabel}
         </div>
@@ -51,7 +58,7 @@ export const SplitScene: React.FC<{ scene: Scene; accent: string }> = ({ scene, 
 
       <div style={{ position: "relative", width: "100%", display: "flex", alignItems: "center" }}>
         <Half label={scene.splitLeftLabel} value={scene.splitLeftValue} accent={accent} from="left" />
-        <div style={{ width: 2, height: 90, background: "rgba(255,255,255,0.2)", opacity: dividerOp }} />
+        <div style={{ width: 2, height: 90, background: "var(--ink-2)", opacity: dividerOp }} />
         <Half label={scene.splitRightLabel} value={scene.splitRightValue} accent={accent} from="right" highlight />
       </div>
 
