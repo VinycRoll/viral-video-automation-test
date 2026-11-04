@@ -314,6 +314,12 @@ const KenBurnsImage: React.FC<{ src: string; index: number }> = ({ src, index })
 // sempre com partículas sutis e gradiente escuro na base para a legenda respirar.
 // O overlay de base fica sempre escuro-tingido-pelo-hue (não inverte com o tema) —
 // existe só pra dar contraste pra legenda branca, que é theme-independent.
+// Tipos que já eram desenhados pra ter foto atrás (legenda/texto central, sem card
+// opaco competindo). Todo o resto, quando tem backgroundImage, é "UI densa" (cards,
+// contadores, ícones) e leva overlay/blur mais forte pra não perder legibilidade —
+// ver isDenseUi abaixo. Espelha SCENE_TYPES_SEM_FOTO em gerar_motion.py pelo complemento.
+const PHOTO_NATIVE_TYPES = new Set<Scene["type"]>(["text", "highlight", "list", "chapter", "code"]);
+
 const SceneBackdrop: React.FC<{ scene: Scene; accent: string; index: number; hueFrom?: number; hueTo?: number; theme?: "dark" | "light" }> = ({ scene, accent, index, hueFrom, hueTo, theme = "dark" }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -324,25 +330,37 @@ const SceneBackdrop: React.FC<{ scene: Scene; accent: string; index: number; hue
   const blur = rackFocus
     ? interpolate(frame, [0, CHAPTER_REVEAL_FRAMES], [18, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
     : 0;
+  const isDenseUi = !!scene.backgroundImage && !PHOTO_NATIVE_TYPES.has(scene.type);
   const base = (a: number) => `hsla(${hue}, 30%, 4%, ${a})`;
+  // Cenas nativas de foto usam texto sempre-claro com contorno (TEXT_OUTLINE) —
+  // por isso o overlay delas é sempre escuro, independente do tema. UI densa usa
+  // var(--ink), que inverte com o tema (claro→texto escuro, escuro→texto claro),
+  // então o overlay dela sobre a foto também precisa seguir o tema — senão um
+  // vídeo "claro" fica com fundo escuro forçado e texto escuro em cima, ilegível.
+  const denseBase = theme === "light" ? (a: number) => `hsla(${hue}, 25%, 93%, ${a})` : base;
   return (
     <>
       {scene.backgroundImage
         ? (
           <>
-            <AbsoluteFill style={{ filter: rackFocus ? `blur(${blur}px)` : undefined }}>
+            <AbsoluteFill style={{ filter: rackFocus ? `blur(${blur}px)` : isDenseUi ? "blur(3px)" : undefined }}>
               <KenBurnsImage src={scene.backgroundImage} index={index} />
             </AbsoluteFill>
-            {/* Tint sutil da paleta sobre a foto — sem isso, cenas com foto (5 dos 110
-                tipos) nunca mostravam o hue, só o tom fixo das próprias fotos. */}
-            <AbsoluteFill style={{ background: `hsl(${hue}, 60%, 45%)`, mixBlendMode: "color", opacity: 0.2 }} />
+            {/* Tint sutil da paleta sobre a foto — sem isso, cenas com foto nunca
+                mostravam o hue, só o tom fixo das próprias fotos. Mais forte em
+                cenas de UI densa (card/contador/ícone) pra foto não competir com
+                a UI por atenção. mixBlendMode "color" preserva a luminosidade do
+                fundo, então não precisa variar por tema. */}
+            <AbsoluteFill style={{ background: `hsl(${hue}, 60%, 45%)`, mixBlendMode: "color", opacity: isDenseUi ? 0.4 : 0.2 }} />
           </>
         )
         : <Background accent={accent} hueFrom={hueFrom} hueTo={hueTo} theme={theme} />}
       <Particles accent={accent} />
       <AbsoluteFill style={{
         background: scene.backgroundImage
-          ? `linear-gradient(180deg, ${base(0.55)} 0%, ${base(0.3)} 40%, ${base(0.85)} 100%)`
+          ? (isDenseUi
+              ? `linear-gradient(180deg, ${denseBase(0.72)} 0%, ${denseBase(0.55)} 55%, ${base(0.9)} 100%)`
+              : `linear-gradient(180deg, ${base(0.55)} 0%, ${base(0.3)} 40%, ${base(0.85)} 100%)`)
           : `linear-gradient(180deg, ${base(0)} 0%, ${base(0)} 55%, ${base(0.8)} 100%)`,
       }} />
     </>

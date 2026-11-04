@@ -1281,9 +1281,12 @@ def gerar_imagens(prompts: list, tema: str, dest_dir: Path) -> list:
     return caminhos
 
 
-# Cenas de card/dado/branding (proof, card, intro, outro) ficam sem foto de propósito —
-# renderizam sobre o gradiente limpo do Remotion, estilo editorial (motionmaxxing). Módulo
-# usa o mesmo set em main() pra nem buscar/baixar imagem pras cenas que nunca vão exibi-la.
+# Nome histórico: hoje toda cena recebe foto de fundo (ver aplicar_imagens_de_fundo).
+# Este set de cenas de card/dado/branding (proof, card, intro, outro, etc.) ainda compõe
+# VALID_SCENE_TYPES abaixo. No lado do Remotion, SceneBackdrop (MotionReel.tsx) aplica
+# overlay/blur mais forte sobre a foto em todo tipo FORA de PHOTO_NATIVE_TYPES (os 5
+# listados logo abaixo) — a mesma distinção, mas expressa pelo complemento (só 5 itens
+# pra manter em sincronia, não os ~105 deste set).
 SCENE_TYPES_SEM_FOTO = {"proof", "growth", "card", "intro", "outro", "notification", "calendar", "clock", "moneystack", "checklist", "progress", "timer", "rating", "scale", "map", "weather", "achievement", "battery", "book", "thermometer", "piggybank", "receipt", "roadmap", "quote", "alert", "split", "counter", "sizecompare", "xray", "proportiongrid", "speedrace", "timelineera", "orbit", "dna", "mythfact", "redacted", "magnify", "censored", "domino", "treebranch", "vsbattle", "brain", "ecg", "illusion", "soundwave", "depthdive", "pressure", "chainreaction", "pendulum", "slotmachine", "labmix", "pyramid", "supplychain", "crowd", "balancebeam", "glitch", "radar", "evolution", "microscope", "telescope", "blueprint", "vortex", "chess", "morse", "hourglass", "satellite", "barcode", "stamp", "metronome", "compass", "liquidfill", "radiotuner", "spotlight", "shredder", "magnetic", "circuit", "shatter", "curtain", "bombfuse", "kaleidoscope", "abacus", "lever", "cardhouse", "centrifuge", "chromatography", "cointoss", "conveyor", "cubeunfold", "cuckoo", "decibel", "safedial", "droplet", "elevator", "filmstrip", "hydraulicpress", "lasermaze", "origami", "parachute", "periscope", "pinball", "rubiks", "sieve", "stethoscope", "tuningfork", "windvane"}
 
 # "text"/"highlight"/"list"/"chapter"/"code" são os únicos 5 tipos que pedem foto ao
@@ -1335,8 +1338,10 @@ def _normalizar_tipo_cena(scene: dict) -> None:
 
 
 def aplicar_imagens_de_fundo(script: dict, imagens: list) -> None:
-    """Copia as imagens geradas para public/images/ e associa uma a cada cena elegível
-    (cicla se houver menos imagens que cenas) para o Ken Burns no Remotion."""
+    """Copia as imagens geradas para public/images/ e associa uma a CADA cena (cicla
+    se houver menos imagens que cenas) para o Ken Burns no Remotion. Nos tipos
+    "sem foto" (card/contador/etc.), o MotionReel aplica overlay+blur mais fortes
+    (ver DENSE_UI_SCENE_TYPES/isDenseUi em MotionReel.tsx) pra UI não perder leitura."""
     public_images_dir = SCRIPT_DIR / "public" / "images"
     if public_images_dir.exists():
         shutil.rmtree(public_images_dir)
@@ -1351,8 +1356,6 @@ def aplicar_imagens_de_fundo(script: dict, imagens: list) -> None:
     print(f"\n🎞️  {len(nomes)} imagem(ns) pronta(s) em public/images/ (Ken Burns automático)")
     ciclo = itertools.cycle(nomes)
     for scene in script["scenes"]:
-        if scene.get("type") in SCENE_TYPES_SEM_FOTO:
-            continue
         scene["backgroundImage"] = f"images/{next(ciclo)}"
 
 
@@ -1767,13 +1770,9 @@ def main():
             image_prompts = image_prompts + [image_prompts[-1] if image_prompts else tema] * (n_scenes - len(image_prompts))
         image_prompts = image_prompts[:n_scenes]
 
-        # Só gera imagem pra cena que vai de fato exibir uma (aplicar_imagens_de_fundo
-        # pula os tipos em SCENE_TYPES_SEM_FOTO) — evita o ComfyUI gastar tempo e GPU
-        # gerando imagem pra cena de card/intro/outro que nunca vai usá-la.
-        image_prompts_fetch = [
-            p for p, scene in zip(image_prompts, script["scenes"])
-            if scene.get("type") not in SCENE_TYPES_SEM_FOTO
-        ]
+        # Toda cena agora exibe foto de fundo (ver aplicar_imagens_de_fundo) — busca
+        # um prompt de imagem por cena.
+        image_prompts_fetch = list(image_prompts)
 
         print("\n🔎 Prompts de imagem (geração ComfyUI):")
         for i, p in enumerate(image_prompts_fetch):
